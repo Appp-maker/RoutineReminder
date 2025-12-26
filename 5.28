@@ -1,0 +1,17 @@
+Index: app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+--- a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
++++ b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt	(date 1761406049503)
+@@ -93,7 +93,7 @@
+     }
+ 
+     val locationRequest = LocationRequest.Builder(
+-        Priority.PRIORITY_HIGH_ACCURACY, 2000L
++        Priority.PRIORITY_HIGH_ACCURACY, 1000L
+     ).setMinUpdateDistanceMeters(2f).build()
+ 
+     val locationCallback = object : LocationCallback() {

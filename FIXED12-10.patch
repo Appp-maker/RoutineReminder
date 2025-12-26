@@ -1,0 +1,28 @@
+Index: app/build/generated/ksp/debug/java/com/example/routinereminder/data/dao/LoggedFoodDao_Impl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build/generated/ksp/debug/java/com/example/routinereminder/data/dao/LoggedFoodDao_Impl.java b/app/build/generated/ksp/debug/java/com/example/routinereminder/data/dao/LoggedFoodDao_Impl.java
+--- a/app/build/generated/ksp/debug/java/com/example/routinereminder/data/dao/LoggedFoodDao_Impl.java
++++ b/app/build/generated/ksp/debug/java/com/example/routinereminder/data/dao/LoggedFoodDao_Impl.java	(date 1760272759253)
+@@ -8,6 +8,7 @@
+ import androidx.room.EntityDeletionOrUpdateAdapter;
+ import androidx.room.EntityInsertionAdapter;
+ import androidx.room.RoomDatabase;
++import androidx.room.RoomDatabaseKt;
+ import androidx.room.RoomSQLiteQuery;
+ import androidx.room.SharedSQLiteStatement;
+ import androidx.room.util.CursorUtil;
+@@ -229,6 +230,11 @@
+     }, $completion);
+   }
+ 
++  @Override
++  public Object upsert(final LoggedFood food, final Continuation<? super Unit> $completion) {
++    return RoomDatabaseKt.withTransaction(__db, (__cont) -> LoggedFoodDao.DefaultImpls.upsert(LoggedFoodDao_Impl.this, food, __cont), $completion);
++  }
++
+   @Override
+   public Object delete(final long id, final Continuation<? super Unit> $completion) {
+     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {

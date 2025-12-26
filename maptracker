@@ -1,0 +1,126 @@
+Index: app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+--- a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
++++ b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt	(date 1761405588171)
+@@ -6,7 +6,8 @@
+ import android.location.Location
+ import android.os.Looper
+ import androidx.compose.foundation.layout.fillMaxSize
+-import androidx.compose.runtime.*
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.viewinterop.AndroidView
+@@ -21,14 +22,16 @@
+ import org.maplibre.android.maps.Style
+ import org.maplibre.android.style.layers.CircleLayer
+ import org.maplibre.android.style.sources.GeoJsonSource
+-import org.json.JSONObject
++import org.maplibre.android.style.sources.GeoJsonOptions
++import org.maplibre.geojson.Feature
++import org.maplibre.geojson.FeatureCollection
++import org.maplibre.geojson.Point
+ 
+ @SuppressLint("MissingPermission")
+ @Composable
+ fun MapScreen(viewModel: MainViewModel = hiltViewModel()) {
+     val context = LocalContext.current
+     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+-    var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
+ 
+     AndroidView(
+         factory = { ctx ->
+@@ -36,25 +39,24 @@
+ 
+             mapView.getMapAsync(object : OnMapReadyCallback {
+                 override fun onMapReady(map: MapLibreMap) {
+-                    mapLibreMap = map
+ 
+-                    // ✅ Load your local hybrid style
++                    // ✅ Load your Esri + OSM hybrid style
+                     map.setStyle(Style.Builder().fromUri("asset://esri-hybrid-style.json")) { style ->
+ 
+-                        // Source + layer for position marker
+-                        if (!style.hasSource("location-source")) {
+-                            val geoJson = GeoJsonSource("location-source", JSONObject())
+-                            style.addSource(geoJson)
+-                            val circleLayer = CircleLayer("location-layer", "location-source")
+-                            circleLayer.withProperties(
+-                                org.maplibre.android.style.layers.PropertyFactory.circleRadius(6f),
+-                                org.maplibre.android.style.layers.PropertyFactory.circleColor("#2196F3"),
+-                                org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth(2f),
+-                                org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor("#FFFFFF")
+-                            )
+-                            style.addLayer(circleLayer)
+-                        }
++                        // ✅ Add source for location marker
++                        val source = GeoJsonSource("location-source", GeoJsonOptions())
++                        style.addSource(source)
++
++                        // ✅ Add blue dot marker layer
++                        val layer = CircleLayer("location-layer", "location-source").withProperties(
++                            org.maplibre.android.style.layers.PropertyFactory.circleRadius(6f),
++                            org.maplibre.android.style.layers.PropertyFactory.circleColor("#2196F3"),
++                            org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth(2f),
++                            org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor("#FFFFFF")
++                        )
++                        style.addLayer(layer)
+ 
++                        // ✅ Enable gestures
+                         map.uiSettings.isZoomGesturesEnabled = true
+                         map.uiSettings.isScrollGesturesEnabled = true
+                         map.uiSettings.isRotateGesturesEnabled = true
+@@ -69,9 +71,6 @@
+     )
+ }
+ 
+-/**
+- * Continuously receives device location and updates the map position + marker.
+- */
+ @SuppressLint("MissingPermission")
+ private fun startLocationTracking(
+     context: android.content.Context,
+@@ -83,9 +82,7 @@
+             context,
+             Manifest.permission.ACCESS_FINE_LOCATION
+         ) != PackageManager.PERMISSION_GRANTED
+-    ) {
+-        return
+-    }
++    ) return
+ 
+     val locationRequest = LocationRequest.Builder(
+         Priority.PRIORITY_HIGH_ACCURACY, 2000L
+@@ -96,22 +93,12 @@
+             val location = result.lastLocation ?: return
+             val latLng = LatLng(location.latitude, location.longitude)
+ 
+-            // Update marker source
+-            val geoJson = JSONObject(
+-                """{
+-                    "type": "FeatureCollection",
+-                    "features": [{
+-                        "type": "Feature",
+-                        "geometry": {
+-                            "type": "Point",
+-                            "coordinates": [${latLng.longitude}, ${latLng.latitude}]
+-                        }
+-                    }]
+-                }"""
+-            )
+-            (style.getSourceAs<GeoJsonSource>("location-source"))?.setGeoJson(geoJson)
++            // ✅ Update marker position
++            val feature = Feature.fromGeometry(Point.fromLngLat(latLng.longitude, latLng.latitude))
++            val featureCollection = FeatureCollection.fromFeatures(arrayOf(feature))
++            (style.getSourceAs<GeoJsonSource>("location-source"))?.setGeoJson(featureCollection)
+ 
+-            // Move camera smoothly to follow user
++            // ✅ Smooth camera movement
+             map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16.0))
+         }
+     }

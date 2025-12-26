@@ -1,0 +1,151 @@
+Index: app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt b/app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt
+--- a/app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt
++++ b/app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt	(date 1765044094888)
+@@ -219,70 +219,7 @@
+             )
+         )
+     }
+-    @Composable
+-    fun CustomFoodDialog(
+-        onDismiss: () -> Unit,
+-        onSave: (String, Int, Int, Int, Int) -> Unit
+-    ) {
+-        var name by remember { mutableStateOf("") }
+-        var calories by remember { mutableStateOf("") }
+-        var protein by remember { mutableStateOf("") }
+-        var carbs by remember { mutableStateOf("") }
+-        var fat by remember { mutableStateOf("") }
+-
+-        AlertDialog(
+-            onDismissRequest = { onDismiss() },
+-            title = { Text("Add Custom Food Entry") },
+-            text = {
+-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+-                    OutlinedTextField(
+-                        value = name,
+-                        onValueChange = { name = it },
+-                        label = { Text("Name (required)") }
+-                    )
+-
+-                    OutlinedTextField(
+-                        value = calories,
+-                        onValueChange = { calories = it.filter(Char::isDigit) },
+-                        label = { Text("Calories (default 0)") }
+-                    )
+-
+-                    OutlinedTextField(
+-                        value = protein,
+-                        onValueChange = { protein = it.filter(Char::isDigit) },
+-                        label = { Text("Protein g (default 0)") }
+-                    )
+-
+-                    OutlinedTextField(
+-                        value = carbs,
+-                        onValueChange = { carbs = it.filter(Char::isDigit) },
+-                        label = { Text("Carbs g (default 0)") }
+-                    )
+-
+-                    OutlinedTextField(
+-                        value = fat,
+-                        onValueChange = { fat = it.filter(Char::isDigit) },
+-                        label = { Text("Fat g (default 0)") }
+-                    )
+-                }
+-            },
+-            confirmButton = {
+-                Button(onClick = {
+-                    if (name.isBlank()) return@Button
+-                    onSave(
+-                        name,
+-                        calories.toIntOrNull() ?: 0,
+-                        protein.toIntOrNull() ?: 0,
+-                        carbs.toIntOrNull() ?: 0,
+-                        fat.toIntOrNull() ?: 0
+-                    )
+-                }) {
+-                    Text("Add")
+-                }
+-            },
+-            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+-        )
+-    }
++
+ 
+     @Composable
+     fun UnifiedDateHeader(
+@@ -633,7 +570,70 @@
+         Text("${value.toInt()} / ${target.toInt()}", color = Color.Gray, fontSize = 11.sp)
+     }
+ }
++@Composable
++fun CustomFoodDialog(
++    onDismiss: () -> Unit,
++    onSave: (String, Int, Int, Int, Int) -> Unit
++) {
++    var name by remember { mutableStateOf("") }
++    var calories by remember { mutableStateOf("") }
++    var protein by remember { mutableStateOf("") }
++    var carbs by remember { mutableStateOf("") }
++    var fat by remember { mutableStateOf("") }
++
++    AlertDialog(
++        onDismissRequest = { onDismiss() },
++        title = { Text("Add Custom Food Entry") },
++        text = {
++            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
++                OutlinedTextField(
++                    value = name,
++                    onValueChange = { name = it },
++                    label = { Text("Name (required)") }
++                )
++
++                OutlinedTextField(
++                    value = calories,
++                    onValueChange = { calories = it.filter(Char::isDigit) },
++                    label = { Text("Calories (default 0)") }
++                )
++
++                OutlinedTextField(
++                    value = protein,
++                    onValueChange = { protein = it.filter(Char::isDigit) },
++                    label = { Text("Protein g (default 0)") }
++                )
+ 
++                OutlinedTextField(
++                    value = carbs,
++                    onValueChange = { carbs = it.filter(Char::isDigit) },
++                    label = { Text("Carbs g (default 0)") }
++                )
++
++                OutlinedTextField(
++                    value = fat,
++                    onValueChange = { fat = it.filter(Char::isDigit) },
++                    label = { Text("Fat g (default 0)") }
++                )
++            }
++        },
++        confirmButton = {
++            Button(onClick = {
++                if (name.isBlank()) return@Button
++                onSave(
++                    name,
++                    calories.toIntOrNull() ?: 0,
++                    protein.toIntOrNull() ?: 0,
++                    carbs.toIntOrNull() ?: 0,
++                    fat.toIntOrNull() ?: 0
++                )
++            }) {
++                Text("Add")
++            }
++        },
++        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
++    )
++}
+ @Composable
+ fun LoggedFoodsList(
+     loggedFoods: List<LoggedFood>,

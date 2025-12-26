@@ -1,0 +1,1098 @@
+package com.example.routinereminder
+import org.maplibre.android.maps.MapView
+import com.example.routinereminder.ui.SessionSharePreviewScreen
+import com.example.routinereminder.ui.shareBitmap
+import com.example.routinereminder.ui.SessionStore
+import com.example.routinereminder.ui.MapScreen
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import android.Manifest
+
+
+import androidx.lifecycle.repeatOnLifecycle
+
+import android.content.Context
+import android.graphics.Bitmap
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.TextStyle
+import com.example.routinereminder.data.entities.ScheduleDone
+import androidx.navigation.NavController
+import com.example.routinereminder.ui.Screen
+import com.example.routinereminder.ui.BarcodeScannerScreen
+import android.app.Activity
+import android.content.Intent
+import android.content.IntentSender
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleCoroutineScope
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.ScheduleItem
+
+import com.example.routinereminder.ui.CalorieTrackerScreen
+import com.example.routinereminder.ui.MainViewModel
+import com.example.routinereminder.ui.SettingsScreen
+import com.example.routinereminder.ui.components.EditItemDialog
+import com.example.routinereminder.ui.theme.RoutineReminderTheme
+
+
+
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+
+    private val viewModel: MainViewModel by viewModels()
+
+
+
+
+
+
+
+
+
+    private val requestCalendarPermissionsLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            val writeGranted = permissions[Manifest.permission.WRITE_CALENDAR] ?: false
+            val readGranted = permissions[Manifest.permission.READ_CALENDAR] ?: false
+
+            if (writeGranted && readGranted) {
+                Toast.makeText(this, "Calendar permissions granted.", Toast.LENGTH_LONG).show()
+                viewModel.onAppResumed()
+            } else {
+                Toast.makeText(this, "Calendar permissions denied.", Toast.LENGTH_LONG).show()
+            }
+        }
+
+    private fun requestCalendarPermissions() {
+        requestCalendarPermissionsLauncher.launch(
+            arrayOf(Manifest.permission.WRITE_CALENDAR, Manifest.permission.READ_CALENDAR)
+        )
+    }
+
+    private val requestLocationPermissionsLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+            val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+            if (fineGranted || coarseGranted) {
+                Toast.makeText(this, "Location permissions granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Location permissions denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    fun requestLocationPermissions() {
+        requestLocationPermissionsLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.onAppResumed()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.onAppPaused()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        // --- Google Account Picker launcher ---
+        val accountPickerLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    val email = result.data?.dataString
+                    viewModel.updateSelectedGoogleAccountName(email)
+                }
+            }
+
+
+// --- Trigger Google account selection ---
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.triggerGoogleAccountSelectionFlow
+                    .receiveAsFlow()
+                    .collectLatest {
+
+                        val intent = Intent(Intent.ACTION_PICK).apply {
+                            type = "vnd.android.cursor.dir/email_v2"
+                        }
+                        accountPickerLauncher.launch(intent)
+
+
+                    }
+            }
+        }
+
+
+
+        // --- Calendar permissions ---
+        lifecycleScope.launch {
+            viewModel.requestCalendarPermission.receiveAsFlow().collectLatest {
+                requestCalendarPermissions()
+            }
+        }
+
+        // --- UI Content ---
+        setContent {
+            MainAppUI(
+                viewModel = viewModel,
+                lifecycleScope = lifecycleScope
+            )
+        }
+    }
+}
+
+
+
+    // ... (The rest of your MainActivity.kt file remains unchanged) ...
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope) {
+    RoutineReminderTheme {
+        val context = LocalContext.current
+        var showExactAlarmPermissionDialogState by remember { mutableStateOf(false) }
+        var showSettingsScreen by remember { mutableStateOf(false) }
+
+        val navController = rememberNavController()
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = navBackStackEntry?.destination?.route
+        val mainTabRoutes = listOf(
+            Screen.RoutineReminder.route,
+            Screen.CalorieTracker.route,
+            Screen.Map.route
+        )
+
+        val showBottomBar = currentRoute in mainTabRoutes
+
+        val showFab = currentRoute == Screen.RoutineReminder.route
+
+        // ✅ FIXED: include ALL possible screens (including Map) for route lookup
+        val currentScreen by remember(currentRoute) {
+            derivedStateOf {
+                Screen.allScreens
+                    .plus(Screen.Map) // include map here
+                    .firstOrNull { it.route == currentRoute } ?: Screen.RoutineReminder
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            viewModel.syncStatus.collectLatest { status ->
+                if (status.isNotBlank()) {
+                    Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        val permissionLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            Log.d("MainActivity", "POST_NOTIFICATIONS permission granted: $isGranted")
+        }
+
+        LaunchedEffect(Unit) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            viewModel.showExactAlarmPermissionDialog.receiveAsFlow().collectLatest {
+                showExactAlarmPermissionDialogState = true
+            }
+        }
+
+        var showEditDialog by remember { mutableStateOf(false) }
+        var itemToEdit by remember { mutableStateOf<ScheduleItem?>(null) }
+        var showDeleteCalendarConfirmDialog by remember { mutableStateOf(false) }
+        var itemForCalendarDeleteConfirmation by remember { mutableStateOf<ScheduleItem?>(null) }
+        val scheduleItems by viewModel.scheduleItems.collectAsState()
+        val selectedDate by viewModel.selectedDate.collectAsState()
+        val defaultEventSettings by viewModel.defaultEventSettings.collectAsState()
+        val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
+
+        if (showSettingsScreen) {
+            SettingsScreen(
+                viewModel = viewModel,
+                from = "default",
+                onDismiss = { showSettingsScreen = false }
+            )
+        }
+        else {
+            Scaffold(
+                floatingActionButton = {
+                    if (currentRoute == Screen.RoutineReminder.route) {
+                        FloatingActionButton(onClick = {
+                            itemToEdit = null
+                            showEditDialog = true
+                        }) {
+                            Icon(Icons.Filled.Add, "Create new entry")
+                        }
+                    }
+                },
+                bottomBar = {
+                    val showBottomBar = currentRoute in listOf(
+                        Screen.RoutineReminder.route,
+                        Screen.CalorieTracker.route,
+                        Screen.Map.route
+                    )
+
+                    if (showBottomBar) {
+                        // Hard-coded list of bottom bar screens – cannot contain nulls
+                        val barScreens = listOf(
+                            Screen.RoutineReminder,
+                            Screen.CalorieTracker,
+                            Screen.Map
+                        )
+
+                        NavigationBar {
+                            barScreens.forEach { s ->
+                                NavigationBarItem(
+                                    icon = { s.icon?.invoke() },
+                                    label = { Text(s.title) },
+                                    selected = currentRoute == s.route,
+                                    onClick = {
+                                        if (currentRoute != s.route) {
+                                            navController.navigate(s.route) {
+                                                popUpTo(navController.graph.startDestinationId) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+            )
+
+
+
+            { paddingValues ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    // ✅ NavHost defines all your routes
+                    NavHost(
+                        navController = navController,
+                        startDestination = Screen.RoutineReminder.route
+                    ) {
+                        composable(Screen.RoutineReminder.route) {
+                            MainScreenContent(
+                                items = scheduleItems,
+                                currentDate = selectedDate,
+                                onPreviousDay = { viewModel.selectPreviousDay() },
+                                onNextDay = { viewModel.selectNextDay() },
+                                onDateSelected = viewModel::selectDate,
+                                onEditRequest = { item ->
+                                    lifecycleScope.launch {
+                                        viewModel.getScheduleItemForEditing(item.id)?.let {
+                                            itemToEdit = it
+                                            showEditDialog = true
+                                        } ?: Toast.makeText(context, "Event no longer exists.", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                onDeleteItem = { itemToDelete ->
+                                    if (itemToDelete.calendarEventId != null) {
+                                        itemForCalendarDeleteConfirmation = itemToDelete
+                                        showDeleteCalendarConfirmDialog = true
+                                    } else {
+                                        viewModel.deleteScheduleItem(itemToDelete, false)
+                                    }
+                                },
+                                navController = navController,   //  <-- REQUIRED
+                                onSettingsClick = {
+                                    navController.navigate("settings/routine")
+
+                                },
+                                onMarkDone = { item ->
+                                    viewModel.markScheduleItemDone(item, selectedDate.toEpochDay())
+                                },
+                                onUndoDone = { item ->
+                                    viewModel.unmarkScheduleItemDone(item, selectedDate.toEpochDay())
+                                },
+                                viewModel = viewModel
+                            )
+
+                        }
+
+                        composable(Screen.CalorieTracker.route) {
+                            CalorieTrackerScreen(navController = navController)
+                        }
+                        composable("settings/{from}") { backStackEntry ->
+                        val from = backStackEntry.arguments?.getString("from") ?: "default"
+
+                            SettingsScreen(
+                                viewModel = viewModel,
+                                from = from,
+                                onDismiss = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(Screen.BarcodeScanner.route) {
+                            BarcodeScannerScreen(navController = navController)
+                        }
+                        composable(Screen.Map.route) {
+                            val context = LocalContext.current
+                            LaunchedEffect(Unit) {
+                                if (ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.ACCESS_FINE_LOCATION
+                                    ) != PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    (context as? MainActivity)?.requestLocationPermissions()
+                                }
+                            }
+                            MapScreen(navController = navController)
+                        }
+
+                        composable("share_preview/{sessionId}") { backStackEntry ->
+                            val context = LocalContext.current
+                            val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                            val mapView = remember { MapView(context) } // optional reuse if needed
+
+                            SessionSharePreviewScreen(
+                                sessionId = sessionId,
+                                mapView = mapView,
+                                onShare = { bitmap ->
+                                    shareBitmap(context, bitmap)
+                                },
+                                onCancel = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                        composable("history") {
+                            com.example.routinereminder.ui.HistoryScreen(navController = navController)
+                        }
+
+
+                    }
+
+                    // ✅ Dialogs stay the same
+                    if (showEditDialog) {
+                        EditItemDialog(
+                            initialItem = itemToEdit,
+                            defaultEventSettings = defaultEventSettings,
+                            useGoogleBackupMode = useGoogleBackupMode,
+                            onDismissRequest = { showEditDialog = false },
+                            onSave = {
+                                viewModel.upsertScheduleItem(it)
+                                showEditDialog = false
+                            }
+                        )
+                    }
+
+                    if (showExactAlarmPermissionDialogState) {
+                        AlertDialog(
+                            onDismissRequest = { showExactAlarmPermissionDialogState = false },
+                            title = { Text("Permission Required") },
+                            text = { Text("To ensure reminders are delivered on time, please grant permission to schedule exact alarms in the system settings.") },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        showExactAlarmPermissionDialogState = false
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                            context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                                        }
+                                    }
+                                ) {
+                                    Text("Open Settings")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showExactAlarmPermissionDialogState = false }) {
+                                    Text("Later")
+                                }
+                            }
+                        )
+                    }
+
+                    if (showDeleteCalendarConfirmDialog && itemForCalendarDeleteConfirmation != null) {
+                        DeleteFromCalendarConfirmationDialog(
+                            itemTitle = itemForCalendarDeleteConfirmation!!.name,
+                            isImported = itemForCalendarDeleteConfirmation!!.origin.startsWith("IMPORTED_"),
+                            onConfirmDeleteBoth = {
+                                viewModel.deleteScheduleItem(itemForCalendarDeleteConfirmation!!, true)
+                                showDeleteCalendarConfirmDialog = false
+                            },
+                            onConfirmDeleteAppOnly = {
+                                viewModel.deleteScheduleItem(itemForCalendarDeleteConfirmation!!, false)
+                                showDeleteCalendarConfirmDialog = false
+                            },
+                            onDismiss = { showDeleteCalendarConfirmDialog = false }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun DateDisplayHeader(
+    currentDate: LocalDate,
+    onPreviousDay: () -> Unit,
+    onNextDay: () -> Unit,
+    onDateTextClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val formatter = DateTimeFormatter.ofPattern("EEE, MMM d, yyyy")
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onPreviousDay) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Day")
+        }
+
+        Text(
+            text = currentDate.format(formatter),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onDateTextClick() },
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
+
+        IconButton(onClick = onNextDay) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Day")
+        }
+
+        IconButton(onClick = onSettingsClick) {
+            Icon(Icons.Filled.Settings, contentDescription = "Settings")
+        }
+
+    }
+}
+
+
+@Composable
+private fun ScheduleItemListContent(
+    items: List<ScheduleItem>,
+    currentDate: LocalDate,
+    doneStates: Map<Pair<Long, Long>, Boolean>,
+    onLongPress: (ScheduleItem) -> Unit,
+    viewModel: MainViewModel
+)
+ {
+    val distinctItems = remember(items) { items.distinctBy { it.id } }
+
+    if (distinctItems.isEmpty()) {
+        Text(
+            text = "No entries for this day. Tap + to create a new entry or swipe for another day.",
+            modifier = Modifier.padding(top = 16.dp)
+        )
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Top,
+            contentPadding = PaddingValues(bottom = 72.dp)
+        ) {
+            items(
+                items = distinctItems,
+                key = { it.id }
+            ) { item: ScheduleItem ->
+
+
+                val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
+                val isDoneToday = doneStates[key] == true
+
+
+
+
+                ScheduleItemView(
+                    item = item,
+                    currentDate = currentDate,
+                    isDoneToday = isDoneToday,
+                    onLongPress = onLongPress
+                )
+            }
+
+
+
+        }
+    }
+}
+
+@Composable
+fun UnifiedDateHeader(
+    currentDate: LocalDate,
+    onPreviousDay: () -> Unit,
+    onNextDay: () -> Unit,
+    onDateTextClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val formatter = DateTimeFormatter.ofPattern("EEE, MMM d, yyyy")
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onPreviousDay, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Day")
+        }
+
+        Text(
+            text = currentDate.format(formatter),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onDateTextClick() },
+            textAlign = TextAlign.Center,
+            maxLines = 1
+        )
+
+        IconButton(onClick = onNextDay, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Day")
+        }
+
+        IconButton(onClick = onSettingsClick, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Filled.Settings, contentDescription = "Settings")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainScreenContent(
+    items: List<ScheduleItem>,
+    currentDate: LocalDate,
+    onPreviousDay: () -> Unit,
+    onNextDay: () -> Unit,
+    onDateSelected: (LocalDate) -> Unit,
+    onEditRequest: (ScheduleItem) -> Unit,
+    onDeleteItem: (ScheduleItem) -> Unit,
+    navController: NavController,                      // <-- ADD THIS
+    onSettingsClick: () -> Unit,                       // <-- leave as function
+    onMarkDone: (ScheduleItem) -> Unit,
+    onUndoDone: (ScheduleItem) -> Unit,
+    viewModel: MainViewModel
+)
+
+ {
+    var showItemActionDialog by remember { mutableStateOf(false) }
+    var selectedItemForAction by remember { mutableStateOf<ScheduleItem?>(null) }
+    var selectedIsDoneToday by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    var totalHorizontalDrag by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val swipeThresholdPx = with(density) { 50.dp.toPx() }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragStart = { totalHorizontalDrag = 0f },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        totalHorizontalDrag += dragAmount
+                    },
+                    onDragEnd = {
+                        when {
+                            totalHorizontalDrag > swipeThresholdPx -> onPreviousDay()
+                            totalHorizontalDrag < -swipeThresholdPx -> onNextDay()
+                        }
+                    }
+                )
+            }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            UnifiedDateHeader(
+                currentDate = currentDate,
+                onPreviousDay = onPreviousDay,
+                onNextDay = onNextDay,
+                onDateTextClick = { showDatePicker = true },
+                onSettingsClick = { navController.navigate("settings/routine") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ScheduleItemListContent(
+                items = items,
+                currentDate = currentDate,
+                doneStates = viewModel.doneItemsForDay.collectAsState().value,
+                onLongPress = { item ->
+                    selectedItemForAction = item
+                    coroutineScope.launch {
+                        selectedIsDoneToday = viewModel.isDoneForDate(item.id, currentDate.toEpochDay())
+                        showItemActionDialog = true
+                    }
+                },
+                viewModel = viewModel
+            )
+
+            Spacer(modifier = Modifier.height(72.dp))
+        }
+
+    }
+
+    if (showItemActionDialog && selectedItemForAction != null) {
+        ItemActionDialog(
+            item = selectedItemForAction!!,
+            isDoneToday = selectedIsDoneToday,
+            onDismissRequest = { showItemActionDialog = false },
+            onEdit = {
+                onEditRequest(it)
+                showItemActionDialog = false
+            },
+            onDelete = { itemFromDialog ->
+                onDeleteItem(itemFromDialog)
+                showItemActionDialog = false
+            },
+            onMarkDone = { itemFromDialog ->
+                onMarkDone(itemFromDialog)
+                showItemActionDialog = false
+            },
+            onUndoDone = { itemFromDialog ->
+                onUndoDone(itemFromDialog)
+                showItemActionDialog = false
+            }
+        )
+
+
+
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = currentDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            onDateSelected(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate())
+                        }
+                        showDatePicker = false
+                    }
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ScheduleItemView(
+    item: ScheduleItem,
+    currentDate: LocalDate,
+    isDoneToday: Boolean,
+    onLongPress: (ScheduleItem) -> Unit
+) {
+    var isExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
+    val timeString = String.format(Locale.getDefault(), "%02d:%02d", item.hour, item.minute)
+    val realNowDateTime = LocalDateTime.now()
+    val itemAbsoluteStartDateTime = currentDate.atTime(item.hour, item.minute)
+    val itemAbsoluteEndDateTime = itemAbsoluteStartDateTime.plusMinutes(item.durationMinutes.toLong())
+    val endTimeFormatted = remember(itemAbsoluteEndDateTime) {
+        itemAbsoluteEndDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))
+    }
+    val isEffectivelyActiveNow = currentDate.isEqual(realNowDateTime.toLocalDate()) &&
+            !realNowDateTime.isBefore(itemAbsoluteStartDateTime) &&
+            realNowDateTime.isBefore(itemAbsoluteEndDateTime)
+    val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
+    val rowBackgroundColor = if (isEffectivelyActiveNow) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent
+    // ❗ This value must be passed in from MainScreenContent
+
+
+// Base text color logic
+    val baseTextColor = when {
+        isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        isEffectivelyPastNow -> MaterialTheme.colorScheme.outline
+        else -> LocalContentColor.current
+    }
+
+// Style for DONE state (grey + strikethrough)
+    val doneAlpha = if (isDoneToday) 0.4f else 1f
+    val doneDecoration = if (isDoneToday) TextDecoration.LineThrough else TextDecoration.None
+
+    val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
+        color = baseTextColor.copy(alpha = doneAlpha),
+        textDecoration = doneDecoration
+    )
+
+
+
+
+
+    val prefixColor = when (item.origin) {
+        "IMPORTED_GOOGLE" -> Color.Green
+        "APP_CREATED_GOOGLE" -> Color.Magenta
+        "IMPORTED_LOCAL" -> Color.Yellow
+        "APP_CREATED_LOCAL" -> Color.Cyan
+        "APP_CREATED" -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        else -> baseTextColor
+    }
+    val prefix = when (item.origin) {
+        "IMPORTED_GOOGLE" -> "Google Calendar"
+        "APP_CREATED_GOOGLE" -> "Google Calendar (App)"
+        "IMPORTED_LOCAL" -> "Local Calendar"
+        "APP_CREATED_LOCAL" -> "Local Calendar (App)"
+        "APP_CREATED" -> "App Only"
+        else -> null
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(rowBackgroundColor)
+            .combinedClickable(
+                onClick = { isExpanded = !isExpanded },
+                onLongClick = { onLongPress(item) }
+            )
+            .padding(vertical = 4.dp, horizontal = 2.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // LEFT COLUMN: start time + ONE TIME / REPEATS under it
+            Column(
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = timeString,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = baseTextColor.copy(alpha = doneAlpha)
+                )
+
+                // Badge directly under the start time
+                if (item.isOneTime || (item.repeatOnDays != null || item.repeatEveryWeeks > 1)) {
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    if (item.isOneTime) {
+                        Box(
+                            modifier = Modifier
+                                .width(70.dp)              // SAME WIDTH FOR ALL BADGES
+                                .height(20.dp)             // UNIFIED HEIGHT
+                                .background(Color(0x332196F3), MaterialTheme.shapes.extraSmall),
+                            contentAlignment = Alignment.Center  // CENTER TEXT
+                        ) {
+                            Text(
+                                text = "ONE TIME",
+                                color = Color(0xFF2196F3),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .width(70.dp)              // SAME WIDTH
+                                .height(20.dp)             // SAME HEIGHT
+                                .background(Color(0x334CAF50), MaterialTheme.shapes.extraSmall),
+                            contentAlignment = Alignment.Center  // CENTER TEXT
+                        ) {
+                            Text(
+                                text = "REPEATS",
+                                color = Color(0xFF4CAF50),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+
+
+                    }
+                }
+            }
+
+           Spacer(modifier = Modifier.width(8.dp))
+
+            // RIGHT COLUMN: title + end time (first line), prefix under title
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+
+                    Text(
+                        text = item.name,
+                        style = doneTextStyle,
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // NEW end-time + prefix column
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = endTimeFormatted,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = baseTextColor.copy(alpha = doneAlpha)
+
+                        )
+
+                        prefix?.let {
+                            // Unique colors NOT using blue or green
+                            val (bgColor, textColor) = when (item.origin) {
+                                "APP_CREATED" -> Color(0x33FF9800) to Color(0xFFCBCBCB)       // App Only → Orange
+                                "IMPORTED_GOOGLE" -> Color(0x33AA00FF) to Color(0xFF0FEEE5)   // Google Calendar → Purple
+                                "APP_CREATED_GOOGLE" -> Color(0x33E91E63) to Color(0xFFE91E63) // App Google → Pink
+                                "IMPORTED_LOCAL" -> Color(0x33FFC107) to Color(0xFFFFC107)    // Local Calendar → Amber
+                                "APP_CREATED_LOCAL" -> Color(0x33FF5722) to Color(0xFFFF5722) // Local App → Deep Orange
+                                else -> Color(0x33444444) to Color(0xFF888888)                // fallback → grey
+                            }
+
+                            Text(
+                                text = it.uppercase(),
+                                color = textColor,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .background(bgColor, shape = MaterialTheme.shapes.extraSmall)
+                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                        }
+
+
+                    }
+                }
+            }
+        }
+    }
+
+    if (!item.notes.isNullOrBlank()) {
+            Text(
+                text = item.notes,
+                style = MaterialTheme.typography.bodySmall,
+                color = baseTextColor,
+                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(rowBackgroundColor)
+                    .padding(vertical = 0.dp, horizontal = 2.dp)
+
+                    .animateContentSize()
+
+            )
+        }
+    }
+
+
+@Composable
+fun ItemActionDialog(
+    item: ScheduleItem,
+    isDoneToday: Boolean,
+    onDismissRequest: () -> Unit,
+    onEdit: (ScheduleItem) -> Unit,
+    onDelete: (ScheduleItem) -> Unit,
+    onMarkDone: (ScheduleItem) -> Unit,
+    onUndoDone: (ScheduleItem) -> Unit
+) {
+    val isDone = isDoneToday
+
+
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Action for '${item.name}'") },
+        text = { Text("What would you like to do?") },
+        confirmButton = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+
+                // EDIT
+                Button(
+                    onClick = { onEdit(item) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Edit")
+                }
+
+                Spacer(Modifier.height(6.dp))
+
+                // DONE / UNDONE
+                if (!isDone) {
+                    Button(
+                        onClick = { onMarkDone(item) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Mark as Done")
+                    }
+                } else {
+                    Button(
+                        onClick = { onUndoDone(item) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Undo Done")
+                    }
+                }
+
+                Spacer(Modifier.height(6.dp))
+
+                // DELETE
+                TextButton(
+                    onClick = { onDelete(item) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Delete")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) { Text("Cancel") }
+        }
+    )
+
+}
+
+
+
+
+@Composable
+fun DeleteFromCalendarConfirmationDialog(
+    itemTitle: String,
+    isImported: Boolean,
+    onConfirmDeleteBoth: () -> Unit,
+    onConfirmDeleteAppOnly: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete calendar entry?") },
+        text = { Text(if (isImported) "Also delete the imported entry '$itemTitle' from your calendar?" else "Also delete the entry '$itemTitle' from your calendar?") },
+        confirmButton = {
+            Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                Button(onClick = onConfirmDeleteBoth, modifier = Modifier.fillMaxWidth()) { Text("App & Calendar") }
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = onConfirmDeleteAppOnly, modifier = Modifier.fillMaxWidth()) { Text("Block Import & Delete from App") }
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Cancel") }
+            }
+        },
+        dismissButton = null
+    )
+}
+
+fun shareBitmap(context: Context, bitmap: Bitmap) {
+    val cachePath = File(context.cacheDir, "shared_images")
+    cachePath.mkdirs()
+    val file = File(cachePath, "share_${System.currentTimeMillis()}.png")
+    FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+
+    val uri = FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        file
+    )
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share via"))
+}

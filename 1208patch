@@ -1,0 +1,29 @@
+Index: app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt b/app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt
+--- a/app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt
++++ b/app/src/main/java/com/example/routinereminder/ui/CalorieTrackerScreen.kt	(date 1765226959601)
+@@ -515,15 +515,18 @@
+ 
+     Column(
+         modifier = Modifier
+-            .wrapContentHeight()
+             .fillMaxWidth()
+-            // ★ Forces the detail card to fill the whole screen
++            .heightIn(
++                min = screenHeight * 0.35f,   // fills a reasonable part of the screen
++                max = screenHeight * 0.8f     // prevents too tall expansion
++            )
+             .clip(RoundedCornerShape(16.dp))
+             .background(Color(0xFF2A2A2A))
+             .padding(16.dp)
+     )
+ 
+ 
++
+     {
+         Row(
+             modifier = Modifier

@@ -1,0 +1,88 @@
+Index: app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+--- a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
++++ b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt	(date 1761408867478)
+@@ -114,6 +114,39 @@
+         }
+     }
+ 
++    // location callback implementation
++    fun onLocation(location: Location) {
++        val latLng = LatLng(location.latitude, location.longitude)
++        val m = map ?: return
++        val s = m.style ?: return
++
++        // update marker
++        val locationSource = s.getSourceAs("location-source") as? GeoJsonSource
++        locationSource?.setGeoJson(
++            Feature.fromGeometry(
++                Point.fromLngLat(latLng.longitude, latLng.latitude)
++            )
++        )
++
++// trail update
++        val last = trail.lastOrNull()
++        val newPoint = Point.fromLngLat(latLng.longitude, latLng.latitude)
++        if (last == null || last != newPoint) {
++            // distance increment
++            if (last != null) distanceMeters += haversineMeters(last, newPoint)
++
++            trail.add(newPoint)
++
++            val line = LineString.fromLngLats(trail.toList())
++            val trailSource = s.getSourceAs("trail-source") as? GeoJsonSource
++            trailSource?.setGeoJson(Feature.fromGeometry(line))
++        }
++
++        // follow user but keep zoom
++        val cp = CameraPosition.Builder().target(latLng).zoom(userZoom).build()
++        m.animateCamera(CameraUpdateFactory.newCameraPosition(cp))
++    }
++
+     Surface(Modifier.fillMaxSize()) {
+         Column(Modifier.fillMaxSize()) {
+             // ----------- STATS HEADER -----------
+@@ -279,39 +312,6 @@
+             }
+         }
+     }
+-
+-    // location callback implementation
+-    fun onLocation(location: Location) {
+-        val latLng = LatLng(location.latitude, location.longitude)
+-        val m = map ?: return
+-        val s = m.style ?: return
+-
+-        // update marker
+-        val locationSource = s.getSourceAs("location-source") as? GeoJsonSource
+-        locationSource?.setGeoJson(
+-            Feature.fromGeometry(
+-                Point.fromLngLat(latLng.longitude, latLng.latitude)
+-            )
+-        )
+-
+-// trail update
+-        val last = trail.lastOrNull()
+-        val newPoint = Point.fromLngLat(latLng.longitude, latLng.latitude)
+-        if (last == null || last != newPoint) {
+-            // distance increment
+-            if (last != null) distanceMeters += haversineMeters(last, newPoint)
+-
+-            trail.add(newPoint)
+-
+-            val line = LineString.fromLngLats(trail.toList())
+-            val trailSource = s.getSourceAs("trail-source") as? GeoJsonSource
+-            trailSource?.setGeoJson(Feature.fromGeometry(line))
+-        }
+-
+-        // follow user but keep zoom
+-        val cp = CameraPosition.Builder().target(latLng).zoom(userZoom).build()
+-        m.animateCamera(CameraUpdateFactory.newCameraPosition(cp))
+-    }
+ }
+ 
+ /* ---------------- Location handling ---------------- */

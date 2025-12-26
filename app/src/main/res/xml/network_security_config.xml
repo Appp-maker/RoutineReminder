@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Allow all remote maps -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">tile.openstreetmap.org</domain>
+        <domain includeSubdomains="true">services.arcgisonline.com</domain>
+        <domain includeSubdomains="true">gibs.earthdata.nasa.gov</domain>
+        <domain includeSubdomains="true">api.maptiler.com</domain>
+    </domain-config>
+</network-security-config>

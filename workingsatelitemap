@@ -1,0 +1,51 @@
+Index: app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+--- a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
++++ b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt	(date 1761405278811)
+@@ -32,13 +32,10 @@
+             mapView.getMapAsync(object : OnMapReadyCallback {
+                 override fun onMapReady(map: MapLibreMap) {
+ 
+-                    // ✅ Use a full working hybrid style that v11 understands
+-                    // This is free, public, and requires no API key
++                    // ✅ Load your local hybrid Esri + OSM style
+                     map.setStyle(
+-                        Style.Builder().fromUri("https://api.maptiler.com/maps/hybrid/style.json?key=free")
+-                    )
+-                    {
+-
++                        Style.Builder().fromUri("asset://esri-hybrid-style.json")
++                    ) {
+                         map.uiSettings.isZoomGesturesEnabled = true
+                         map.uiSettings.isScrollGesturesEnabled = true
+                         map.uiSettings.isRotateGesturesEnabled = true
+@@ -50,13 +47,21 @@
+                         ) {
+                             fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+                                 location?.let {
+-                                    val pos = LatLng(it.latitude, it.longitude)
+-                                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15.0))
++                                    map.animateCamera(
++                                        CameraUpdateFactory.newLatLngZoom(
++                                            LatLng(it.latitude, it.longitude),
++                                            15.0
++                                        )
++                                    )
+                                 }
+                             }
+                         } else {
+-                            val defaultPos = LatLng(51.1657, 10.4515)
+-                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultPos, 6.0))
++                            map.moveCamera(
++                                CameraUpdateFactory.newLatLngZoom(
++                                    LatLng(51.1657, 10.4515),
++                                    6.0
++                                )
++                            )
+                         }
+                     }
+                 }

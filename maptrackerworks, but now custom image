@@ -1,0 +1,28 @@
+Index: app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
+--- a/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt
++++ b/app/src/main/java/com/example/routinereminder/ui/MapScreen.kt	(date 1761416892304)
+@@ -512,7 +512,7 @@
+ 
+         val pad = 32f
+         val availW = mapRect.width() - pad * 2
+-        val bottomPadding = 100f // leave room above the black stats bar
++        val bottomPadding = 80f // leave room above the black stats bar
+         val availH = mapRect.height() - pad * 2 - bottomPadding
+ 
+ 
+@@ -600,7 +600,9 @@
+         canvas.drawColor(Color.BLACK)
+ 
+         val overlayTop = height - 300f
+-        val mapRect = RectF(0f, 0f, width.toFloat(), overlayTop)
++// lift the bottom boundary of the map slightly to match top spacing
++        val mapRect = RectF(0f, 0f, width.toFloat(), overlayTop - 80f)
++
+ 
+ 
+ // draw the map image into mapRect (as you already do)

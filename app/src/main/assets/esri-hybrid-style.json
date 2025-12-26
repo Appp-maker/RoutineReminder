@@ -1,0 +1,35 @@
+{
+  "version": 8,
+  "name": "Esri Hybrid",
+  "sources": {
+    "esri-imagery": {
+      "type": "raster",
+      "tiles": [
+        "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "tileSize": 256,
+      "attribution": "Imagery © Esri"
+    },
+    "osm-labels": {
+      "type": "raster",
+      "tiles": [
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      ],
+      "tileSize": 256,
+      "attribution": "Streets © OpenStreetMap contributors"
+    }
+  },
+  "layers": [
+    {
+      "id": "esri-layer",
+      "type": "raster",
+      "source": "esri-imagery"
+    },
+    {
+      "id": "osm-layer",
+      "type": "raster",
+      "source": "osm-labels",
+      "paint": { "raster-opacity": 0.7 }
+    }
+  ]
+}

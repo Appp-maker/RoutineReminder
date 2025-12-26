@@ -1,0 +1,15 @@
+Index: app/src/main/java/com/example/routinereminder/ui/BarcodeScannerScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/routinereminder/ui/BarcodeScannerScreen.kt b/app/src/main/java/com/example/routinereminder/ui/BarcodeScannerScreen.kt
+--- a/app/src/main/java/com/example/routinereminder/ui/BarcodeScannerScreen.kt
++++ b/app/src/main/java/com/example/routinereminder/ui/BarcodeScannerScreen.kt	(date 1760549295037)
+@@ -1,5 +1,6 @@
+ package com.example.routinereminder.ui
+ 
++import kotlinx.coroutines.withContext
+ import android.widget.Toast
+ import android.Manifest
+ import android.content.pm.PackageManager

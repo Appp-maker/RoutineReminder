@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/shareLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000">
+
+    <!-- 🗺️ MapLibre Map -->
+    <com.mapbox.mapboxsdk.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 🏃 Stats overlay -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="bottom|center_horizontal"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/workoutTypeText"
+            android:text="RUNNING"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            android:textColor="@android:color/white" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/distanceText"
+                android:text="0.00 km"
+                android:textSize="18sp"
+                android:textColor="@android:color/white"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:id="@+id/durationText"
+                android:text="00:00:00"
+                android:textSize="18sp"
+                android:textColor="@android:color/white"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:id="@+id/paceText"
+                android:text="0:00 min/km"
+                android:textSize="18sp"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <!-- optional attribution line -->
+        <TextView
+            android:id="@+id/attribution"
+            android:text="© OpenStreetMap contributors"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            android:gravity="center"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+</FrameLayout>

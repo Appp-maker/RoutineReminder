@@ -1,0 +1,17 @@
+Index: app/build/generated/ksp/debug/java/com/example/routinereminder/data/AppDatabase_Impl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build/generated/ksp/debug/java/com/example/routinereminder/data/AppDatabase_Impl.java b/app/build/generated/ksp/debug/java/com/example/routinereminder/data/AppDatabase_Impl.java
+--- a/app/build/generated/ksp/debug/java/com/example/routinereminder/data/AppDatabase_Impl.java
++++ b/app/build/generated/ksp/debug/java/com/example/routinereminder/data/AppDatabase_Impl.java	(date 1759595918287)
+@@ -39,7 +39,7 @@
+   @Override
+   @NonNull
+   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
+-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(9) {
++    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(10) {
+       @Override
+       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
+         db.execSQL("CREATE TABLE IF NOT EXISTS `schedule_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `notes` TEXT, `repeatOnDays` TEXT, `hour` INTEGER NOT NULL, `minute` INTEGER NOT NULL, `durationMinutes` INTEGER NOT NULL, `isOneTime` INTEGER NOT NULL, `dateEpochDay` INTEGER, `repeatEveryWeeks` INTEGER NOT NULL, `startEpochDay` INTEGER, `addToCalendarOnSave` INTEGER NOT NULL, `calendarEventId` INTEGER, `lastModified` INTEGER NOT NULL, `notifyEnabled` INTEGER NOT NULL, `showDetailsInNotification` INTEGER NOT NULL, `origin` TEXT NOT NULL, `targetCalendarSystem` TEXT, `preBackupModeAddToCalendar` INTEGER, `preBackupModeTargetCalendarSystem` TEXT, `preBackupModeCalendarEventId` INTEGER, `previousOrigin` TEXT)");

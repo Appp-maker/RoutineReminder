@@ -1,0 +1,88 @@
+<resources>
+    <string name="app_name">RoutineReminder</string>
+
+    <!-- General -->
+    <string name="alert_action_discard">Discard</string>
+    <string name="alert_action_cancel">Cancel</string>
+    <string name="alert_action_close">Close</string>
+    <string name="alert_unsaved_changes_title">Unsaved Changes</string>
+    <string name="alert_unsaved_changes_message">You have unsaved changes. Are you sure you want to discard them?</string>
+    <string name="settings_toast_work_in_progress">This feature is a work in progress.</string>
+    <string name="default_web_client_id" translatable="false">YOUR_WEB_CLIENT_ID_HERE</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_action_back">Back</string>
+    <string name="settings_action_save">Save</string>
+    <string name="settings_toast_settings_saved">Settings saved successfully.</string>
+    <string name="settings_toast_invalid_sync_interval">Invalid sync interval. Must be between 1 minute and 7 days.</string>
+    <string name="settings_toast_gcalendar_disabled_backup_mode">Google Calendar features are disabled in backup mode.</string>
+    <string name="settings_toast_calendar_permission_needed_select">Calendar permission is needed to select a calendar.</string>
+    <string name="settings_toast_no_gcalendars_found">No Google Calendars found</string>
+    <string name="settings_toast_event_unblocked">Event unblocked. It will be re-evaluated on the next sync.</string>
+
+    <!-- Settings Categories -->
+    <string name="settings_category_default_events">Defaults</string>
+    <string name="settings_category_sync">Sync</string>
+    <string name="settings_category_app">App</string>
+
+    <!-- Data Sync Settings -->
+    <string name="settings_data_sync_title">Data &amp; Sync</string>
+    <string name="settings_selected_google_account">Selected Account: %1$s</string>
+    <string name="settings_no_google_account_selected">No Google Account selected.</string>
+    <string name="settings_change_google_account">Change Account</string>
+    <string name="settings_select_google_account">Select Google Account</string>
+    <string name="settings_data_sync_enable_calendar_sync">Enable Calendar Sync</string>
+    <string name="settings_data_sync_backup_interval">Automatic Backup Interval</string>
+
+    <!-- Calendar Sync Settings -->
+    <string name="settings_calendar_sync_title">Calendar Sync</string>
+    <string name="settings_calendar_sync_background_sync_interval">Background Sync Interval</string>
+    <string name="settings_label_hours_short">H</string>
+    <string name="settings_label_minutes_short">M</string>
+    <string name="settings_calendar_sync_import_gcal_events_auto">Import Google Calendar events automatically</string>
+    <string name="settings_calendar_sync_import_from">Import From</string>
+    <string name="settings_calendar_sync_import_from_local">Local Device Calendar</string>
+    <string name="settings_calendar_sync_import_from_google">Selected Google Account\'s Primary Calendar</string>
+    <string name="settings_calendar_sync_import_from_both">Both (Local &amp; Google)</string>
+    <string name="settings_calendar_sync_on_app_delete_imported_title">When deleting an imported event from this app:</string>
+    <string name="settings_calendar_sync_on_app_delete_keep">Keep the original calendar event</string>
+    <string name="settings_calendar_sync_on_app_delete_delete">Delete the original calendar event</string>
+    <string name="settings_calendar_sync_on_app_delete_ask">Always ask</string>
+    <string name="settings_calendar_sync_manage_blocked_imports">Manage Blocked Imports</string>
+    <string name="settings_calendar_sync_on_calendar_delete_title">When an event is deleted from the external calendar:</string>
+    <string name="settings_calendar_sync_on_calendar_delete_keep_in_app">Keep the event in this app</string>
+    <string name="settings_calendar_sync_on_calendar_delete_delete_from_app">Delete the event from this app</string>
+
+    <!-- Default Events Settings -->
+    <string name="settings_default_events_title">Default Event Settings</string>
+    <string name="settings_default_events_start_time">Start Time</string>
+    <string name="settings_start_time_option_current_time">Current time</string>
+    <string name="settings_start_time_option_specific_time">Specific time</string>
+    <string name="settings_start_time_option_next_full_hour">Next full hour</string>
+    <string name="settings_default_events_edit_specific_time">Edit time</string>
+    <string name="settings_default_events_duration">Duration</string>
+    <string name="settings_default_events_one_time_appointment">One-time appointment</string>
+    <string name="settings_default_events_create_calendar_entry">Create calendar entry</string>
+    <string name="settings_default_events_target_calendar_new_events">Target calendar for new events:</string>
+    <string name="settings_default_events_target_calendar_local_device">Local device calendar</string>
+    <string name="settings_default_events_select_gcal_primary">Selected Google Account\'s primary calendar</string>
+    <string name="settings_default_events_notification_options_title">Notification Options</string>
+    <string name="settings_default_events_system_notification">Show system notification</string>
+    <string name="settings_default_events_show_details_notification">Show details in notification</string>
+
+    <!-- App Settings -->
+    <string name="settings_app_title">Application</string>
+    <string name="settings_app_import_export">Import / Export Data</string>
+    <string name="settings_app_language">Language</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_gcal_choose_title">Choose a Calendar</string>
+    <string name="dialog_gcal_no_calendars_found">No calendars found.</string>
+    <string name="dialog_gcal_primary">Primary Calendar</string>
+    <string name="dialog_gcal_item_format">%1$s (%2$s)</string>
+    <string name="dialog_blocked_imports_title">Blocked Imports</string>
+    <string name="dialog_blocked_imports_empty">No events are currently blocked from being imported.</string>
+    <string name="dialog_blocked_imports_unlock_event_desc">Unblock this event</string>
+
+</resources>

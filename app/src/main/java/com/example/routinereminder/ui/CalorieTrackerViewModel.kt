@@ -1,0 +1,553 @@
+package com.example.routinereminder.ui
+
+import java.time.DayOfWeek
+import android.app.Application
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.routinereminder.data.ActivityLevel
+import com.example.routinereminder.data.AppDatabase
+import com.example.routinereminder.data.entities.FoodProduct
+import com.example.routinereminder.data.entities.LoggedFood
+import com.example.routinereminder.data.OpenFoodFactsApiClient
+import com.example.routinereminder.data.SettingsRepository
+import com.example.routinereminder.data.UserSettings
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalTime
+import javax.inject.Inject
+import java.io.IOException
+import java.net.SocketTimeoutException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+
+@HiltViewModel
+class CalorieTrackerViewModel @Inject constructor(
+    application: Application,
+    private val appDatabase: AppDatabase,
+    private val settingsRepository: SettingsRepository
+) : AndroidViewModel(application) {
+
+    private val openFoodFactsApiClient = OpenFoodFactsApiClient()
+
+    private val _userSettings = MutableStateFlow<UserSettings?>(null)
+    val userSettings: StateFlow<UserSettings?> = _userSettings.asStateFlow()
+    private val _searchError = MutableStateFlow<String?>(null)
+    val searchError = _searchError.asStateFlow()
+
+    private val _dailyTotals = MutableStateFlow<DailyTotals?>(null)
+    val dailyTotals: StateFlow<DailyTotals?> = _dailyTotals.asStateFlow()
+
+    private val _dailyTargets = MutableStateFlow<DailyTargets?>(null)
+    val dailyTargets: StateFlow<DailyTargets?> = _dailyTargets.asStateFlow()
+
+    private val _scannedFoodProduct = MutableStateFlow<FoodProduct?>(null)
+    val scannedFoodProduct: StateFlow<FoodProduct?> = _scannedFoodProduct.asStateFlow()
+
+    private val _isProfileComplete = MutableStateFlow(false)
+    val isProfileComplete: StateFlow<Boolean> = _isProfileComplete.asStateFlow()
+
+    private val _loggedFoods = MutableStateFlow<List<LoggedFood>>(emptyList())
+    val loggedFoods: StateFlow<List<LoggedFood>> = _loggedFoods.asStateFlow()
+
+    private val _searchResults = MutableStateFlow<List<FoodProduct>>(emptyList())
+    val searchResults: StateFlow<List<FoodProduct>> = _searchResults.asStateFlow()
+
+    private val _selectedDate = MutableStateFlow(LocalDate.now())
+    val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
+
+
+    init {
+        viewModelScope.launch {
+            settingsRepository.getUserSettings().collectLatest { settings ->
+                _userSettings.value = settings
+                _isProfileComplete.value = settings != null && settings.weightKg > 0 && settings.heightCm > 0 && settings.age > 0
+                calculateDailyTargets()
+                calculateDailyTotals()
+            }
+        }
+        viewModelScope.launch {
+            selectedDate.collectLatest {
+                _loggedFoods.value = appDatabase.loggedFoodDao().getFoodsForDate(date = it.toString())
+
+                calculateDailyTotals()
+            }
+        }
+    }
+
+    fun setSelectedDate(date: LocalDate) {
+        _selectedDate.value = date
+    }
+
+    fun selectToday() {
+        _selectedDate.value = LocalDate.now()
+    }
+
+    fun deleteRecurringEntries(food: LoggedFood) {
+        viewModelScope.launch {
+            if (!food.isOneTime && food.startEpochDay != null) {
+                appDatabase.loggedFoodDao().deleteFoodSeriesFromDate(
+                    startEpochDay = food.startEpochDay,
+                    mealSlot = food.mealSlot,
+                    foodName = food.foodProduct.name,
+                    fromEpochDay = selectedDate.value.toEpochDay()
+                )
+            }
+
+            refreshForSelectedDate()
+        }
+    }
+
+
+
+
+
+
+    fun onBarcodeScanned(barcode: String) {
+        viewModelScope.launch {
+            _scannedFoodProduct.value = openFoodFactsApiClient.getFoodProduct(barcode)
+        }
+    }
+
+    fun searchFood(query: String) {
+        val cleanedQuery = query.trim()
+
+        if (cleanedQuery.length < 3) {
+            _searchResults.value = emptyList()
+            _searchError.value = "Please enter at least 3 characters"
+            return
+        }
+
+        viewModelScope.launch {
+            _searchError.value = null
+            _searchResults.value = emptyList() // clear previous results
+
+            try {
+                val results = withContext(Dispatchers.IO) {
+                    openFoodFactsApiClient.searchFood(cleanedQuery)
+                }
+
+                _searchResults.value = results
+
+                if (results.isEmpty()) {
+                    _searchError.value = "No results found"
+                }
+
+            } catch (e: SocketTimeoutException) {
+                _searchError.value = "Network timeout. Try again."
+                _searchResults.value = emptyList()
+
+            } catch (e: IOException) {
+                _searchError.value = "Network error. Check your connection."
+                _searchResults.value = emptyList()
+
+            } catch (e: Exception) {
+                _searchError.value = "Search failed"
+                _searchResults.value = emptyList()
+            }
+        }
+    }
+
+
+
+
+
+    fun onFoodSelected(foodProduct: FoodProduct) {
+        _scannedFoodProduct.value = foodProduct
+    }
+
+    fun clearScannedProduct() {
+        _scannedFoodProduct.value = null
+    }
+
+//    fun deleteLoggedFood(loggedFood: LoggedFood) {
+//        viewModelScope.launch {
+//            appDatabase.loggedFoodDao().delete(loggedFood)
+//            calculateDailyTotals()
+//            _loggedFoods.value = appDatabase.loggedFoodDao().getFoodsForDate(date = selectedDate.value.toString())
+//        }
+//    }
+
+    fun deleteLoggedFood(food: LoggedFood) {
+        viewModelScope.launch {
+            appDatabase.loggedFoodDao().delete(food)
+            refreshForSelectedDate()
+        }
+    }
+
+
+
+    fun addCustomFood(
+        name: String,
+        calories: Int,
+        protein: Int,
+        carbs: Int,
+        fat: Int,
+        date: LocalDate
+    ) {
+        // Interpret inputs as “per 100 g” for now – this matches FoodProduct.
+        // (If you enter totals for a 100 g portion, the behaviour is identical.)
+        val product = FoodProduct(
+            name = name,
+            caloriesPer100g = calories.toDouble(),
+            proteinPer100g = protein.toDouble(),
+            carbsPer100g = carbs.toDouble(),
+            fatPer100g = fat.toDouble(),
+            fiberPer100g = 0.0,
+            saturatedFatPer100g = 0.0,
+            addedSugarsPer100g = 0.0,
+            sodiumPer100g = 0.0
+        )
+
+        // Re-use the same flow as a scanned product:
+        // the UI already shows PortionDialog whenever scannedFoodProduct != null
+        _scannedFoodProduct.value = product
+        // selectedDate is already used by addFood via PortionDialog’s startDate,
+        // so we don’t need to use `date` directly here.
+    }
+
+
+
+    fun updateLoggedFood(
+        loggedFood: LoggedFood,
+        newPortionSizeG: Double,
+        mealSlot: String,
+        isOneTime: Boolean,
+        repeatDays: Set<DayOfWeek>,
+        repeatEveryWeeks: Int,
+        startDate: LocalDate,
+        updatedFoodProduct: FoodProduct,
+        updateAllFuture: Boolean = false
+    ) {
+        viewModelScope.launch {
+            val dao = appDatabase.loggedFoodDao()
+            val foodProduct = loggedFood.foodProduct
+
+            val calories = (foodProduct.caloriesPer100g / 100.0) * newPortionSizeG
+            val protein = (foodProduct.proteinPer100g / 100.0) * newPortionSizeG
+            val carbs = (foodProduct.carbsPer100g / 100.0) * newPortionSizeG
+            val fat = (foodProduct.fatPer100g / 100.0) * newPortionSizeG
+            val fiber = (foodProduct.fiberPer100g / 100.0) * newPortionSizeG
+            val saturatedFat = (foodProduct.saturatedFatPer100g / 100.0) * newPortionSizeG
+            val addedSugars = (foodProduct.addedSugarsPer100g / 100.0) * newPortionSizeG
+            val sodium = (foodProduct.sodiumPer100g / 100.0) * newPortionSizeG * 1000
+
+            // Define updated recurrence fields
+            val newRepeatDays = if (isOneTime) emptySet() else repeatDays
+            val newRepeatEveryWeeks = if (isOneTime) 1 else repeatEveryWeeks
+            val newStartEpochDay = if (isOneTime) null else startDate.toEpochDay()
+            val newDateEpochDay = if (isOneTime) startDate.toEpochDay() else null
+
+            if (updateAllFuture && !loggedFood.isOneTime && loggedFood.startEpochDay != null) {
+                // Update all future entries in this recurrence pattern
+                val allRecurring = dao.getAllRecurringFromStart(loggedFood.startEpochDay!!)
+                for (entry in allRecurring) {
+                    val updated = entry.copy(
+                        portionSizeG = newPortionSizeG,
+                        calories = calories,
+                        proteinG = protein,
+                        carbsG = carbs,
+                        fatG = fat,
+                        fiberG = fiber,
+                        saturatedFatG = saturatedFat,
+                        addedSugarsG = addedSugars,
+                        sodiumMg = sodium,
+                        isOneTime = isOneTime,
+                        repeatOnDays = newRepeatDays,
+                        repeatEveryWeeks = newRepeatEveryWeeks,
+                        startEpochDay = newStartEpochDay,
+                        dateEpochDay = newDateEpochDay
+                    )
+                    dao.upsert(updated)
+                }
+            } else {
+                // Update only this entry
+                val updatedFood = loggedFood.copy(
+                    portionSizeG = newPortionSizeG,
+                    calories = calories,
+                    proteinG = protein,
+                    carbsG = carbs,
+                    fatG = fat,
+                    fiberG = fiber,
+                    saturatedFatG = saturatedFat,
+                    addedSugarsG = addedSugars,
+                    sodiumMg = sodium,
+                    mealSlot = mealSlot,
+                    isOneTime = isOneTime,
+                    repeatOnDays = newRepeatDays,
+                    repeatEveryWeeks = newRepeatEveryWeeks,
+                    startEpochDay = newStartEpochDay,
+                    dateEpochDay = newDateEpochDay
+                )
+                dao.upsert(updatedFood)
+            }
+
+            calculateDailyTotals()
+
+        }
+    }
+
+    private suspend fun refreshForSelectedDate() {
+        _loggedFoods.value =
+            appDatabase.loggedFoodDao()
+                .getFoodsForDate(selectedDate.value.toString())
+
+        calculateDailyTotals()
+    }
+
+    fun addBundleToTracker(
+        bundleId: Long,
+        mealSlot: String
+    ) {
+        viewModelScope.launch {
+            val bundleDao = appDatabase.foodBundleDao()
+            val loggedFoodDao = appDatabase.loggedFoodDao()
+
+            val bundleWithItems = bundleDao.getBundleWithItems(bundleId)
+            val today = selectedDate.value
+
+            bundleWithItems.items.forEach { item ->
+                val loggedFood = LoggedFood(
+                    date = today.toString(),
+                    foodProduct = FoodProduct(
+                        name = item.foodName,
+                        caloriesPer100g = item.calories / item.portionSizeG * 100.0,
+                        proteinPer100g = item.proteinG / item.portionSizeG * 100.0,
+                        carbsPer100g = item.carbsG / item.portionSizeG * 100.0,
+                        fatPer100g = item.fatG / item.portionSizeG * 100.0,
+                        fiberPer100g = item.fiberG / item.portionSizeG * 100.0,
+                        saturatedFatPer100g = item.saturatedFatG / item.portionSizeG * 100.0,
+                        addedSugarsPer100g = item.addedSugarsG / item.portionSizeG * 100.0,
+                        sodiumPer100g = item.sodiumMg / item.portionSizeG / 10.0
+                    ),
+                    portionSizeG = item.portionSizeG,
+                    calories = item.calories,
+                    proteinG = item.proteinG,
+                    carbsG = item.carbsG,
+                    fatG = item.fatG,
+                    fiberG = item.fiberG,
+                    saturatedFatG = item.saturatedFatG,
+                    addedSugarsG = item.addedSugarsG,
+                    sodiumMg = item.sodiumMg,
+                    mealSlot = mealSlot,
+                    bundleName = bundleWithItems.bundle.name // ⭐ KEY LINE
+                )
+
+                loggedFoodDao.upsert(loggedFood)
+            }
+
+            refreshForSelectedDate()
+        }
+    }
+
+    fun logFood(foodProduct: FoodProduct, portionSizeG: Double, mealSlot: String) {
+
+        viewModelScope.launch {
+            val calories = (foodProduct.caloriesPer100g / 100.0) * portionSizeG
+            val protein = (foodProduct.proteinPer100g / 100.0) * portionSizeG
+            val carbs = (foodProduct.carbsPer100g / 100.0) * portionSizeG
+            val fat = (foodProduct.fatPer100g / 100.0) * portionSizeG
+            val fiber = (foodProduct.fiberPer100g / 100.0) * portionSizeG
+            val saturatedFat = (foodProduct.saturatedFatPer100g / 100.0) * portionSizeG
+            val addedSugars = (foodProduct.addedSugarsPer100g / 100.0) * portionSizeG
+            val sodium = (foodProduct.sodiumPer100g / 100.0) * portionSizeG * 1000
+
+            val loggedFood = LoggedFood(
+                date = selectedDate.value.toString(),
+                foodProduct = foodProduct,
+                portionSizeG = portionSizeG,
+                calories = calories,
+                proteinG = protein,
+                carbsG = carbs,
+                fatG = fat,
+                fiberG = fiber,
+                saturatedFatG = saturatedFat,
+                addedSugarsG = addedSugars,
+                sodiumMg = sodium,
+                mealSlot = mealSlot
+            )
+            appDatabase.loggedFoodDao().upsert(loggedFood)
+            calculateDailyTotals()
+            _loggedFoods.value = appDatabase.loggedFoodDao().getFoodsForDate(date = selectedDate.value.toString())
+        }
+    }
+
+    private suspend fun calculateDailyTotals() {
+        val loggedFoods = appDatabase.loggedFoodDao().getFoodsForDate(date = selectedDate.value.toString())
+        val calories = loggedFoods.sumOf { it.calories }
+        val protein = loggedFoods.sumOf { it.proteinG }
+        val carbs = loggedFoods.sumOf { it.carbsG }
+        val fat = loggedFoods.sumOf { it.fatG }
+        val fiber = loggedFoods.sumOf { it.fiberG }
+        val saturatedFat = loggedFoods.sumOf { it.saturatedFatG }
+        val addedSugars = loggedFoods.sumOf { it.addedSugarsG }
+        val sodium = loggedFoods.sumOf { it.sodiumMg }
+
+        _dailyTotals.value = DailyTotals(
+            calories = calories,
+            proteinG = protein,
+            carbsG = carbs,
+            fatG = fat,
+            fiberG = fiber,
+            saturatedFatG = saturatedFat,
+            addedSugarsG = addedSugars,
+            sodiumMg = sodium
+        )
+    }
+
+    fun addFood(
+        portion: Double,
+        foodProduct: FoodProduct,
+        time: java.time.LocalTime,
+        mealSlot: String,
+        isOneTime: Boolean,
+        repeatDays: Set<java.time.DayOfWeek>,
+        repeatEveryWeeks: Int,
+        startDate: java.time.LocalDate
+    ) {
+        viewModelScope.launch {
+            val dao = appDatabase.loggedFoodDao()
+
+            val caloriesPerGram = foodProduct.caloriesPer100g / 100.0
+            val proteinPerGram = foodProduct.proteinPer100g / 100.0
+            val carbsPerGram = foodProduct.carbsPer100g / 100.0
+            val fatPerGram = foodProduct.fatPer100g / 100.0
+            val fiberPerGram = foodProduct.fiberPer100g / 100.0
+            val saturatedFatPerGram = foodProduct.saturatedFatPer100g / 100.0
+            val addedSugarsPerGram = foodProduct.addedSugarsPer100g / 100.0
+            val sodiumPerGram = foodProduct.sodiumPer100g / 100.0
+
+            if (isOneTime || repeatDays.isEmpty()) {
+                val loggedFood = LoggedFood(
+                    date = startDate.toString(),
+                    foodProduct = foodProduct,
+                    portionSizeG = portion,
+                    calories = caloriesPerGram * portion,
+                    proteinG = proteinPerGram * portion,
+                    carbsG = carbsPerGram * portion,
+                    fatG = fatPerGram * portion,
+                    fiberG = fiberPerGram * portion,
+                    saturatedFatG = saturatedFatPerGram * portion,
+                    addedSugarsG = addedSugarsPerGram * portion,
+                    sodiumMg = sodiumPerGram * portion,
+                    mealSlot = mealSlot,
+                    isOneTime = true,
+                    dateEpochDay = startDate.toEpochDay()
+                )
+
+                dao.upsert(loggedFood)
+            } else {
+                val maxWeeksToGenerate = 12 // limit to avoid infinite insertion
+
+                for (weekOffset in 0 until maxWeeksToGenerate step repeatEveryWeeks) {
+                    val weekStart = startDate.plusWeeks(weekOffset.toLong())
+
+                    for (day in repeatDays) {
+                        // calculate next valid occurrence of this weekday
+                        val dayOffset = (day.value - weekStart.dayOfWeek.value).let {
+                            if (it < 0) it + 7 else it
+                        }
+                        val targetDate = weekStart.plusDays(dayOffset.toLong())
+
+                        if (!targetDate.isBefore(startDate)) {
+                            val recurringFood = LoggedFood(
+                                date = targetDate.toString(),
+                                dateEpochDay = targetDate.toEpochDay(), // ✅ REQUIRED
+                                foodProduct = foodProduct,
+                                portionSizeG = portion,
+                                calories = caloriesPerGram * portion,
+                                proteinG = proteinPerGram * portion,
+                                carbsG = carbsPerGram * portion,
+                                fatG = fatPerGram * portion,
+                                fiberG = fiberPerGram * portion,
+                                saturatedFatG = saturatedFatPerGram * portion,
+                                addedSugarsG = addedSugarsPerGram * portion,
+                                sodiumMg = sodiumPerGram * portion,
+                                mealSlot = mealSlot,
+                                isOneTime = false,
+                                startEpochDay = startDate.toEpochDay(),
+                                repeatOnDays = repeatDays,
+                                repeatEveryWeeks = repeatEveryWeeks
+                            )
+
+
+                            dao.upsert(recurringFood)
+                        }
+                    }
+                }
+            }
+            calculateDailyTotals()
+        }
+    }
+
+    private fun calculateDailyTargets() {
+        val userSettings = _userSettings.value
+        if (userSettings == null || userSettings.weightKg <= 0) {
+            _dailyTargets.value = DailyTargets(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) // Default/empty state
+            return
+        }
+
+
+        val calories = when (userSettings.activityLevel) {
+            ActivityLevel.SEDENTARY -> 25 * userSettings.weightKg
+            ActivityLevel.LIGHT -> 30 * userSettings.weightKg
+            ActivityLevel.MODERATE -> 35 * userSettings.weightKg
+            ActivityLevel.ACTIVE -> 40 * userSettings.weightKg
+        }
+        val protein = 1.6 * userSettings.weightKg
+        val carbs = (calories * 0.5) / 4
+        val fat = (calories * 0.25) / 9
+        val fiber = 14.0 * (calories / 1000)
+        val saturatedFat = (calories * 0.1) / 9
+        val addedSugars = (calories * 0.1) / 4
+        val sodium = 2000.0
+
+        _dailyTargets.value = DailyTargets(
+            calories = calories,
+            proteinG = protein,
+            carbsG = carbs,
+            fatG = fat,
+            fiberG = fiber,
+            saturatedFatG = saturatedFat,
+            addedSugarsG = addedSugars,
+            sodiumMg = sodium
+        )
+    }
+
+    fun selectPreviousDay() {
+        _selectedDate.value = _selectedDate.value.minusDays(1)
+    }
+
+    fun selectNextDay() {
+        _selectedDate.value = _selectedDate.value.plusDays(1)
+    }
+
+    data class DailyTotals(
+        val calories: Double,
+        val proteinG: Double,
+        val carbsG: Double,
+        val fatG: Double,
+        val fiberG: Double,
+        val saturatedFatG: Double,
+        val addedSugarsG: Double,
+        val sodiumMg: Double
+    )
+
+    data class DailyTargets(
+        val calories: Double,
+        val proteinG: Double,
+        val carbsG: Double,
+        val fatG: Double,
+        val fiberG: Double,
+        val saturatedFatG: Double,
+        val addedSugarsG: Double,
+        val sodiumMg: Double
+    )
+}

@@ -1,0 +1,49 @@
+package com.example.routinereminder.data.mappers
+
+import com.example.routinereminder.data.ScheduleItem
+import com.example.routinereminder.data.entities.Schedule
+
+// Map from UI model → Room entity
+fun ScheduleItem.toEntity(): Schedule = Schedule(
+    id = id,
+    name = name,
+    notes = notes,
+    hour = hour,
+    minute = minute,
+    durationMinutes = durationMinutes,
+    isOneTime = isOneTime,
+    dateEpochDay = dateEpochDay,
+    startEpochDay = startEpochDay,
+    repeatOnDays = repeatOnDays,
+    repeatEveryWeeks = repeatEveryWeeks,
+    notifyEnabled = notifyEnabled,
+    showDetailsInNotification = showDetailsInNotification,
+    addToCalendarOnSave = addToCalendarOnSave,
+    calendarEventId = calendarEventId,
+    origin = origin,
+    targetCalendarSystem = targetCalendarSystem
+)
+
+// Map from Room entity → UI model
+fun Schedule.toItem(): ScheduleItem =
+    ScheduleItem(
+        id = id,
+        name = name,
+        notes = notes,
+        hour = hour,
+        minute = minute,
+        durationMinutes = durationMinutes,
+        isOneTime = isOneTime,
+        dateEpochDay = dateEpochDay,
+        startEpochDay = startEpochDay,
+        repeatOnDays = repeatOnDays,
+        repeatEveryWeeks = repeatEveryWeeks,
+        notifyEnabled = notifyEnabled,
+        showDetailsInNotification = showDetailsInNotification,
+        addToCalendarOnSave = addToCalendarOnSave,
+        calendarEventId = calendarEventId,
+        origin = origin,
+        targetCalendarSystem = targetCalendarSystem,
+        isDone = isDone
+    )
+

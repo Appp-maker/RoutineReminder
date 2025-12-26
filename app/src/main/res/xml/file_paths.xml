@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Cached images or screenshots (used for session sharing) -->
+    <cache-path
+        name="shared_images"
+        path="." />
+
+    <!-- Optional: allow sharing from internal files (e.g. saved sessions, exports) -->
+    <files-path
+        name="shared_files"
+        path="." />
+</paths>
