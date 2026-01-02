@@ -57,7 +57,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -77,8 +76,6 @@ import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import com.example.routinereminder.location.TrackingService
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 
 
 private enum class ActivityType(val label: String, val met: Double) {
@@ -127,7 +124,6 @@ fun MapScreen(
     var timerJob by remember { mutableStateOf<Job?>(null) }
     var inactivityJob by remember { mutableStateOf<Job?>(null) }
     var lastMovementAt by remember { mutableStateOf<Long?>(null) }
-    val lifecycleOwner = LocalLifecycleOwner.current
     val stopRecording = rememberUpdatedState {
         if (recording) {
             stopTracking(context)
@@ -1047,7 +1043,7 @@ fun shareSessionImage(
     }
 }
 
-fun startTracking(context: Context, trackingMode: TrackingMode) {
+private fun startTracking(context: Context, trackingMode: TrackingMode) {
     val intent = Intent(context, TrackingService::class.java).apply {
         putExtra(TrackingService.EXTRA_TRACKING_MODE, trackingMode.value)
     }
