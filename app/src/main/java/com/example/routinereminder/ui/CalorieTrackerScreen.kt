@@ -66,10 +66,9 @@ private const val TAG = "CalorieTrackerScreen"
 @Composable
 fun CalorieTrackerScreen(
     navController: NavController,
-    startMode: String = "default"
+    startMode: String = "default",
+    viewModel: CalorieTrackerViewModel = hiltViewModel()
 ) {
-    val viewModel: CalorieTrackerViewModel = hiltViewModel()
-
     val dailyTotals by viewModel.dailyTotals.collectAsState()
     val dailyTargets by viewModel.dailyTargets.collectAsState()
     val scannedFoodProduct by viewModel.scannedFoodProduct.collectAsState()
@@ -106,6 +105,9 @@ fun CalorieTrackerScreen(
 
     LaunchedEffect(startMode) {
         when (startMode) {
+            "default" -> {
+                viewModel.clearBundleTarget()
+            }
             "search" -> {
                 showSearchDialog = true
             }
@@ -177,7 +179,7 @@ fun CalorieTrackerScreen(
     scannedFoodProduct?.let { food ->
         PortionDialog(
             foodProduct = food,
-            onDismiss = { viewModel.clearScannedProduct() },
+            onDismiss = { viewModel.clearScannedProduct(clearBundle = bundleTargetId != null) },
             // IMPORTANT: call addFood(...) with the scheduling values from the dialog
             onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate ->
                 viewModel.addFood(
