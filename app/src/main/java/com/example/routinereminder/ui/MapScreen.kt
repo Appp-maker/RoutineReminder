@@ -72,12 +72,20 @@ import kotlin.math.roundToInt
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import com.example.routinereminder.location.TrackingService
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 
 private enum class ActivityType(val label: String, val met: Double) {
     WALKING("Walking", 3.8),
     RUNNING("Running", 9.8),
     CYCLING("Cycling", 8.0)
+}
+
+private enum class TrackingMode(val label: String, val value: String) {
+    BALANCED("Balanced", TrackingService.MODE_BALANCED),
+    HIGH_ACCURACY("High accuracy", TrackingService.MODE_HIGH_ACCURACY)
 }
 
 @SuppressLint("MissingPermission")
@@ -101,6 +109,8 @@ fun MapScreen(
     var userZoom by remember { mutableStateOf(15.5) }
     var includeMapInShare by remember { mutableStateOf(true) }
     var activity by remember { mutableStateOf(ActivityType.RUNNING) }
+    var trackingMode by remember { mutableStateOf(TrackingMode.BALANCED) }
+    var trackingMenuExpanded by remember { mutableStateOf(false) }
 
     // live stats
     var distanceMeters by remember { mutableStateOf(0.0) }
@@ -121,6 +131,7 @@ fun MapScreen(
     val kalman = remember { KalmanLatLong() }
     var smoothedLat by remember { mutableStateOf<Double?>(null) }
     var smoothedLng by remember { mutableStateOf<Double?>(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // ask once if weight missing
     LaunchedEffect(weightKg) {
@@ -240,6 +251,20 @@ fun MapScreen(
             context.unregisterReceiver(r)
         }
     }
+
+    DisposableEffect(lifecycleOwner, recording, trackingMode) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && recording) {
+                stopTracking(context)
+            } else if (event == Lifecycle.Event.ON_START && recording) {
+                startTracking(context, trackingMode)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
@@ -260,6 +285,40 @@ fun MapScreen(
                     StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
                     StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
                     StatBlock(title = "Calories", value = calories.roundToInt().toString())
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Tracking: ${trackingMode.label}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ComposeColor.Gray
+                )
+                IconButton(onClick = { trackingMenuExpanded = true }) {
+                    Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Tracking mode")
+                }
+                DropdownMenu(
+                    expanded = trackingMenuExpanded,
+                    onDismissRequest = { trackingMenuExpanded = false }
+                ) {
+                    TrackingMode.values().forEach { mode ->
+                        DropdownMenuItem(
+                            text = { Text(mode.label) },
+                            onClick = {
+                                trackingMode = mode
+                                trackingMenuExpanded = false
+                                if (recording) {
+                                    startTracking(context, trackingMode)
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
@@ -427,7 +486,7 @@ fun MapScreen(
                                     firstFix = true
 
                                     // Start Foreground GPS Tracking Service
-                                    startTracking(context)
+                                    startTracking(context, trackingMode)
 
                                     // Start timer job
                                     timerJob?.cancel()
@@ -952,8 +1011,10 @@ fun shareSessionImage(
     }
 }
 
-fun startTracking(context: Context) {
-    val intent = Intent(context, TrackingService::class.java)
+fun startTracking(context: Context, trackingMode: TrackingMode) {
+    val intent = Intent(context, TrackingService::class.java).apply {
+        putExtra(TrackingService.EXTRA_TRACKING_MODE, trackingMode.value)
+    }
     context.startForegroundService(intent)
 }
 
