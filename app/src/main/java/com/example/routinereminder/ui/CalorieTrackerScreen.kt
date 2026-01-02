@@ -58,7 +58,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.saveable.rememberSaveable
-import com.example.routinereminder.ui.bundle.BundleViewModel
 import com.example.routinereminder.ui.components.FoodBundlePickerDialog
 import java.time.LocalTime
 private const val TAG = "CalorieTrackerScreen"
@@ -574,7 +573,7 @@ fun CalorieTrackerScreen(
                                     .fillMaxWidth()
                                     .height(44.dp)
                             ) {
-                                Text("Bundle")
+                                Text("Recipe")
                             }
 
 
@@ -731,42 +730,34 @@ fun MealSlotDetail(
                 .weight(1f) // makes the scroll area take remaining space in the card
                 .verticalScroll(rememberScrollState())
         ) {
-            // --- group foods by bundle (or standalone) ---
-            val grouped = foods.groupBy { it.bundleName }
-
-            grouped.forEach { (bundleName, items) ->
-                if (bundleName == null) {
+            foods.forEach { food ->
+                if (food.bundleId == null) {
                     // ----- NORMAL FOOD -----
-                    items.forEach { food ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onFoodClick(food) }
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(food.foodProduct.name, color = Color.White)
-                                Text(
-                                    "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
-                                    color = Color.Gray,
-                                    fontSize = 12.sp
-                                )
-                            }
-                            IconButton(onClick = { onDelete(food) }) {
-                                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
-                            }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onFoodClick(food) }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(food.foodProduct.name, color = Color.White)
+                            Text(
+                                "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+                        IconButton(onClick = { onDelete(food) }) {
+                            Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
                         }
                     }
                 } else {
-                    // ----- BUNDLE -----
-                    ExpandableBundleRow(
-                        bundleName = bundleName,
-                        items = items,
-                        onDeleteBundle = {
-                            // delete ALL foods of this bundle in this meal slot
-                            items.forEach { onDelete(it) }
-                        }
+                    // ----- RECIPE -----
+                    ExpandableRecipeRow(
+                        food = food,
+                        viewModel = viewModel,
+                        onDeleteRecipe = { onDelete(food) }
                     )
                 }
             }
@@ -776,12 +767,22 @@ fun MealSlotDetail(
     }
 }
 @Composable
-fun ExpandableBundleRow(
-    bundleName: String,
-    items: List<LoggedFood>,
-    onDeleteBundle: () -> Unit
+fun ExpandableRecipeRow(
+    food: LoggedFood,
+    viewModel: CalorieTrackerViewModel,
+    onDeleteRecipe: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val bundleId = food.bundleId ?: return
+    val bundleWithItems by produceState<com.example.routinereminder.data.entities.FoodBundleWithItems?>(
+        initialValue = null,
+        key1 = bundleId
+    ) {
+        value = viewModel.getBundleWithItems(bundleId)
+    }
+    val recipeName = bundleWithItems?.bundle?.name ?: food.foodProduct.name
+    val recipeDescription = bundleWithItems?.bundle?.description?.trim().orEmpty()
+    val recipeItems = bundleWithItems?.items.orEmpty()
 
     Column(
         modifier = Modifier
@@ -795,24 +796,32 @@ fun ExpandableBundleRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(bundleName, color = Color.White, fontSize = 16.sp)
+                Text(recipeName, color = Color.White, fontSize = 16.sp)
                 Text(
-                    "${items.sumOf { it.calories }.toInt()} cal • ${items.size} items",
+                    "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
                     color = Color.Gray,
                     fontSize = 12.sp
                 )
             }
 
-            IconButton(onClick = onDeleteBundle) {
+            IconButton(onClick = onDeleteRecipe) {
                 Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
             }
         }
 
         if (expanded) {
             Spacer(Modifier.height(8.dp))
-            items.forEach { item ->
+            if (recipeDescription.isNotBlank()) {
                 Text(
-                    "• ${item.foodProduct.name} – ${item.portionSizeG.toInt()} g",
+                    recipeDescription,
+                    color = Color.LightGray,
+                    fontSize = 13.sp
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+            recipeItems.forEach { item ->
+                Text(
+                    "• ${item.foodName} – ${item.portionSizeG.toInt()} g",
                     color = Color.LightGray,
                     fontSize = 13.sp
                 )

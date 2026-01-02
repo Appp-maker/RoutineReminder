@@ -90,10 +90,10 @@ fun BundleDetailScreen(
         if (showDeleteConfirm) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
-                title = { Text("Delete bundle") },
+                title = { Text("Delete recipe") },
                 text = {
                     Text(
-                        "Are you sure you want to delete this bundle? " +
+                        "Are you sure you want to delete this recipe? " +
                                 "This will remove all its ingredients and cannot be undone."
                     )
                 },
@@ -126,7 +126,7 @@ fun BundleDetailScreen(
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Bundle name") },
+                        label = { Text("Recipe name") },
                         modifier = Modifier.weight(1f)
                     )
                 } else {
@@ -150,7 +150,7 @@ fun BundleDetailScreen(
                 }) {
                     Icon(
                         imageVector = if (isEditing) Icons.Filled.Check else Icons.Filled.Edit,
-                        contentDescription = "Edit bundle"
+                        contentDescription = "Edit recipe"
                     )
                 }
             }
@@ -161,7 +161,7 @@ fun BundleDetailScreen(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description") },
+                    label = { Text("Recipe description") },
                     modifier = Modifier.fillMaxWidth()
                 )
             } else if (data.bundle.description.isNotBlank()) {
@@ -217,7 +217,7 @@ fun BundleDetailScreen(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Delete bundle")
+            Text("Delete recipe")
         }
 
     }
@@ -362,5 +362,4 @@ fun EditableBundleItemRow(
         }
     }
 }
-
 

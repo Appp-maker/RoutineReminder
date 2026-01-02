@@ -31,6 +31,7 @@ data class LoggedFood(
     val mealSlot: String = "unspecified",
 // ---- bundle marker ----
     val bundleName: String? = null,
+    val bundleId: Long? = null,
 
     // ---- recurrence fields ----
     val isOneTime: Boolean = false,

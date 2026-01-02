@@ -10,6 +10,7 @@ import com.example.routinereminder.data.ActivityLevel
 import com.example.routinereminder.data.AppDatabase
 import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.data.entities.LoggedFood
+import com.example.routinereminder.data.entities.FoodBundleWithItems
 import com.example.routinereminder.data.OpenFoodFactsApiClient
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.data.UserSettings
@@ -378,38 +379,37 @@ class CalorieTrackerViewModel @Inject constructor(
             val today = selectedDate.value
 
             val bundleWithItems = bundleDao.getBundleWithItems(bundleId)
+            val totalGrams = bundleWithItems.items.sumOf { it.portionSizeG }.toDouble()
+            if (totalGrams <= 0.0) return@launch
 
-            bundleWithItems.items.forEach { item ->
-                if (item.portionSizeG <= 0) return@forEach
+            val totalCalories = bundleWithItems.items.sumOf { it.calories }
+            val totalProtein = bundleWithItems.items.sumOf { it.proteinG }
+            val totalCarbs = bundleWithItems.items.sumOf { it.carbsG }
+            val totalFat = bundleWithItems.items.sumOf { it.fatG }
+            val totalFiber = bundleWithItems.items.sumOf { it.fiberG }
+            val totalSatFat = bundleWithItems.items.sumOf { it.saturatedFatG }
+            val totalSugar = bundleWithItems.items.sumOf { it.addedSugarsG }
+            val totalSodiumMg = bundleWithItems.items.sumOf { it.sodiumMg }
 
-                val loggedFood = LoggedFood(
-                    date = today.toString(),
-                    foodProduct = FoodProduct(
-                        name = item.foodName,
-                        caloriesPer100g = 0.0,
-                        proteinPer100g = 0.0,
-                        carbsPer100g = 0.0,
-                        fatPer100g = 0.0,
-                        fiberPer100g = 0.0,
-                        saturatedFatPer100g = 0.0,
-                        addedSugarsPer100g = 0.0,
-                        sodiumPer100g = 0.0
-                    ),
-                    portionSizeG = item.portionSizeG.toDouble(),
-                    calories = item.calories,
-                    proteinG = item.proteinG,
-                    carbsG = item.carbsG,
-                    fatG = item.fatG,
-                    fiberG = item.fiberG,
-                    saturatedFatG = item.saturatedFatG,
-                    addedSugarsG = item.addedSugarsG,
-                    sodiumMg = item.sodiumMg,
-                    mealSlot = mealSlot,
-                    bundleName = bundleWithItems.bundle.name
-                )
+            val foodProduct = buildBundleAsFoodProduct(bundleId)
+            val loggedFood = LoggedFood(
+                date = today.toString(),
+                foodProduct = foodProduct,
+                portionSizeG = totalGrams,
+                calories = totalCalories,
+                proteinG = totalProtein,
+                carbsG = totalCarbs,
+                fatG = totalFat,
+                fiberG = totalFiber,
+                saturatedFatG = totalSatFat,
+                addedSugarsG = totalSugar,
+                sodiumMg = totalSodiumMg,
+                mealSlot = mealSlot,
+                bundleName = bundleWithItems.bundle.name,
+                bundleId = bundleWithItems.bundle.id
+            )
 
-                loggedFoodDao.upsert(loggedFood)
-            }
+            loggedFoodDao.upsert(loggedFood)
 
 
             _loggedFoods.value =
@@ -455,6 +455,10 @@ class CalorieTrackerViewModel @Inject constructor(
                 _scannedFoodProduct.value = synthetic
             }
         }
+    }
+
+    suspend fun getBundleWithItems(bundleId: Long): FoodBundleWithItems {
+        return appDatabase.foodBundleDao().getBundleWithItems(bundleId)
     }
 
     private val _bundleTargetId = MutableStateFlow<Long?>(null)

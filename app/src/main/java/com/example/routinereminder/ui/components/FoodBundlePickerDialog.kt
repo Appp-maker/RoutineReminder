@@ -20,7 +20,7 @@ fun FoodBundlePickerDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.large) {
             Column(Modifier.padding(16.dp)) {
-                Text("Add bundle", style = MaterialTheme.typography.titleLarge)
+                Text("Add recipe", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(12.dp))
 
                 LazyColumn {
