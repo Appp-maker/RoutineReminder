@@ -791,7 +791,7 @@ fun ExpandableRecipeRow(
             }
             recipeItems.forEach { item ->
                 Text(
-                    "• ${item.foodName} – ${item.portionSizeG.toInt()} g",
+                    "• ${item.name} – ${item.portionSizeG.toInt()} g",
                     color = Color.LightGray,
                     fontSize = 13.sp
                 )
