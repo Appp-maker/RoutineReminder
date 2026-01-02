@@ -160,7 +160,7 @@ fun MapScreen(
         // -----------------------------
         // 1) Accuracy filter
         // -----------------------------
-        if (location.accuracy > 20f) {
+        if (location.accuracy > 50f) {
             return  // ignore noisy GPS
         }
 
@@ -195,14 +195,15 @@ fun MapScreen(
         // 4) Min-movement filter (removes jitter)
         // -----------------------------
         val last = trail.lastOrNull()
+        var allowTrailUpdate = true
         if (last != null) {
             val delta = haversineMeters(last, newPoint)
 
-            // Ignore tiny drift below 4m
-            if (delta < 4.0) return
+            // Ignore tiny drift below 2m (still update marker)
+            if (delta < 2.0) allowTrailUpdate = false
 
             // Ignore giant GPS spikes
-            if (delta > 50.0) return
+            if (delta > 100.0) allowTrailUpdate = false
         }
 
         // Continue with original code here
@@ -220,7 +221,7 @@ fun MapScreen(
         )
 
         // trail update
-        if (last == null || last != newPoint) {
+        if (allowTrailUpdate && (last == null || last != newPoint)) {
             // distance increment
             if (last != null) distanceMeters += haversineMeters(last, newPoint)
 
