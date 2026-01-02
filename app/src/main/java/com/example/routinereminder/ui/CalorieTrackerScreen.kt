@@ -179,43 +179,33 @@ fun CalorieTrackerScreen(
             foodProduct = food,
             onDismiss = { viewModel.clearScannedProduct() },
             // IMPORTANT: call addFood(...) with the scheduling values from the dialog
-            onConfirm = { portion, finalFood, _, _, _, _, _, _ ->
-
-                val bundleId = viewModel.bundleTargetId.value
-
-                android.util.Log.d(
-                    TAG,
-                    "PortionDialog CONFIRM VM#${System.identityHashCode(viewModel)} bundleTargetId=$bundleId"
+            onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate ->
+                viewModel.addFood(
+                    portion = portion,
+                    foodProduct = finalFood,
+                    time = time,
+                    mealSlot = mealSlot,
+                    isOneTime = isOneTime,
+                    repeatDays = repeatDays,
+                    repeatEveryWeeks = repeatEveryWeeks,
+                    startDate = anchorDate
                 )
 
-
-                if (bundleId != null) {
+                viewModel.clearScannedProduct()
+            },
+            onAddToBundle = bundleTargetId?.let { targetId ->
+                { finalFood, portion ->
                     viewModel.addItemToBundle(
-                        bundleId = bundleId,
+                        bundleId = targetId,
                         food = finalFood,
                         portionG = portion
                     )
 
                     viewModel.clearBundleTarget()
                     navController.popBackStack()
-                } else {
-                    viewModel.addFood(
-                        portion = portion,
-                        foodProduct = finalFood,
-                        time = LocalTime.now(),
-                        mealSlot = activeMealSlot ?: "Lunch",
-                        isOneTime = true,
-                        repeatDays = emptySet(),
-                        repeatEveryWeeks = 1,
-                        startDate = selectedDate
-                    )
+                    viewModel.clearScannedProduct()
                 }
-
-                viewModel.clearScannedProduct()
-            }
-
-            ,
-
+            },
             currentTotals = viewModel.dailyTotals.value ?: CalorieTrackerViewModel.DailyTotals(
                 calories = 0.0,
                 proteinG = 0.0,

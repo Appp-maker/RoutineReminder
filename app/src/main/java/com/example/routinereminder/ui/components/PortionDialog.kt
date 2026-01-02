@@ -392,104 +392,114 @@ fun PortionDialog(
                 Spacer(Modifier.height(20.dp))
 
 
-// ===== Meal Slot Selection =====
-                Text("Meal Slot", fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                Spacer(Modifier.height(6.dp))
+                if (onAddToBundle == null) {
+                    // ===== Meal Slot Selection =====
+                    Text("Meal Slot", fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    Spacer(Modifier.height(6.dp))
 
-                var expandedMeal by remember { mutableStateOf(false) }
-                val mealOptions = listOf("Breakfast", "Mid-Morning", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack")
-
-                Surface(
-                    color = Track,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { expandedMeal = true }
-                        .padding(vertical = 12.dp, horizontal = 8.dp)
-                ) {
-                    Text(
-                        text = selectedMeal,
-                        color = TextPrimary,
-                        fontSize = 16.sp
+                    var expandedMeal by remember { mutableStateOf(false) }
+                    val mealOptions = listOf(
+                        "Breakfast",
+                        "Mid-Morning",
+                        "Lunch",
+                        "Afternoon Snack",
+                        "Dinner",
+                        "Evening Snack"
                     )
-                }
 
-                DropdownMenu(
-                    expanded = expandedMeal,
-                    onDismissRequest = { expandedMeal = false }
-                ) {
-                    mealOptions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option) },
-                            onClick = {
-                                selectedMeal = option
-                                expandedMeal = false
-                            }
+                    Surface(
+                        color = Track,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { expandedMeal = true }
+                            .padding(vertical = 12.dp, horizontal = 8.dp)
+                    ) {
+                        Text(
+                            text = selectedMeal,
+                            color = TextPrimary,
+                            fontSize = 16.sp
                         )
                     }
-                }
 
-                Spacer(Modifier.height(16.dp))
-
-                // ===== Scheduling =====
-                Text("Scheduling Options", fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                Spacer(Modifier.height(8.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = isOneTime,
-                        onCheckedChange = { isOneTime = it },
-                        colors = CheckboxDefaults.colors(checkedColor = AccentBlue)
-                    )
-                    Text("One-time only", color = TextPrimary)
-                }
-
-                if (!isOneTime) {
-                    Spacer(Modifier.height(8.dp))
-                    Text("Repeat on:", color = TextPrimary)
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                    DropdownMenu(
+                        expanded = expandedMeal,
+                        onDismissRequest = { expandedMeal = false }
                     ) {
-                        DayOfWeek.values().forEach { day ->
-                            val selected = selectedDays.contains(day)
-                            Surface(
-                                color = if (selected) AccentBlue else Track,
-                                shape = RoundedCornerShape(50),
-                                modifier = Modifier
-                                    .clickable {
-                                        selectedDays = if (selected) selectedDays - day else selectedDays + day
-                                    }
-                            ) {
-                                Text(
-                                    text = day.name.take(3),
-                                    color = TextPrimary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                    textAlign = TextAlign.Center,
-                                    fontSize = 13.sp
-                                )
-                            }
+                        mealOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    selectedMeal = option
+                                    expandedMeal = false
+                                }
+                            )
                         }
                     }
 
+                    Spacer(Modifier.height(16.dp))
 
-
-                    Spacer(Modifier.height(12.dp))
-                    Text("Every N weeks:", color = TextPrimary)
-                    OutlinedTextField(
-                        value = repeatEveryWeeks.toString(),
-                        onValueChange = { repeatEveryWeeks = it.toIntOrNull()?.coerceAtLeast(1) ?: 1 },
-                        singleLine = true,
-                        textStyle = LocalTextStyle.current.copy(color = TextPrimary)
-                    )
-
+                    // ===== Scheduling =====
+                    Text("Scheduling Options", fontWeight = FontWeight.SemiBold, color = TextPrimary)
                     Spacer(Modifier.height(8.dp))
-                    Text("Start anchor date: $startDate", color = AccentBlue)
-                }
 
-                Spacer(Modifier.height(16.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = isOneTime,
+                            onCheckedChange = { isOneTime = it },
+                            colors = CheckboxDefaults.colors(checkedColor = AccentBlue)
+                        )
+                        Text("One-time only", color = TextPrimary)
+                    }
+
+                    if (!isOneTime) {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Repeat on:", color = TextPrimary)
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            DayOfWeek.values().forEach { day ->
+                                val selected = selectedDays.contains(day)
+                                Surface(
+                                    color = if (selected) AccentBlue else Track,
+                                    shape = RoundedCornerShape(50),
+                                    modifier = Modifier
+                                        .clickable {
+                                            selectedDays =
+                                                if (selected) selectedDays - day else selectedDays + day
+                                        }
+                                ) {
+                                    Text(
+                                        text = day.name.take(3),
+                                        color = TextPrimary,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                        textAlign = TextAlign.Center,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+                        Text("Every N weeks:", color = TextPrimary)
+                        OutlinedTextField(
+                            value = repeatEveryWeeks.toString(),
+                            onValueChange = {
+                                repeatEveryWeeks = it.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                            },
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(color = TextPrimary)
+                        )
+
+                        Spacer(Modifier.height(8.dp))
+                        Text("Start anchor date: $startDate", color = AccentBlue)
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
