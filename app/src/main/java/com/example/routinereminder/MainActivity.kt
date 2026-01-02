@@ -83,7 +83,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -456,14 +455,6 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                                 ?.toLongOrNull()
                                 ?: return@composable
 
-                            val caloriesEntry: NavBackStackEntry = remember(backStackEntry) {
-                                navController.getBackStackEntry(Screen.CalorieTracker.route)
-                            }
-
-
-                            val calorieVm: CalorieTrackerViewModel =
-                                hiltViewModel(caloriesEntry)
-
                             BundleIngredientPickerScreen(
                                 navController = navController,
                                 bundleId = bundleId
@@ -523,7 +514,8 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
 
                           CalorieTrackerScreen(
                               navController = navController,
-                              startMode = mode
+                              startMode = mode,
+                              viewModel = calorieVm
                           )
 
                       }
