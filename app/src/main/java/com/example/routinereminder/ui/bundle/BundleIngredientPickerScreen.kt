@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.ui.CalorieTrackerViewModel
 import com.example.routinereminder.ui.Screen
 
@@ -48,7 +47,7 @@ fun BundleIngredientPickerScreen(
         Button(
             onClick = {
                 calorieVm.startAddingToBundle(bundleId)
-                navController.navigate(Screen.CalorieTracker.route)
+                navController.navigate(Screen.FoodSearch.route)
             }
         ) {
             Text("Search")
@@ -58,20 +57,7 @@ fun BundleIngredientPickerScreen(
         Button(
             onClick = {
                 calorieVm.startAddingToBundle(bundleId)
-                calorieVm.onFoodSelected(
-                    FoodProduct(
-                        name = "",
-                        caloriesPer100g = 0.0,
-                        proteinPer100g = 0.0,
-                        carbsPer100g = 0.0,
-                        fatPer100g = 0.0,
-                        fiberPer100g = 0.0,
-                        saturatedFatPer100g = 0.0,
-                        addedSugarsPer100g = 0.0,
-                        sodiumPer100g = 0.0
-                    )
-                )
-                navController.navigate(Screen.CalorieTracker.route)
+                navController.navigate(Screen.CustomFood.route)
             }
         ) {
             Text("Custom")
@@ -79,5 +65,4 @@ fun BundleIngredientPickerScreen(
 
     }
 }
-
 
