@@ -17,7 +17,7 @@ import com.example.routinereminder.data.entities.Weight
 import com.example.routinereminder.data.entities.WeightLog
 import com.example.routinereminder.data.entities.BlockedCalendarImport
 import com.example.routinereminder.data.entities.FoodBundle
-import com.example.routinereminder.data.entities.FoodBundleItem
+import com.example.routinereminder.data.entities.RecipeIngredient
 import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.data.dao.FoodBundleDao
 
@@ -60,10 +60,10 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         BlockedCalendarImport::class,
         ScheduleDone::class,
         FoodBundle::class,
-        FoodBundleItem::class
+        RecipeIngredient::class
 
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class, DayOfWeekSetConverter::class, LocalDateConverter::class)

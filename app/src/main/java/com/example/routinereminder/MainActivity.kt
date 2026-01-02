@@ -93,9 +93,8 @@ import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.ui.CalorieTrackerScreen
 import com.example.routinereminder.ui.MainViewModel
 import com.example.routinereminder.ui.SettingsScreen
-import com.example.routinereminder.ui.bundle.AddBundleItemScreen
 import com.example.routinereminder.ui.bundle.BundleDetailScreen
-import com.example.routinereminder.ui.bundle.BundleIngredientPickerScreen
+import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
@@ -437,30 +436,26 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
 //                                startMode = "default"
 //                            )
 //                        }
-                        composable("bundle/{bundleId}/ingredient") { backStackEntry ->
+                        composable(
+                            route = "bundle/{bundleId}/ingredient?ingredientId={ingredientId}",
+                            arguments = listOf(
+                                navArgument("ingredientId") {
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            )
+                        ) { backStackEntry ->
                             val bundleId =
                                 backStackEntry.arguments?.getString("bundleId")?.toLongOrNull()
                                     ?: return@composable
+                            val ingredientId =
+                                backStackEntry.arguments?.getString("ingredientId")?.toLongOrNull()
 
-                            BundleIngredientPickerScreen(
+                            RecipeIngredientEditorScreen(
                                 navController = navController,
-                                bundleId = bundleId
+                                bundleId = bundleId,
+                                ingredientId = ingredientId
                             )
-                        }
-
-
-                        composable("bundle/{bundleId}/add-item") { backStackEntry ->
-                            val bundleId = backStackEntry.arguments
-                                ?.getString("bundleId")
-                                ?.toLongOrNull()
-                                ?: return@composable
-
-                            BundleIngredientPickerScreen(
-                                navController = navController,
-                                bundleId = bundleId
-                            )
-
-
                         }
 
 
