@@ -1,4 +1,5 @@
 package com.example.routinereminder.ui
+import android.util.Log
 import com.example.routinereminder.ui.BarcodeScannerScreen
 import java.time.DayOfWeek
 import androidx.compose.foundation.Canvas
@@ -56,13 +57,20 @@ import com.example.routinereminder.ui.components.NutritionPreview
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.routinereminder.ui.bundle.BundleViewModel
+import com.example.routinereminder.ui.components.FoodBundlePickerDialog
+import java.time.LocalTime
+private const val TAG = "CalorieTrackerScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalorieTrackerScreen(
     navController: NavController,
-    viewModel: CalorieTrackerViewModel = hiltViewModel()
+    startMode: String = "default"
 ) {
+    val viewModel: CalorieTrackerViewModel = hiltViewModel()
+
     val dailyTotals by viewModel.dailyTotals.collectAsState()
     val dailyTargets by viewModel.dailyTargets.collectAsState()
     val scannedFoodProduct by viewModel.scannedFoodProduct.collectAsState()
@@ -73,7 +81,7 @@ fun CalorieTrackerScreen(
     var selectedMealFilter by remember { mutableStateOf<String?>(null) }
     var activeMealSlot by remember { mutableStateOf<String?>(null) }
     var showSearchDialog by remember { mutableStateOf(false) }
-    var showCustomDialog by remember { mutableStateOf(false) }
+//    var modeConsumed by rememberSaveable { mutableStateOf(false) }
     var editingFood by remember { mutableStateOf<LoggedFood?>(null) }
     val selectedDate by viewModel.selectedDate.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
@@ -82,12 +90,48 @@ fun CalorieTrackerScreen(
     var foodToDelete by remember { mutableStateOf<LoggedFood?>(null) }
     val swipeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
     var showBundlePicker by remember { mutableStateOf(false) }
-    val bundles by produceState(initialValue = emptyList()) {
-        value = viewModel
-            .appDatabase
-            .foodBundleDao()
-            .getAllBundles()
+    val bundles by viewModel.foodBundles.collectAsState()
+    val bundleTargetId by viewModel.bundleTargetId.collectAsState()
+
+
+
+
+
+
+    LaunchedEffect(bundleTargetId) {
+        android.util.Log.d(
+            TAG,
+            "CalorieTrackerScreen VM#${System.identityHashCode(viewModel)} sees bundleTargetId=$bundleTargetId"
+        )
     }
+
+    LaunchedEffect(startMode) {
+        when (startMode) {
+            "search" -> {
+                showSearchDialog = true
+            }
+            "custom" -> {
+                viewModel.onFoodSelected(
+                    FoodProduct(
+                        name = "",
+                        caloriesPer100g = 0.0,
+                        proteinPer100g = 0.0,
+                        carbsPer100g = 0.0,
+                        fatPer100g = 0.0,
+                        fiberPer100g = 0.0,
+                        saturatedFatPer100g = 0.0,
+                        addedSugarsPer100g = 0.0,
+                        sodiumPer100g = 0.0
+                    )
+                )
+            }
+        }
+    }
+
+
+
+
+
 
     // Observe barcode result
     DisposableEffect(navController) {
@@ -116,6 +160,19 @@ fun CalorieTrackerScreen(
         )
     }
 
+    if (showBundlePicker) {
+        FoodBundlePickerDialog(
+            bundles = bundles,
+            onPick = { bundle ->
+                viewModel.addBundleToTracker(
+                    bundleId = bundle.id,
+                    mealSlot = activeMealSlot!!
+                )
+            },
+            onDismiss = { showBundlePicker = false }
+        )
+    }
+
 
     // Portion dialog after scanning
     scannedFoodProduct?.let { food ->
@@ -123,19 +180,42 @@ fun CalorieTrackerScreen(
             foodProduct = food,
             onDismiss = { viewModel.clearScannedProduct() },
             // IMPORTANT: call addFood(...) with the scheduling values from the dialog
-            onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate ->
-                viewModel.addFood(
-                    portion = portion,
-                    foodProduct = finalFood, // ← now receives edited custom product!
-                    time = time,
-                    mealSlot = mealSlot,
-                    isOneTime = isOneTime,
-                    repeatDays = repeatDays,
-                    repeatEveryWeeks = repeatEveryWeeks,
-                    startDate = anchorDate
+            onConfirm = { portion, finalFood, _, _, _, _, _, _ ->
+
+                val bundleId = viewModel.bundleTargetId.value
+
+                android.util.Log.d(
+                    TAG,
+                    "PortionDialog CONFIRM VM#${System.identityHashCode(viewModel)} bundleTargetId=$bundleId"
                 )
+
+
+                if (bundleId != null) {
+                    viewModel.addItemToBundle(
+                        bundleId = bundleId,
+                        food = finalFood,
+                        portionG = portion
+                    )
+
+                    viewModel.clearBundleTarget()
+                    navController.popBackStack()
+                } else {
+                    viewModel.addFood(
+                        portion = portion,
+                        foodProduct = finalFood,
+                        time = LocalTime.now(),
+                        mealSlot = activeMealSlot ?: "Lunch",
+                        isOneTime = true,
+                        repeatDays = emptySet(),
+                        repeatEveryWeeks = 1,
+                        startDate = selectedDate
+                    )
+                }
+
                 viewModel.clearScannedProduct()
-            },
+            }
+
+            ,
 
             currentTotals = viewModel.dailyTotals.value ?: CalorieTrackerViewModel.DailyTotals(
                 calories = 0.0,
@@ -159,6 +239,7 @@ fun CalorieTrackerScreen(
             )
         )
     }
+
 // Portion dialog for editing logged food
     editingFood?.let { food ->
         PortionDialog(
@@ -488,17 +569,15 @@ fun CalorieTrackerScreen(
                                 Text("Custom")
                             }
                             Button(
-                                onClick = {
-                                    if (activeMealSlot == null) return@Button
-                                    showBundlePicker = true
-                                },
+                                onClick = { navController.navigate(Screen.BundleList.route) },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(44.dp),
-                                enabled = activeMealSlot != null
+                                    .height(44.dp)
                             ) {
                                 Text("Bundle")
                             }
+
+
 
 
                         }
@@ -1045,15 +1124,4 @@ fun FoodSearchDialog(
             }
         }
     }
-}
-
-
-
-
-@Preview(showBackground = true)
-@Composable
-fun CalorieTrackerScreenPreview() {
-    CalorieTrackerScreen(navController = rememberNavController())
-
-
 }

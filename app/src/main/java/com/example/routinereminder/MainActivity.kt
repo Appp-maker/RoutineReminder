@@ -7,6 +7,15 @@ import com.example.routinereminder.ui.MapScreen
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import android.Manifest
+import androidx.navigation.navArgument
+import com.example.routinereminder.ui.CalorieTrackerViewModel
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.material3.*
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 
 
 import androidx.lifecycle.repeatOnLifecycle
@@ -74,6 +83,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -84,6 +94,10 @@ import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.ui.CalorieTrackerScreen
 import com.example.routinereminder.ui.MainViewModel
 import com.example.routinereminder.ui.SettingsScreen
+import com.example.routinereminder.ui.bundle.AddBundleItemScreen
+import com.example.routinereminder.ui.bundle.BundleDetailScreen
+import com.example.routinereminder.ui.bundle.BundleIngredientPickerScreen
+
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
 
@@ -99,6 +113,8 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.example.routinereminder.ui.bundle.BundleListScreen
+import com.example.routinereminder.ui.bundle.CreateBundleScreen
 
 
 
@@ -328,8 +344,15 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                                     label = { Text(s.title) },
                                     selected = currentRoute == s.route,
                                     onClick = {
-                                        if (currentRoute != s.route) {
-                                            navController.navigate(s.route) {
+                                        val targetRoute =
+                                            if (s == Screen.CalorieTracker) {
+                                                Screen.CalorieTracker.route
+                                            } else {
+                                                s.route
+                                            }
+
+                                        if (currentRoute != targetRoute) {
+                                            navController.navigate(targetRoute) {
                                                 popUpTo(navController.graph.startDestinationId) {
                                                     saveState = true
                                                 }
@@ -338,6 +361,8 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                                             }
                                         }
                                     }
+
+
                                 )
                             }
                         }
@@ -383,7 +408,7 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                                         viewModel.deleteScheduleItem(itemToDelete, false)
                                     }
                                 },
-                                navController = navController,   //  <-- REQUIRED
+                                navController = navController,
                                 onSettingsClick = {
                                     navController.navigate("settings/routine")
 
@@ -399,9 +424,112 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
 
                         }
 
-                        composable(Screen.CalorieTracker.route) {
-                            CalorieTrackerScreen(navController = navController)
+
+//                        composable(Screen.CalorieTracker.route) {
+//                            val caloriesEntry = remember(it) {
+//                                navController.getBackStackEntry(Screen.CalorieTracker.route)
+//                            }
+//
+//                            val calorieVm: CalorieTrackerViewModel =
+//                                hiltViewModel(caloriesEntry)
+//
+//                            CalorieTrackerScreen(
+//                                navController = navController,
+//                                startMode = "default"
+//                            )
+//                        }
+                        composable("bundle/{bundleId}/ingredient") { backStackEntry ->
+                            val bundleId =
+                                backStackEntry.arguments?.getString("bundleId")?.toLongOrNull()
+                                    ?: return@composable
+
+                            BundleIngredientPickerScreen(
+                                navController = navController,
+                                bundleId = bundleId
+                            )
                         }
+
+
+                        composable("bundle/{bundleId}/add-item") { backStackEntry ->
+                            val bundleId = backStackEntry.arguments
+                                ?.getString("bundleId")
+                                ?.toLongOrNull()
+                                ?: return@composable
+
+                            val caloriesEntry: NavBackStackEntry = remember(backStackEntry) {
+                                navController.getBackStackEntry(Screen.CalorieTracker.route)
+                            }
+
+
+                            val calorieVm: CalorieTrackerViewModel =
+                                hiltViewModel(caloriesEntry)
+
+                            BundleIngredientPickerScreen(
+                                navController = navController,
+                                bundleId = bundleId
+                            )
+
+
+                        }
+
+
+//                        composable("bundle/{bundleId}") { backStackEntry ->
+//                            val bundleId = backStackEntry.arguments?.getString("bundleId")!!.toLong()
+//                            BundleDetailScreen(navController, bundleId)
+//                        }
+                        composable("bundle/{id}") { backStackEntry ->
+                            val id = backStackEntry.arguments?.getString("id")?.toLong() ?: return@composable
+                            BundleDetailScreen(
+                                navController = navController,
+                                bundleId = id
+                            )
+                        }
+
+                        composable(Screen.BundleList.route) {
+                            BundleListScreen(navController)
+                        }
+                        composable(Screen.CreateBundle.route) {
+                            CreateBundleScreen(navController)
+                        }
+                        composable("bundle/{bundleId}") { backStackEntry ->
+                            val bundleId = backStackEntry.arguments
+                                ?.getString("bundleId")
+                                ?.toLongOrNull()
+                                ?: return@composable
+
+                            BundleDetailScreen(
+                                navController = navController,
+                                bundleId = bundleId
+                            )
+                        }
+
+
+                      composable(
+                          route = "calories?mode={mode}",
+                          arguments = listOf(
+                              navArgument("mode") { defaultValue = "default" }
+                          )
+                      ) { backStackEntry ->
+
+                          // 🔑 SINGLE shared VM for ALL calorie flows
+                          val caloriesEntry = remember(backStackEntry) {
+                              navController.getBackStackEntry(Screen.CalorieTracker.route)
+                          }
+
+                          val calorieVm: CalorieTrackerViewModel =
+                              hiltViewModel(caloriesEntry)
+
+                          val mode = backStackEntry.arguments?.getString("mode") ?: "default"
+
+                          CalorieTrackerScreen(
+                              navController = navController,
+                              startMode = mode
+                          )
+
+                      }
+
+
+
                         composable("settings/{from}") { backStackEntry ->
                         val from = backStackEntry.arguments?.getString("from") ?: "default"
 

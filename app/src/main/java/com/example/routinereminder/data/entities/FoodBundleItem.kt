@@ -1,5 +1,4 @@
 package com.example.routinereminder.data.entities
-
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -26,7 +25,7 @@ data class FoodBundleItem(
     // SNAPSHOT of the food (NOT a foreign key!)
     val foodName: String,
 
-    val portionSizeG: Double,
+    val portionSizeG: Int,
 
     // nutrition snapshot (important!)
     val calories: Double,
@@ -38,3 +37,4 @@ data class FoodBundleItem(
     val addedSugarsG: Double,
     val sodiumMg: Double
 )
+

@@ -20,22 +20,25 @@ class FoodBundleViewModel @Inject constructor(
     private val selectedFoods = mutableListOf<FoodBundleItem>()
 
     fun addFoodToBundle(food: FoodProduct, portionG: Double) {
+        val portionInt = portionG.toInt()
+
         selectedFoods.add(
             FoodBundleItem(
                 bundleId = 0, // temporary, set on save
                 foodName = food.name,
-                portionSizeG = portionG,
-                calories = (food.caloriesPer100g / 100.0) * portionG,
-                proteinG = (food.proteinPer100g / 100.0) * portionG,
-                carbsG = (food.carbsPer100g / 100.0) * portionG,
-                fatG = (food.fatPer100g / 100.0) * portionG,
-                fiberG = (food.fiberPer100g / 100.0) * portionG,
-                saturatedFatG = (food.saturatedFatPer100g / 100.0) * portionG,
-                addedSugarsG = (food.addedSugarsPer100g / 100.0) * portionG,
-                sodiumMg = (food.sodiumPer100g / 100.0) * portionG * 1000
+                portionSizeG = portionInt,
+                calories = (food.caloriesPer100g / 100.0) * portionInt,
+                proteinG = (food.proteinPer100g / 100.0) * portionInt,
+                carbsG = (food.carbsPer100g / 100.0) * portionInt,
+                fatG = (food.fatPer100g / 100.0) * portionInt,
+                fiberG = (food.fiberPer100g / 100.0) * portionInt,
+                saturatedFatG = (food.saturatedFatPer100g / 100.0) * portionInt,
+                addedSugarsG = (food.addedSugarsPer100g / 100.0) * portionInt,
+                sodiumMg = (food.sodiumPer100g / 100.0) * portionInt * 1000
             )
         )
     }
+
 
     fun saveBundle(
         name: String,

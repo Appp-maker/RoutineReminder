@@ -141,7 +141,11 @@ fun BarcodeScannerScreen(navController: NavController) {
                             ?.savedStateHandle
                             ?.set("barcode", barcode)
 
-                        navController.popBackStack()
+                        navController.popBackStack(
+                            route = Screen.CalorieTracker.route,
+                            inclusive = false
+                        )
+
                     } else {
                         Toast.makeText(
                             context,

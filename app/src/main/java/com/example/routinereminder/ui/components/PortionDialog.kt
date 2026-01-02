@@ -607,6 +607,7 @@ private fun CaloriesOverview(current: Double, target: Double, delta: Double) {
         }
     }
 }
+
 @Composable
 private fun NutrientTile(
     label: String,
