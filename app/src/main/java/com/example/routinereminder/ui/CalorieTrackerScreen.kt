@@ -652,6 +652,7 @@ fun CalorieTrackerScreen(
                         MealSlotDetail(
                             slotName = activeMealSlot!!,
                             foods = loggedFoods.filter { it.mealSlot == activeMealSlot },
+                            viewModel = viewModel,
                             onFoodClick = { editingFood = it },
                             onDelete = {
                                 foodToDelete = it
@@ -676,6 +677,7 @@ fun CalorieTrackerScreen(
 fun MealSlotDetail(
     slotName: String,
     foods: List<LoggedFood>,
+    viewModel: CalorieTrackerViewModel,
     onFoodClick: (LoggedFood) -> Unit,
     onDelete: (LoggedFood) -> Unit,
     onBackToGrid: () -> Unit,
