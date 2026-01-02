@@ -16,6 +16,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val USER_ACTIVITY_LEVEL = stringPreferencesKey("user_activity_level")
 
     val SYNC_INTERVAL_MINUTES = longPreferencesKey("sync_interval_minutes")
+    val CLOUD_SYNC_ENABLED = booleanPreferencesKey("cloud_sync_enabled")
     val DEFAULT_EVENT_HOUR = intPreferencesKey("default_event_hour")
     val DEFAULT_EVENT_MINUTE = intPreferencesKey("default_event_minute")
     val DEFAULT_EVENT_DURATION_HOURS_KEY = intPreferencesKey("default_event_duration_hours")
@@ -89,6 +90,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getSyncInterval(): Flow<Long> {
         return dataStore.data.map { preferences ->
             preferences[SYNC_INTERVAL_MINUTES] ?: 60L
+        }
+    }
+
+    suspend fun saveCloudSyncEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[CLOUD_SYNC_ENABLED] = enabled
+        }
+    }
+
+    fun getCloudSyncEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[CLOUD_SYNC_ENABLED] ?: false
         }
     }
 

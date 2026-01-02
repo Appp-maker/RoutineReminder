@@ -3,11 +3,18 @@ package com.example.routinereminder
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.workers.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -17,6 +24,11 @@ class RoutineReminderApp : Application(), Configuration.Provider {
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -36,7 +48,9 @@ class RoutineReminderApp : Application(), Configuration.Provider {
         createNotificationChannel()
 
         // Keep existing WorkManager setup
-        setupRecurringWork()
+        applicationScope.launch {
+            setupRecurringWork()
+        }
     }
     private fun createNotificationChannel() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -52,8 +66,21 @@ class RoutineReminderApp : Application(), Configuration.Provider {
         }
     }
 
-    private fun setupRecurringWork() {
-        val repeatingRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+    private suspend fun setupRecurringWork() {
+        val isCloudSyncEnabled = settingsRepository.getCloudSyncEnabled().first()
+        if (!isCloudSyncEnabled) {
+            WorkManager.getInstance(applicationContext)
+                .cancelUniqueWork(SyncWorker::class.java.name)
+            return
+        }
+
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .setRequiresCharging(true)
+            .build()
+
+        val repeatingRequest = PeriodicWorkRequestBuilder<SyncWorker>(6, TimeUnit.HOURS)
+            .setConstraints(constraints)
             .build()
 
         WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
