@@ -30,14 +30,14 @@ fun FoodBundleCreateScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Create Food Bundle", style = MaterialTheme.typography.headlineSmall)
+        Text("Create Recipe", style = MaterialTheme.typography.headlineSmall)
 
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
             value = bundleName,
             onValueChange = { bundleName = it },
-            label = { Text("Bundle name") },
+            label = { Text("Recipe name") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -46,7 +46,7 @@ fun FoodBundleCreateScreen(
         OutlinedTextField(
             value = bundleDescription,
             onValueChange = { bundleDescription = it },
-            label = { Text("Description / recipe") },
+            label = { Text("Recipe description") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 4
         )
@@ -75,7 +75,7 @@ fun FoodBundleCreateScreen(
                     previewItems.clear()
                 }
             ) {
-                Text("Save bundle")
+                Text("Save recipe")
             }
         }
 

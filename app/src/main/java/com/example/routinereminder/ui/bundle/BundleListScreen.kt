@@ -28,14 +28,14 @@ fun BundleListScreen(
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text(
-            "Bundles",
+            "Recipes",
             style = MaterialTheme.typography.headlineMedium
         )
 
         Spacer(Modifier.height(12.dp))
 
         if (bundles.isEmpty()) {
-            Text("No bundles yet", color = Color.Gray)
+            Text("No recipes yet", color = Color.Gray)
         } else {
             LazyColumn {
                 items(bundles) { bundle ->
@@ -57,7 +57,7 @@ fun BundleListScreen(
         Button(
             onClick = { navController.navigate(Screen.CreateBundle.route) }
         ) {
-            Text("Create Bundle")
+            Text("Create Recipe")
         }
     }
 }

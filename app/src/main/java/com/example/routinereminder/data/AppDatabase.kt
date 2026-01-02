@@ -63,7 +63,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         FoodBundleItem::class
 
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class, DayOfWeekSetConverter::class, LocalDateConverter::class)

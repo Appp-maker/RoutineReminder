@@ -26,7 +26,7 @@ fun CreateBundleScreen(
 
     Column(modifier = Modifier.padding(16.dp)) {
 
-        Text("Create Bundle", style = MaterialTheme.typography.headlineMedium)
+        Text("Create Recipe", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(Modifier.height(12.dp))
 
@@ -59,5 +59,4 @@ fun CreateBundleScreen(
         }
     }
 }
-
 

@@ -554,7 +554,7 @@ fun PortionDialog(
                     ) {
                         Text(
                             when {
-                                onAddToBundle != null -> "Add to bundle"
+                                onAddToBundle != null -> "Add to recipe"
                                 existingLoggedFood == null -> "Save"
                                 else -> "Update"
                             },
