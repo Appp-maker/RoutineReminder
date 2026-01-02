@@ -53,7 +53,11 @@ import com.example.routinereminder.ui.SessionStore
 import com.google.android.gms.location.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -121,6 +125,20 @@ fun MapScreen(
     // timer
     val scope = rememberCoroutineScope()
     var timerJob by remember { mutableStateOf<Job?>(null) }
+    var inactivityJob by remember { mutableStateOf<Job?>(null) }
+    var lastMovementAt by remember { mutableStateOf<Long?>(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val stopRecording = rememberUpdatedState {
+        if (recording) {
+            stopTracking(context)
+            timerJob?.cancel()
+            timerJob = null
+            inactivityJob?.cancel()
+            inactivityJob = null
+            recording = false
+        }
+    }
+    val noMovementTimeoutMs = remember { 2 * 60 * 1000L }
 
     // weight (read from MainViewModel if you already expose it; otherwise prompt will be handled there)
     val weightKg by remember { mutableStateOf(viewModel.currentUserWeightKgOrNull()) } // implement in your MainViewModel; return null if unknown
@@ -206,11 +224,12 @@ fun MapScreen(
         )
 
         // trail update
-                if (last == null || last != newPoint) {
+        if (last == null || last != newPoint) {
             // distance increment
             if (last != null) distanceMeters += haversineMeters(last, newPoint)
 
             trail.add(newPoint)
+            lastMovementAt = System.currentTimeMillis()
 
             val line = LineString.fromLngLats(trail.toList())
             val trailSource = s.getSourceAs("trail-source") as? GeoJsonSource
@@ -484,6 +503,7 @@ fun MapScreen(
                                     calories = 0.0
                                     trail.clear()
                                     firstFix = true
+                                    lastMovementAt = System.currentTimeMillis()
 
                                     // Start Foreground GPS Tracking Service
                                     startTracking(context, trackingMode)
@@ -491,7 +511,7 @@ fun MapScreen(
                                     // Start timer job
                                     timerJob?.cancel()
                                     timerJob = scope.launch {
-                                        while (true) {
+                                        while (isActive) {
                                             delay(1000L)
                                             durationSec += 1
 
@@ -509,6 +529,19 @@ fun MapScreen(
                                             )
                                         }
                                     }
+                                    inactivityJob?.cancel()
+                                    inactivityJob = scope.launch {
+                                        while (isActive) {
+                                            delay(5000L)
+                                            val lastMove = lastMovementAt
+                                            if (lastMove != null &&
+                                                System.currentTimeMillis() - lastMove > noMovementTimeoutMs
+                                            ) {
+                                                stopRecording.value.invoke()
+                                                break
+                                            }
+                                        }
+                                    }
 
                                     recording = true
 
@@ -516,6 +549,9 @@ fun MapScreen(
                                     // --- Stop logic ---
                                     stopTracking(context) // Stop foreground tracking
                                     timerJob?.cancel()
+                                    timerJob = null
+                                    inactivityJob?.cancel()
+                                    inactivityJob = null
                                     recording = false
 
                                     // Avoid saving empty or invalid sessions
