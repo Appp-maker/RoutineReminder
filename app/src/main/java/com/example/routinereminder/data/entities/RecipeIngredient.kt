@@ -1,11 +1,12 @@
 package com.example.routinereminder.data.entities
+
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "food_bundle_items",
+    tableName = "recipe_ingredients",
     foreignKeys = [
         ForeignKey(
             entity = FoodBundle::class,
@@ -16,18 +17,12 @@ import androidx.room.PrimaryKey
     ],
     indices = [Index("bundleId")]
 )
-data class FoodBundleItem(
+data class RecipeIngredient(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-
     val bundleId: Long,
-
-    // SNAPSHOT of the food (NOT a foreign key!)
-    val foodName: String,
-
+    val name: String,
     val portionSizeG: Int,
-
-    // nutrition snapshot (important!)
     val calories: Double,
     val proteinG: Double,
     val carbsG: Double,
@@ -37,4 +32,3 @@ data class FoodBundleItem(
     val addedSugarsG: Double,
     val sodiumMg: Double
 )
-

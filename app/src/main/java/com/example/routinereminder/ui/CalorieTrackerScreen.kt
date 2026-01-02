@@ -1,6 +1,4 @@
 package com.example.routinereminder.ui
-import android.util.Log
-import com.example.routinereminder.ui.BarcodeScannerScreen
 import java.time.DayOfWeek
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.LocalIndication
@@ -89,24 +87,15 @@ fun CalorieTrackerScreen(
     val swipeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
     var showBundlePicker by remember { mutableStateOf(false) }
     val bundles by viewModel.foodBundles.collectAsState()
-    val bundleTargetId by viewModel.bundleTargetId.collectAsState()
 
 
 
 
 
-
-    LaunchedEffect(bundleTargetId) {
-        android.util.Log.d(
-            TAG,
-            "CalorieTrackerScreen VM#${System.identityHashCode(viewModel)} sees bundleTargetId=$bundleTargetId"
-        )
-    }
 
     LaunchedEffect(startMode) {
         when (startMode) {
             "default" -> {
-                viewModel.clearBundleTarget()
             }
             "search" -> {
                 showSearchDialog = true
@@ -179,7 +168,7 @@ fun CalorieTrackerScreen(
     scannedFoodProduct?.let { food ->
         PortionDialog(
             foodProduct = food,
-            onDismiss = { viewModel.clearScannedProduct(clearBundle = bundleTargetId != null) },
+            onDismiss = { viewModel.clearScannedProduct() },
             // IMPORTANT: call addFood(...) with the scheduling values from the dialog
             onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate ->
                 viewModel.addFood(
@@ -194,19 +183,6 @@ fun CalorieTrackerScreen(
                 )
 
                 viewModel.clearScannedProduct()
-            },
-            onAddToBundle = bundleTargetId?.let { targetId ->
-                { finalFood, portion ->
-                    viewModel.addItemToBundle(
-                        bundleId = targetId,
-                        food = finalFood,
-                        portionG = portion
-                    )
-
-                    viewModel.clearBundleTarget()
-                    navController.popBackStack()
-                    viewModel.clearScannedProduct()
-                }
             },
             currentTotals = viewModel.dailyTotals.value ?: CalorieTrackerViewModel.DailyTotals(
                 calories = 0.0,

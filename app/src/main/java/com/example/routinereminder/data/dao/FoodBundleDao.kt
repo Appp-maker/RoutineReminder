@@ -2,8 +2,8 @@ package com.example.routinereminder.data.dao
 
 import androidx.room.*
 import com.example.routinereminder.data.entities.FoodBundle
-import com.example.routinereminder.data.entities.FoodBundleItem
 import com.example.routinereminder.data.entities.FoodBundleWithItems
+import com.example.routinereminder.data.entities.RecipeIngredient
 
 @Dao
 interface FoodBundleDao {
@@ -20,13 +20,13 @@ interface FoodBundleDao {
     @Delete
     suspend fun deleteBundle(bundle: FoodBundle)
 
-    // ---------- Bundle items (ingredients) ----------
+    // ---------- Recipe ingredients ----------
 
-    @Query("SELECT * FROM food_bundle_items WHERE bundleId = :bundleId")
-    suspend fun getItemsForBundle(bundleId: Long): List<FoodBundleItem>
+    @Query("SELECT * FROM recipe_ingredients WHERE bundleId = :bundleId")
+    suspend fun getIngredientsForBundle(bundleId: Long): List<RecipeIngredient>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertItems(items: List<FoodBundleItem>)
+    suspend fun insertIngredients(items: List<RecipeIngredient>)
 
     @Query("SELECT * FROM food_bundles WHERE id = :bundleId LIMIT 1")
     suspend fun getBundleById(bundleId: Long): FoodBundle?
@@ -43,14 +43,13 @@ interface FoodBundleDao {
         description: String
     )
 
-    @Query("DELETE FROM food_bundle_items WHERE bundleId = :bundleId")
-    suspend fun deleteItemsForBundle(bundleId: Long)
+    @Query("DELETE FROM recipe_ingredients WHERE bundleId = :bundleId")
+    suspend fun deleteIngredientsForBundle(bundleId: Long)
 
-    @Query("SELECT * FROM food_bundle_items WHERE id = :id")
-    suspend fun getItemById(id: Long): FoodBundleItem?
+    @Query("SELECT * FROM recipe_ingredients WHERE id = :id")
+    suspend fun getIngredientById(id: Long): RecipeIngredient?
 
-    @Query("DELETE FROM food_bundle_items WHERE id = :id")
-    suspend fun deleteItemById(id: Long)
+    @Query("DELETE FROM recipe_ingredients WHERE id = :id")
+    suspend fun deleteIngredientById(id: Long)
 
 }
-

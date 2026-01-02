@@ -11,5 +11,5 @@ data class FoodBundleWithItems(
         parentColumn = "id",
         entityColumn = "bundleId"
     )
-    val items: List<FoodBundleItem>
+    val items: List<RecipeIngredient>
 )

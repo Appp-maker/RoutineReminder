@@ -11,14 +11,14 @@ import androidx.navigation.NavController
 import com.example.routinereminder.data.entities.FoodBundleWithItems
 import com.example.routinereminder.ui.CalorieTrackerViewModel
 import androidx.compose.ui.Alignment
-import androidx.navigation.NavBackStackEntry
 import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.ui.Screen
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Check
-import com.example.routinereminder.data.entities.FoodBundleItem
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.OpenInNew
+import com.example.routinereminder.data.entities.RecipeIngredient
 import kotlinx.coroutines.launch
 
 
@@ -31,8 +31,14 @@ fun BundleDetailScreen(
     var bundleWithItems by remember { mutableStateOf<FoodBundleWithItems?>(null) }
     var isEditing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(bundleId) {
-        bundleWithItems = viewModel.getBundleOnce(bundleId)
+    LaunchedEffect(navController, bundleId) {
+        navController.currentBackStackEntryFlow.collect { entry ->
+            val activeBundleId = entry.arguments?.getString("bundleId")?.toLongOrNull()
+                ?: entry.arguments?.getString("id")?.toLongOrNull()
+            if (activeBundleId == bundleId) {
+                bundleWithItems = viewModel.getBundleOnce(bundleId)
+            }
+        }
     }
 
     val data = bundleWithItems ?: return
@@ -44,14 +50,6 @@ fun BundleDetailScreen(
     var description by remember(data.bundle.id) {
         mutableStateOf(data.bundle.description)
     }
-    var editedItems by remember(data.bundle.id) {
-        mutableStateOf(
-            data.items.associate { item ->
-                item.id to item.portionSizeG.toString()
-            }
-        )
-    }
-
     val scope = rememberCoroutineScope()
 
     val calorieEntry = remember(navController) {
@@ -79,7 +77,7 @@ fun BundleDetailScreen(
         fiberPer100g = totalFiber / totalGrams * 100.0,
         saturatedFatPer100g = totalSaturatedFat / totalGrams * 100.0,
         addedSugarsPer100g = totalAddedSugars / totalGrams * 100.0,
-        sodiumPer100g = totalSodium / totalGrams * 100.0
+        sodiumPer100g = (totalSodium / totalGrams * 100.0) / 1000.0
     )
 
     Column(
@@ -185,26 +183,38 @@ fun BundleDetailScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        data.items.forEach { item ->
-            if (isEditing) {
-                EditableBundleItemRow(
-                    item = item,
-                    onUpdate = { newGrams ->
-                        viewModel.updateItemGrams(item.id, newGrams)
-                        scope.launch {
-                            bundleWithItems = viewModel.getBundleOnce(bundleId)
-                        }
-                    },
-                    onDelete = {
-                        viewModel.deleteItem(item.id)
-                        scope.launch {
-                            bundleWithItems = viewModel.getBundleOnce(bundleId)
-                        }
+        Text(
+            text = "Ingredients",
+            style = MaterialTheme.typography.titleMedium
+        )
 
-                    }
-                )
-            } else {
-                Text("• ${item.foodName} (${item.portionSizeG} g)")
+        Spacer(Modifier.height(8.dp))
+
+        if (data.items.isEmpty()) {
+            Text(
+                text = "No ingredients yet.",
+                color = Color.Gray
+            )
+        } else {
+            data.items.forEach { item ->
+                if (isEditing) {
+                    EditableIngredientRow(
+                        item = item,
+                        onEdit = {
+                            navController.navigate(
+                                "bundle/$bundleId/ingredient?ingredientId=${item.id}"
+                            )
+                        },
+                        onDelete = {
+                            viewModel.deleteIngredient(item.id)
+                            scope.launch {
+                                bundleWithItems = viewModel.getBundleOnce(bundleId)
+                            }
+                        }
+                    )
+                } else {
+                    IngredientSummaryRow(item)
+                }
             }
         }
     if (isEditing) {
@@ -227,13 +237,11 @@ fun BundleDetailScreen(
             Button(
                 onClick = {
                     navController.navigate("bundle/$bundleId/ingredient")
-
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Add ingredients")
+                Text("Add ingredient")
             }
-
         }
 
         Spacer(Modifier.weight(1f))
@@ -278,13 +286,6 @@ fun BundleDetailScreen(
                             name = name,
                             description = description
                         )
-
-                        editedItems.forEach { (id, grams) ->
-                            grams.toIntOrNull()?.let {
-                                viewModel.updateItemGrams(id, it)
-                            }
-                        }
-
                         isEditing = false
                     }
                 ) {
@@ -298,43 +299,30 @@ fun BundleDetailScreen(
 }
 
 @Composable
-fun EditableBundleItemRow(
-    item: FoodBundleItem,
-    grams: String,
-    onGramsChange: (String) -> Unit,
-    onDelete: () -> Unit
-) {
-    Row(
+fun IngredientSummaryRow(item: RecipeIngredient) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 6.dp)
     ) {
-        Text(item.foodName, modifier = Modifier.weight(1f))
-
-        OutlinedTextField(
-            value = grams,
-            onValueChange = onGramsChange,
-            modifier = Modifier.width(80.dp),
-            singleLine = true
+        Text(text = "• ${item.name} (${item.portionSizeG} g)")
+        Text(
+            text = "Calories: ${item.calories.toInt()} kcal • " +
+                "Protein: ${item.proteinG} g • " +
+                "Carbs: ${item.carbsG} g • " +
+                "Fat: ${item.fatG} g",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray
         )
-
-        Text(" g")
-
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Filled.Delete, contentDescription = "Delete")
-        }
     }
 }
 
 @Composable
-fun EditableBundleItemRow(
-    item: FoodBundleItem,
-    onUpdate: (Int) -> Unit,
+fun EditableIngredientRow(
+    item: RecipeIngredient,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var grams by remember { mutableStateOf(item.portionSizeG.toString()) }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -342,24 +330,16 @@ fun EditableBundleItemRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = item.foodName,
+            text = item.name,
             modifier = Modifier.weight(1f)
         )
 
-        OutlinedTextField(
-            value = grams,
-            onValueChange = { grams = it },
-            modifier = Modifier.width(80.dp),
-            singleLine = true
-        )
-
-        Text(" g")
-
-
+        IconButton(onClick = onEdit) {
+            Icon(Icons.Filled.OpenInNew, contentDescription = "Edit ingredient")
+        }
 
         IconButton(onClick = onDelete) {
             Icon(Icons.Filled.Delete, contentDescription = "Delete")
         }
     }
 }
-
