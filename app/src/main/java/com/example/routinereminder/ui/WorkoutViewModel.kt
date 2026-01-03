@@ -29,6 +29,18 @@ data class WorkoutUiState(
 @HiltViewModel
 class WorkoutViewModel @Inject constructor() : ViewModel() {
     private val repository = ExerciseDbRepository()
+    private val requiredBodyParts = listOf(
+        "back",
+        "cardio",
+        "chest",
+        "lower arms",
+        "lower legs",
+        "neck",
+        "shoulders",
+        "upper arms",
+        "upper legs",
+        "waist"
+    )
 
     private val _uiState = MutableStateFlow(WorkoutUiState())
     val uiState: StateFlow<WorkoutUiState> = _uiState.asStateFlow()
@@ -67,10 +79,16 @@ class WorkoutViewModel @Inject constructor() : ViewModel() {
         viewModelScope.launch {
             repository.fetchBodyParts()
                 .onSuccess { bodyParts ->
-                    _uiState.update { it.copy(bodyParts = bodyParts.sorted()) }
+                    val mergedBodyParts = (bodyParts + requiredBodyParts).distinct().sorted()
+                    _uiState.update { it.copy(bodyParts = mergedBodyParts) }
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = error.message ?: "Unable to load body parts.") }
+                    _uiState.update {
+                        it.copy(
+                            bodyParts = requiredBodyParts.sorted(),
+                            errorMessage = error.message ?: "Unable to load body parts."
+                        )
+                    }
                 }
         }
     }
