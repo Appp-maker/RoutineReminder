@@ -1087,6 +1087,48 @@ private fun AppSettingsSection(
     var backupSyncHoursInputText by remember { mutableStateOf("1") }
     var backupSyncMinutesInputText by remember { mutableStateOf("0") }
     val isGoogleAccountSelected = selectedGoogleAccountName != null
+    var showAboutDialog by remember { mutableStateOf(false) }
+    var showCreditsDialog by remember { mutableStateOf(false) }
+    var showLegalDialog by remember { mutableStateOf(false) }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = { Text(stringResource(R.string.settings_app_about_action)) },
+            text = { Text(stringResource(R.string.settings_app_about_body)) },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) {
+                    Text(stringResource(R.string.alert_action_close))
+                }
+            }
+        )
+    }
+
+    if (showCreditsDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreditsDialog = false },
+            title = { Text(stringResource(R.string.settings_app_credits_action)) },
+            text = { Text(stringResource(R.string.settings_app_credits_body)) },
+            confirmButton = {
+                TextButton(onClick = { showCreditsDialog = false }) {
+                    Text(stringResource(R.string.alert_action_close))
+                }
+            }
+        )
+    }
+
+    if (showLegalDialog) {
+        AlertDialog(
+            onDismissRequest = { showLegalDialog = false },
+            title = { Text(stringResource(R.string.settings_app_legal_action)) },
+            text = { Text(stringResource(R.string.settings_app_legal_body)) },
+            confirmButton = {
+                TextButton(onClick = { showLegalDialog = false }) {
+                    Text(stringResource(R.string.alert_action_close))
+                }
+            }
+        )
+    }
 
     Text(stringResource(R.string.settings_app_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Text(stringResource(R.string.settings_tabs_title), style = MaterialTheme.typography.titleMedium)
@@ -1199,6 +1241,27 @@ private fun AppSettingsSection(
         ) {
             Text("Manage $account Data ($count events)")
         }
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(stringResource(R.string.settings_app_about_section_title), style = MaterialTheme.typography.titleMedium)
+    OutlinedButton(
+        onClick = { showAboutDialog = true },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text(stringResource(R.string.settings_app_about_action))
+    }
+    OutlinedButton(
+        onClick = { showCreditsDialog = true },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text(stringResource(R.string.settings_app_credits_action))
+    }
+    OutlinedButton(
+        onClick = { showLegalDialog = true },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text(stringResource(R.string.settings_app_legal_action))
     }
 }
 

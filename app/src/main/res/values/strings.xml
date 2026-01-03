@@ -79,6 +79,13 @@
     <string name="settings_tabs_title">Visible tabs</string>
     <string name="settings_tabs_description">Choose which tabs to show in the app. This can be changed later.</string>
     <string name="settings_tabs_disabled_notice">Disabled tabs are hidden and their features won\u2019t run.</string>
+    <string name="settings_app_about_section_title">About &amp; Legal</string>
+    <string name="settings_app_about_action">About</string>
+    <string name="settings_app_credits_action">Credits</string>
+    <string name="settings_app_legal_action">Legal notice</string>
+    <string name="settings_app_about_body">RoutineReminder helps you build routines, log workouts, and schedule workout plans.</string>
+    <string name="settings_app_credits_body">Exercise data powered by ExerciseDB (exercisedb-api.vercel.app). Thanks to the ExerciseDB contributors for maintaining the public dataset.</string>
+    <string name="settings_app_legal_body">Workout exercise data is provided by ExerciseDB and remains property of its respective owners. Usage requires attribution only; no login or payment is required. Please review ExerciseDB terms for updates.</string>
 
     <!-- Tabs -->
     <string name="tab_events">Events</string>
@@ -87,6 +94,31 @@
     <string name="tab_workout">Workout</string>
     <string name="workout_tab_placeholder_title">Workout tracking</string>
     <string name="workout_tab_placeholder_body">This tab will be available in a future update.</string>
+    <string name="workout_title">Workout programs</string>
+    <string name="workout_plans_title">Your workout plans</string>
+    <string name="workout_plan_select_placeholder">Select a plan</string>
+    <string name="workout_plan_empty_menu">No plans yet</string>
+    <string name="workout_plan_name_label">New plan name</string>
+    <string name="workout_plan_create_action">Create</string>
+    <string name="workout_plan_details_title">Plan details</string>
+    <string name="workout_plan_select_prompt">Choose a plan to see its exercises.</string>
+    <string name="workout_plan_empty_body">No exercises added yet.</string>
+    <string name="workout_plan_schedule_action">Add plan to calendar</string>
+    <string name="workout_plan_delete_action">Delete plan</string>
+    <string name="workout_plan_delete_title">Delete workout plan?</string>
+    <string name="workout_plan_delete_body">Delete “%1$s”? This cannot be undone.</string>
+    <string name="workout_plan_delete_confirm">Delete</string>
+    <string name="workout_plan_remove_exercise">Remove exercise</string>
+    <string name="workout_exercises_title">Find exercises</string>
+    <string name="workout_exercises_subtitle">Search or browse ExerciseDB and add items to your plan.</string>
+    <string name="workout_search_label">Search exercise name</string>
+    <string name="workout_body_part_all">All body parts</string>
+    <string name="workout_search_action">Search</string>
+    <string name="workout_loading_message">Loading ExerciseDB results\u2026</string>
+    <string name="workout_empty_results">No exercises matched your search.</string>
+    <string name="workout_exercise_add">Add exercise</string>
+    <string name="workout_exercisedb_attribution">Exercise data sourced from ExerciseDB (exercisedb-api.vercel.app).</string>
+    <string name="workout_snackbar_select_plan">Select or create a workout plan first.</string>
 
     <!-- First Launch -->
     <string name="settings_tabs_first_launch_title">What do you want to use this app for?</string>
