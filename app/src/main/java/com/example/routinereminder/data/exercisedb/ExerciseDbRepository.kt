@@ -78,42 +78,35 @@ class ExerciseDbRepository @Inject constructor(
     }
 
     suspend fun refreshExerciseDatabase(): Result<List<ExerciseDbExercise>> = refreshMutex.withLock {
-        resetExerciseDatabaseCache()
+        cacheMutex.withLock {
+            cachedExercises = null
+            if (cacheFile.exists()) {
+                cacheFile.delete()
+            }
+            settingsRepository.saveExerciseDbCacheComplete(false)
+            settingsRepository.saveExerciseDbCacheTotal(null)
+        }
         downloadExerciseDatabase()
     }
 
-    suspend fun resetExerciseDatabaseCache() = cacheMutex.withLock {
-        cachedExercises = null
-        if (cacheFile.exists()) {
-            cacheFile.delete()
-        }
-        settingsRepository.saveExerciseDbCacheComplete(false)
-        settingsRepository.saveExerciseDbCacheTotal(null)
-        settingsRepository.saveExerciseDbCacheDownloaded(0)
-    }
-
     suspend fun getDownloadProgress(): ExerciseDbDownloadProgress {
-        var downloaded = settingsRepository.getExerciseDbCacheDownloaded().first()
+        val cached = readCache().orEmpty()
         val total = settingsRepository.getExerciseDbCacheTotal().first()
         val isComplete = settingsRepository.getExerciseDbCacheComplete().first()
-        if (downloaded == 0 && cacheFile.exists()) {
-            val cached = readCache().orEmpty()
-            if (cached.isNotEmpty()) {
-                downloaded = cached.size
-                settingsRepository.saveExerciseDbCacheDownloaded(downloaded)
-            }
+        if (cached.isNotEmpty() && !isComplete && total == null) {
+            settingsRepository.saveExerciseDbCacheComplete(true)
+            settingsRepository.saveExerciseDbCacheTotal(cached.size)
+            return ExerciseDbDownloadProgress(cached.size, cached.size, true)
         }
-        val complete = (isComplete && downloaded > 0) || (total != null && downloaded >= total && downloaded > 0)
-        return ExerciseDbDownloadProgress(downloaded, total, complete)
+        val complete = (isComplete && cached.isNotEmpty()) || (total != null && cached.size >= total && cached.isNotEmpty())
+        return ExerciseDbDownloadProgress(cached.size, total, complete)
     }
 
     suspend fun downloadExerciseDatabase(
-        onProgress: (ExerciseDbDownloadProgress) -> Unit = {},
-        shouldContinue: suspend () -> Boolean = { true }
+        onProgress: (ExerciseDbDownloadProgress) -> Unit = {}
     ): Result<List<ExerciseDbExercise>> = downloadMutex.withLock {
         runCatching {
             val cached = readCache().orEmpty().toMutableList()
-            settingsRepository.saveExerciseDbCacheDownloaded(cached.size)
             val cachedComplete = settingsRepository.getExerciseDbCacheComplete().first()
             if (cached.isNotEmpty() && cachedComplete) {
                 cachedExercises = cached
@@ -131,9 +124,6 @@ class ExerciseDbRepository @Inject constructor(
             var completed = false
 
             while (requestCount < MAX_DOWNLOAD_REQUESTS) {
-                if (!shouldContinue()) {
-                    break
-                }
                 val json = fetchJson(
                     "exercises",
                     mapOf(
@@ -151,7 +141,6 @@ class ExerciseDbRepository @Inject constructor(
                 offset = accumulated.size
                 requestCount += 1
                 saveCache(accumulated)
-                settingsRepository.saveExerciseDbCacheDownloaded(accumulated.size)
                 settingsRepository.saveExerciseDbCacheTotal(total)
                 onProgress(ExerciseDbDownloadProgress(accumulated.size, total, false))
                 if (total != null && accumulated.size >= total) {
@@ -173,7 +162,6 @@ class ExerciseDbRepository @Inject constructor(
                 total
             }
             settingsRepository.saveExerciseDbCacheTotal(resolvedTotal)
-            settingsRepository.saveExerciseDbCacheDownloaded(accumulated.size)
             if (isComplete) {
                 settingsRepository.saveExerciseDbLastRefresh(System.currentTimeMillis())
             }
@@ -281,7 +269,6 @@ class ExerciseDbRepository @Inject constructor(
                 settingsRepository.saveExerciseDbCacheComplete(true)
                 settingsRepository.saveExerciseDbCacheTotal(diskExercises.size)
             }
-            settingsRepository.saveExerciseDbCacheDownloaded(diskExercises.size)
             if (settingsRepository.getExerciseDbLastRefresh().first() == 0L) {
                 settingsRepository.saveExerciseDbLastRefresh(cacheFile.lastModified())
             }

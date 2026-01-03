@@ -39,7 +39,6 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EXERCISE_DB_LAST_PROMPT = longPreferencesKey("exercise_db_last_prompt_epoch_ms")
     val EXERCISE_DB_CACHE_COMPLETE = booleanPreferencesKey("exercise_db_cache_complete")
     val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
-    val EXERCISE_DB_CACHE_DOWNLOADED = intPreferencesKey("exercise_db_cache_downloaded")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -290,18 +289,6 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getExerciseDbCacheTotal(): Flow<Int?> {
         return dataStore.data.map { preferences ->
             preferences[EXERCISE_DB_CACHE_TOTAL]
-        }
-    }
-
-    suspend fun saveExerciseDbCacheDownloaded(downloaded: Int) {
-        dataStore.edit { preferences ->
-            preferences[EXERCISE_DB_CACHE_DOWNLOADED] = downloaded
-        }
-    }
-
-    fun getExerciseDbCacheDownloaded(): Flow<Int> {
-        return dataStore.data.map { preferences ->
-            preferences[EXERCISE_DB_CACHE_DOWNLOADED] ?: 0
         }
     }
 }

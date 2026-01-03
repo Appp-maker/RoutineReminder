@@ -97,26 +97,30 @@ class WorkoutViewModel @Inject constructor(
 
     fun refreshExerciseDatabase() {
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    showRefreshPrompt = false,
-                    errorMessage = null,
-                    isExerciseDbReady = false,
-                    isExerciseDbDownloading = true,
-                    exerciseDbDownloadedCount = 0,
-                    exerciseDbTotalCount = null
-                )
-            }
-            val resetResult = runCatching { repository.resetExerciseDatabaseCache() }
-            if (resetResult.isFailure) {
-                val error = resetResult.exceptionOrNull()
-                _uiState.update {
-                    it.copy(
-                        isExerciseDbReady = false,
-                        isExerciseDbDownloading = false,
-                        errorMessage = error?.message ?: "Unable to refresh ExerciseDB data."
-                    )
+            _uiState.update { it.copy(isLoading = true, showRefreshPrompt = false, errorMessage = null) }
+            repository.refreshExerciseDatabase()
+                .onSuccess { exercises ->
+                    val bodyParts = (exercises.map { it.bodyPart } + requiredBodyParts)
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                        .sorted()
+                    val filtered = filterExercises(exercises, _uiState.value.searchQuery, _uiState.value.selectedBodyPart)
+                    _uiState.update {
+                        it.copy(
+                            exercises = filtered,
+                            bodyParts = bodyParts,
+                            isLoading = false,
+                            isExerciseDbReady = true,
+                            isExerciseDbDownloading = false,
+                            exerciseDbDownloadedCount = exercises.size,
+                            exerciseDbTotalCount = exercises.size
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(isLoading = false, errorMessage = error.message ?: "Unable to refresh ExerciseDB data.")
+                    }
                 }
                 return@launch
             }
@@ -184,26 +188,14 @@ class WorkoutViewModel @Inject constructor(
                         exerciseDbTotalCount = progress.totalCount
                     )
                 }
-                enqueueDownloadWork()
-                monitorDownloadProgress()
+                downloadExerciseDatabase()
             }
         }
     }
 
-    private fun enqueueDownloadWork() {
-        val workRequest = OneTimeWorkRequestBuilder<ExerciseDbDownloadWorker>().build()
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            ExerciseDbDownloadWorker.UNIQUE_WORK_NAME,
-            ExistingWorkPolicy.KEEP,
-            workRequest
-        )
-    }
-
-    private fun monitorDownloadProgress() {
-        progressJob?.cancel()
-        progressJob = viewModelScope.launch {
-            while (true) {
-                val progress = repository.getDownloadProgress()
+    private fun downloadExerciseDatabase() {
+        viewModelScope.launch {
+            repository.downloadExerciseDatabase { progress ->
                 _uiState.update {
                     it.copy(
                         isExerciseDbReady = progress.isComplete,
@@ -212,12 +204,45 @@ class WorkoutViewModel @Inject constructor(
                         exerciseDbTotalCount = progress.totalCount
                     )
                 }
-                if (progress.isComplete) {
-                    refreshBodyParts()
-                    refreshExercises()
-                    break
+            }.onSuccess { exercises ->
+                val progress = repository.getDownloadProgress()
+                if (progress.isComplete && exercises.isNotEmpty()) {
+                    val bodyParts = (exercises.map { it.bodyPart } + requiredBodyParts)
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                        .sorted()
+                    val filtered = filterExercises(exercises, _uiState.value.searchQuery, _uiState.value.selectedBodyPart)
+                    _uiState.update {
+                        it.copy(
+                            exercises = filtered,
+                            bodyParts = bodyParts,
+                            isLoading = false,
+                            isExerciseDbReady = true,
+                            isExerciseDbDownloading = false,
+                            exerciseDbDownloadedCount = exercises.size,
+                            exerciseDbTotalCount = exercises.size
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isExerciseDbReady = false,
+                            isExerciseDbDownloading = true,
+                            exerciseDbDownloadedCount = progress.downloadedCount,
+                            exerciseDbTotalCount = progress.totalCount
+                        )
+                    }
                 }
-                delay(1000)
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        isExerciseDbReady = false,
+                        isExerciseDbDownloading = false,
+                        errorMessage = error.message ?: "Unable to download ExerciseDB data."
+                    )
+                }
             }
         }
     }
