@@ -37,6 +37,9 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val ENABLED_TABS = stringSetPreferencesKey("enabled_tabs")
     val EXERCISE_DB_LAST_REFRESH = longPreferencesKey("exercise_db_last_refresh_epoch_ms")
     val EXERCISE_DB_LAST_PROMPT = longPreferencesKey("exercise_db_last_prompt_epoch_ms")
+    val EXERCISE_DB_CACHE_COMPLETE = booleanPreferencesKey("exercise_db_cache_complete")
+    val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
+    val EXERCISE_DB_CACHE_DOWNLOADED = intPreferencesKey("exercise_db_cache_downloaded")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -259,6 +262,46 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getExerciseDbLastPrompt(): Flow<Long> {
         return dataStore.data.map { preferences ->
             preferences[EXERCISE_DB_LAST_PROMPT] ?: 0L
+        }
+    }
+
+    suspend fun saveExerciseDbCacheComplete(isComplete: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[EXERCISE_DB_CACHE_COMPLETE] = isComplete
+        }
+    }
+
+    fun getExerciseDbCacheComplete(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[EXERCISE_DB_CACHE_COMPLETE] ?: false
+        }
+    }
+
+    suspend fun saveExerciseDbCacheTotal(total: Int?) {
+        dataStore.edit { preferences ->
+            if (total == null) {
+                preferences.remove(EXERCISE_DB_CACHE_TOTAL)
+            } else {
+                preferences[EXERCISE_DB_CACHE_TOTAL] = total
+            }
+        }
+    }
+
+    fun getExerciseDbCacheTotal(): Flow<Int?> {
+        return dataStore.data.map { preferences ->
+            preferences[EXERCISE_DB_CACHE_TOTAL]
+        }
+    }
+
+    suspend fun saveExerciseDbCacheDownloaded(downloaded: Int) {
+        dataStore.edit { preferences ->
+            preferences[EXERCISE_DB_CACHE_DOWNLOADED] = downloaded
+        }
+    }
+
+    fun getExerciseDbCacheDownloaded(): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            preferences[EXERCISE_DB_CACHE_DOWNLOADED] ?: 0
         }
     }
 }
