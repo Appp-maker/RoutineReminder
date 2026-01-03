@@ -98,8 +98,10 @@
     <string name="workout_plans_title">Your workout plans</string>
     <string name="workout_plan_select_placeholder">Select a plan</string>
     <string name="workout_plan_empty_menu">No plans yet</string>
+    <string name="workout_plan_new_menu">New plan</string>
     <string name="workout_plan_name_label">New plan name</string>
     <string name="workout_plan_create_action">Create</string>
+    <string name="workout_plan_new_title">New plan</string>
     <string name="workout_plan_details_title">Plan details</string>
     <string name="workout_plan_select_prompt">Choose a plan to see its exercises.</string>
     <string name="workout_plan_empty_body">No exercises added yet.</string>
