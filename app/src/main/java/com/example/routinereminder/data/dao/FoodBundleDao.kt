@@ -34,13 +34,17 @@ interface FoodBundleDao {
     @Query("""
     UPDATE food_bundles
     SET name = :name,
-        description = :description
+        description = :description,
+        portionType = :portionType,
+        customPortionGrams = :customPortionGrams
     WHERE id = :id
 """)
     suspend fun updateBundle(
         id: Long,
         name: String,
-        description: String
+        description: String,
+        portionType: String,
+        customPortionGrams: Double?
     )
 
     @Query("DELETE FROM recipe_ingredients WHERE bundleId = :bundleId")

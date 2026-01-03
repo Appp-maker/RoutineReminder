@@ -63,17 +63,16 @@ fun RecipeIngredientEditorScreen(
 
     fun applyFoodProduct(food: FoodProduct) {
         val gramsValue = food.servingSizeG?.roundToInt()?.takeIf { it > 0 } ?: 100
-        val multiplier = gramsValue / 100.0
         name = food.name
         grams = gramsValue.toString()
-        calories = (food.caloriesPer100g * multiplier).toDisplayString()
-        protein = (food.proteinPer100g * multiplier).toDisplayString()
-        carbs = (food.carbsPer100g * multiplier).toDisplayString()
-        fat = (food.fatPer100g * multiplier).toDisplayString()
-        fiber = (food.fiberPer100g * multiplier).toDisplayString()
-        saturatedFat = (food.saturatedFatPer100g * multiplier).toDisplayString()
-        addedSugars = (food.addedSugarsPer100g * multiplier).toDisplayString()
-        sodium = (food.sodiumPer100g * multiplier * 1000).toDisplayString()
+        calories = food.caloriesPer100g.toDisplayString()
+        protein = food.proteinPer100g.toDisplayString()
+        carbs = food.carbsPer100g.toDisplayString()
+        fat = food.fatPer100g.toDisplayString()
+        fiber = food.fiberPer100g.toDisplayString()
+        saturatedFat = food.saturatedFatPer100g.toDisplayString()
+        addedSugars = food.addedSugarsPer100g.toDisplayString()
+        sodium = (food.sodiumPer100g * 1000).toDisplayString()
         hasNonCustomSelection = entryMode != IngredientEntryMode.CUSTOM
     }
 
@@ -82,14 +81,19 @@ fun RecipeIngredientEditorScreen(
             val ingredient = viewModel.getIngredientOnce(id) ?: return@let
             name = ingredient.name
             grams = ingredient.portionSizeG.toString()
-            calories = ingredient.calories.toString()
-            protein = ingredient.proteinG.toString()
-            carbs = ingredient.carbsG.toString()
-            fat = ingredient.fatG.toString()
-            fiber = ingredient.fiberG.toString()
-            saturatedFat = ingredient.saturatedFatG.toString()
-            addedSugars = ingredient.addedSugarsG.toString()
-            sodium = ingredient.sodiumMg.toString()
+            val per100Factor = if (ingredient.portionSizeG > 0) {
+                100.0 / ingredient.portionSizeG.toDouble()
+            } else {
+                1.0
+            }
+            calories = (ingredient.calories * per100Factor).toDisplayString()
+            protein = (ingredient.proteinG * per100Factor).toDisplayString()
+            carbs = (ingredient.carbsG * per100Factor).toDisplayString()
+            fat = (ingredient.fatG * per100Factor).toDisplayString()
+            fiber = (ingredient.fiberG * per100Factor).toDisplayString()
+            saturatedFat = (ingredient.saturatedFatG * per100Factor).toDisplayString()
+            addedSugars = (ingredient.addedSugarsG * per100Factor).toDisplayString()
+            sodium = (ingredient.sodiumMg * per100Factor).toDisplayString()
         }
     }
 
@@ -127,7 +131,7 @@ fun RecipeIngredientEditorScreen(
         )
 
         Text(
-            text = "Nutrition values should match this ingredient's amount.",
+            text = "Nutrition values should be entered per 100 g of the ingredient.",
             style = MaterialTheme.typography.bodySmall
         )
 
@@ -259,7 +263,7 @@ fun RecipeIngredientEditorScreen(
             OutlinedTextField(
                 value = calories,
                 onValueChange = { calories = it },
-                label = { Text("Calories (kcal)") },
+                label = { Text("Calories (kcal per 100 g)") },
                 keyboardOptions = decimalKeyboard,
                 enabled = entryMode == IngredientEntryMode.CUSTOM,
                 modifier = Modifier.fillMaxWidth()
@@ -268,7 +272,7 @@ fun RecipeIngredientEditorScreen(
             OutlinedTextField(
                 value = protein,
                 onValueChange = { protein = it },
-                label = { Text("Protein (g)") },
+                label = { Text("Protein (g per 100 g)") },
                 keyboardOptions = decimalKeyboard,
                 enabled = entryMode == IngredientEntryMode.CUSTOM,
                 modifier = Modifier.fillMaxWidth()
@@ -277,7 +281,7 @@ fun RecipeIngredientEditorScreen(
             OutlinedTextField(
                 value = carbs,
                 onValueChange = { carbs = it },
-                label = { Text("Carbs (g)") },
+                label = { Text("Carbs (g per 100 g)") },
                 keyboardOptions = decimalKeyboard,
                 enabled = entryMode == IngredientEntryMode.CUSTOM,
                 modifier = Modifier.fillMaxWidth()
@@ -286,7 +290,7 @@ fun RecipeIngredientEditorScreen(
             OutlinedTextField(
                 value = fat,
                 onValueChange = { fat = it },
-                label = { Text("Fat (g)") },
+                label = { Text("Fat (g per 100 g)") },
                 keyboardOptions = decimalKeyboard,
                 enabled = entryMode == IngredientEntryMode.CUSTOM,
                 modifier = Modifier.fillMaxWidth()
@@ -295,7 +299,7 @@ fun RecipeIngredientEditorScreen(
             OutlinedTextField(
                 value = fiber,
                 onValueChange = { fiber = it },
-                label = { Text("Fiber (g)") },
+                label = { Text("Fiber (g per 100 g)") },
                 keyboardOptions = decimalKeyboard,
                 enabled = entryMode == IngredientEntryMode.CUSTOM,
                 modifier = Modifier.fillMaxWidth()
@@ -304,7 +308,7 @@ fun RecipeIngredientEditorScreen(
             OutlinedTextField(
                 value = saturatedFat,
                 onValueChange = { saturatedFat = it },
-                label = { Text("Saturated fat (g)") },
+                label = { Text("Saturated fat (g per 100 g)") },
                 keyboardOptions = decimalKeyboard,
                 enabled = entryMode == IngredientEntryMode.CUSTOM,
                 modifier = Modifier.fillMaxWidth()
@@ -313,7 +317,7 @@ fun RecipeIngredientEditorScreen(
             OutlinedTextField(
                 value = addedSugars,
                 onValueChange = { addedSugars = it },
-                label = { Text("Added sugars (g)") },
+                label = { Text("Added sugars (g per 100 g)") },
                 keyboardOptions = decimalKeyboard,
                 enabled = entryMode == IngredientEntryMode.CUSTOM,
                 modifier = Modifier.fillMaxWidth()
@@ -322,7 +326,7 @@ fun RecipeIngredientEditorScreen(
             OutlinedTextField(
                 value = sodium,
                 onValueChange = { sodium = it },
-                label = { Text("Sodium (mg)") },
+                label = { Text("Sodium (mg per 100 g)") },
                 keyboardOptions = decimalKeyboard,
                 enabled = entryMode == IngredientEntryMode.CUSTOM,
                 modifier = Modifier.fillMaxWidth()
@@ -356,19 +360,21 @@ fun RecipeIngredientEditorScreen(
         Button(
             enabled = canSave,
             onClick = {
+                val gramsDouble = gramsValue?.toDouble() ?: 0.0
+                val portionFactor = if (gramsDouble > 0.0) gramsDouble / 100.0 else 0.0
                 viewModel.upsertIngredient(
                     ingredientId = ingredientId,
                     bundleId = bundleId,
                     name = name,
                     portionSizeG = gramsValue ?: 0,
-                    calories = caloriesValue ?: 0.0,
-                    proteinG = proteinValue ?: 0.0,
-                    carbsG = carbsValue ?: 0.0,
-                    fatG = fatValue ?: 0.0,
-                    fiberG = fiberValue ?: 0.0,
-                    saturatedFatG = saturatedFatValue ?: 0.0,
-                    addedSugarsG = addedSugarsValue ?: 0.0,
-                    sodiumMg = sodiumValue ?: 0.0
+                    calories = (caloriesValue ?: 0.0) * portionFactor,
+                    proteinG = (proteinValue ?: 0.0) * portionFactor,
+                    carbsG = (carbsValue ?: 0.0) * portionFactor,
+                    fatG = (fatValue ?: 0.0) * portionFactor,
+                    fiberG = (fiberValue ?: 0.0) * portionFactor,
+                    saturatedFatG = (saturatedFatValue ?: 0.0) * portionFactor,
+                    addedSugarsG = (addedSugarsValue ?: 0.0) * portionFactor,
+                    sodiumMg = (sodiumValue ?: 0.0) * portionFactor
                 )
                 navController.popBackStack()
             },
