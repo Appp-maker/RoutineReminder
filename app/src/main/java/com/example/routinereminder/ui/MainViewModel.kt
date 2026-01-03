@@ -2,11 +2,13 @@ package com.example.routinereminder.ui
 import com.example.routinereminder.data.entities.ScheduleDone
 
 import android.app.Application
+import android.content.Context
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.data.AppDatabase
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.Gender
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.data.UserSettings
@@ -189,6 +191,23 @@ class MainViewModel @Inject constructor(
 
     fun onAppPaused() {
         // This is now handled by the SyncWorker
+    }
+
+    fun currentUserWeightKgOrNull(): Double? = userSettings.value?.weightKg
+
+    fun currentUserHeightCmOrNull(): Double? = userSettings.value?.heightCm
+
+    fun currentUserAgeOrNull(): Int? = userSettings.value?.age
+
+    fun currentUserGenderOrNull(): String? = userSettings.value?.gender?.let { gender ->
+        when (gender) {
+            Gender.MALE -> "Male"
+            Gender.FEMALE -> "Female"
+        }
+    }
+
+    fun promptUserForWeightOnce(context: Context) {
+        // Hook up your own dialog flow here if needed.
     }
 
     fun selectDate(date: LocalDate) {
