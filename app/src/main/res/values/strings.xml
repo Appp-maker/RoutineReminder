@@ -20,6 +20,7 @@
     <string name="settings_toast_calendar_permission_needed_select">Calendar permission is needed to select a calendar.</string>
     <string name="settings_toast_no_gcalendars_found">No Google Calendars found</string>
     <string name="settings_toast_event_unblocked">Event unblocked. It will be re-evaluated on the next sync.</string>
+    <string name="settings_tabs_select_at_least_one">Select at least one tab.</string>
 
     <!-- Settings Categories -->
     <string name="settings_category_default_events">Defaults</string>
@@ -75,6 +76,22 @@
     <string name="settings_app_title">Application</string>
     <string name="settings_app_import_export">Import / Export Data</string>
     <string name="settings_app_language">Language</string>
+    <string name="settings_tabs_title">Visible tabs</string>
+    <string name="settings_tabs_description">Choose which tabs to show in the app. This can be changed later.</string>
+    <string name="settings_tabs_disabled_notice">Disabled tabs are hidden and their features won\u2019t run.</string>
+
+    <!-- Tabs -->
+    <string name="tab_events">Events</string>
+    <string name="tab_calories">Calories</string>
+    <string name="tab_running">Running</string>
+    <string name="tab_workout">Workout</string>
+    <string name="workout_tab_placeholder_title">Workout tracking</string>
+    <string name="workout_tab_placeholder_body">This tab will be available in a future update.</string>
+
+    <!-- First Launch -->
+    <string name="settings_tabs_first_launch_title">What do you want to use this app for?</string>
+    <string name="settings_tabs_first_launch_message">Pick the tabs you want to use now. You can change this later in Settings &gt; App.</string>
+    <string name="settings_tabs_first_launch_confirm">Continue</string>
 
     <!-- Dialogs -->
     <string name="dialog_gcal_choose_title">Choose a Calendar</string>

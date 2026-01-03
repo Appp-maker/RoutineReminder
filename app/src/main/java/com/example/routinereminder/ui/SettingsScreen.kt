@@ -84,23 +84,19 @@ fun SettingsScreen(
     onDismiss: () -> Unit
 )
  {
-     val tabs = remember(from) {
-         when (from) {
-             "routine" -> listOf("Defaults", "Sync", "App")
-             "calories" -> listOf("Profile", "Sync", "App")
-             else -> listOf("Sync", "App")
-         }
-     }
-
      val context = LocalContext.current
+     val enabledTabsState by viewModel.enabledTabs.collectAsState()
+     val enabledTabs = enabledTabsState ?: AppTab.defaultTabs
+     val routineEnabled = enabledTabs.contains(AppTab.Routine)
+     val caloriesEnabled = enabledTabs.contains(AppTab.Calories)
      val initialCategory = when (from) {
-         "routine" -> SettingsCategory.DEFAULT_EVENTS
-         "calories" -> SettingsCategory.PROFILE
+         "routine" -> if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else SettingsCategory.SYNC
+         "calories" -> if (caloriesEnabled) SettingsCategory.PROFILE else SettingsCategory.SYNC
          "map" -> SettingsCategory.SYNC
          else -> SettingsCategory.SYNC
      }
 
-     var selectedCategory by remember(from) { mutableStateOf(initialCategory) }
+     var selectedCategory by remember(from, enabledTabs) { mutableStateOf(initialCategory) }
 
 
      val userSettings by viewModel.userSettings.collectAsState()
@@ -129,6 +125,7 @@ fun SettingsScreen(
 
      val showAllEvents by viewModel.showAllEvents.collectAsState()
     val calendarEventCounts by viewModel.calendarEventCounts.collectAsState()
+    var selectedTabs by remember(enabledTabs) { mutableStateOf(enabledTabs) }
 
 
     var syncHoursInputText by remember(currentSyncInterval) { mutableStateOf((currentSyncInterval / 60).toString()) }
@@ -249,7 +246,8 @@ fun SettingsScreen(
         selectedImportTargetCalendarIdForBothMode, currentImportTargetCalendarIdForBothMode,
         currentDefaultEventSettings,
         selectedGoogleAccountName, // Added to dependency list
-        showAllEventsChecked, showAllEvents
+        showAllEventsChecked, showAllEvents,
+        selectedTabs, enabledTabs
     ) {
         derivedStateOf {
             if (weightInput.toDoubleOrNull() != userSettings?.weightKg) return@derivedStateOf true
@@ -278,6 +276,7 @@ fun SettingsScreen(
             // Logic for selectedImportTargetCalendarIdForBothMode might need adjustment
             if (selectedImportTargetCalendarIdForBothMode != currentImportTargetCalendarIdForBothMode) return@derivedStateOf true
             if (showAllEventsChecked != showAllEvents) return@derivedStateOf true
+            if (selectedTabs != enabledTabs) return@derivedStateOf true
             // We don't directly compare selectedGoogleAccountName to a stored value for unsaved changes,
             // as its change directly triggers other settings to change, which are covered above.
             false
@@ -383,6 +382,12 @@ fun SettingsScreen(
                         viewModel.updateUseGoogleBackupMode(useGoogleBackupModeChecked)
                         viewModel.updateImportTargetCalendarIdForBothMode(if (useGoogleBackupModeChecked) SettingsRepository.DEFAULT_IMPORT_TARGET_CALENDAR_ID_FOR_BOTH_MODE else currentImportTargetBoth)
                         viewModel.updateShowAllEvents(showAllEventsChecked)
+                        if (selectedTabs.isNotEmpty()) {
+                            viewModel.saveEnabledTabs(selectedTabs)
+                        } else {
+                            allSavesOk = false
+                            Toast.makeText(context, context.getString(R.string.settings_tabs_select_at_least_one), Toast.LENGTH_SHORT).show()
+                        }
 
 
                         if (allSavesOk) {
@@ -406,13 +411,13 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 val allowedCategories = when (from) {
-                    "routine" -> listOf(
-                        SettingsCategory.DEFAULT_EVENTS,
+                    "routine" -> listOfNotNull(
+                        if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else null,
                         SettingsCategory.SYNC,
                         SettingsCategory.APP
                     )
-                    "calories" -> listOf(
-                        SettingsCategory.PROFILE,
+                    "calories" -> listOfNotNull(
+                        if (caloriesEnabled) SettingsCategory.PROFILE else null,
                         SettingsCategory.SYNC,
                         SettingsCategory.APP
                     )
@@ -424,7 +429,7 @@ fun SettingsScreen(
                 }
 
 // ⚠ Ensure invalid category gets corrected:
-                LaunchedEffect(from) {
+                LaunchedEffect(from, enabledTabs) {
                     if (!allowedCategories.contains(selectedCategory)) {
                         selectedCategory = allowedCategories.first()
                     }
@@ -564,6 +569,15 @@ fun SettingsScreen(
                     }
                     SettingsCategory.APP -> AppSettingsSection(
                         context = context,
+                        selectedTabs = selectedTabs,
+                        onTabSelectionChange = { updatedTabs ->
+                            if (updatedTabs.isNotEmpty()) {
+                                selectedTabs = updatedTabs
+                                justSavedSuccessfully = false
+                            } else {
+                                Toast.makeText(context, context.getString(R.string.settings_tabs_select_at_least_one), Toast.LENGTH_SHORT).show()
+                            }
+                        },
                         selectedGoogleAccountName = selectedGoogleAccountName,
                         showAllEvents = showAllEventsChecked,
                         onShowAllEventsChange = { showAllEventsChecked = it },
@@ -1062,6 +1076,8 @@ private fun DefaultEventsSettingsSection(
 @Composable
 private fun AppSettingsSection(
     context: Context,
+    selectedTabs: Set<AppTab>,
+    onTabSelectionChange: (Set<AppTab>) -> Unit,
     selectedGoogleAccountName: String?,
     showAllEvents: Boolean,
     onShowAllEventsChange: (Boolean) -> Unit,
@@ -1073,6 +1089,53 @@ private fun AppSettingsSection(
     val isGoogleAccountSelected = selectedGoogleAccountName != null
 
     Text(stringResource(R.string.settings_app_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
+    Text(stringResource(R.string.settings_tabs_title), style = MaterialTheme.typography.titleMedium)
+    Text(
+        text = stringResource(R.string.settings_tabs_description),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+    AppTab.entries.forEach { tab ->
+        val checked = selectedTabs.contains(tab)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val updatedTabs = if (checked) {
+                        selectedTabs - tab
+                    } else {
+                        selectedTabs + tab
+                    }
+                    onTabSelectionChange(updatedTabs)
+                }
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = checked,
+                onCheckedChange = { isChecked ->
+                    val updatedTabs = if (isChecked) {
+                        selectedTabs + tab
+                    } else {
+                        selectedTabs - tab
+                    }
+                    onTabSelectionChange(updatedTabs)
+                }
+            )
+            Text(
+                text = stringResource(tab.labelRes),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+    }
+    Text(
+        text = stringResource(R.string.settings_tabs_disabled_notice),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
     OutlinedButton(onClick = { Toast.makeText(context, context.getString(R.string.settings_toast_work_in_progress), Toast.LENGTH_SHORT).show() }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text(stringResource(R.string.settings_app_import_export)) }
     OutlinedButton(onClick = { Toast.makeText(context, context.getString(R.string.settings_toast_work_in_progress), Toast.LENGTH_SHORT).show() }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text(stringResource(R.string.settings_app_language)) }
     Spacer(modifier = Modifier.height(16.dp))
