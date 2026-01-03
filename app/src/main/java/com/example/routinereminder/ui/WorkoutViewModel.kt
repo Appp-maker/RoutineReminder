@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import java.util.UUID
 import javax.inject.Inject
 
@@ -44,6 +46,7 @@ class WorkoutViewModel @Inject constructor() : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkoutUiState())
     val uiState: StateFlow<WorkoutUiState> = _uiState.asStateFlow()
+    private var refreshJob: Job? = null
 
     init {
         refreshBodyParts()
@@ -52,10 +55,12 @@ class WorkoutViewModel @Inject constructor() : ViewModel() {
 
     fun updateSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+        scheduleRefresh()
     }
 
     fun selectBodyPart(bodyPart: String?) {
         _uiState.update { it.copy(selectedBodyPart = bodyPart) }
+        scheduleRefresh()
     }
 
     fun refreshExercises() {
@@ -72,6 +77,14 @@ class WorkoutViewModel @Inject constructor() : ViewModel() {
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false, errorMessage = error.message ?: "Unable to load exercises.") }
                 }
+        }
+    }
+
+    private fun scheduleRefresh() {
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
+            delay(400)
+            refreshExercises()
         }
     }
 
