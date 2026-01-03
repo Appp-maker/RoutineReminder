@@ -27,6 +27,7 @@ import android.content.pm.PackageManager
 import android.graphics.*
 import android.location.Location
 import android.net.Uri
+import com.example.routinereminder.MainActivity
 import com.example.routinereminder.data.SnapshotStorage
 
 import androidx.compose.foundation.background
@@ -112,6 +113,7 @@ fun MapScreen(
     var activity by remember { mutableStateOf(ActivityType.RUNNING) }
     var trackingMode by remember { mutableStateOf(TrackingMode.BALANCED) }
     var trackingMenuExpanded by remember { mutableStateOf(false) }
+    var permissionRequired by remember { mutableStateOf(false) }
 
     // live stats
     var distanceMeters by remember { mutableStateOf(0.0) }
@@ -146,6 +148,21 @@ fun MapScreen(
     var smoothedLat by remember { mutableStateOf<Double?>(null) }
     var smoothedLng by remember { mutableStateOf<Double?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    fun requestLocationPermissions() {
+        (context as? MainActivity)?.requestLocationPermissions()
+    }
+
+    fun startTrackingIfPermitted(): Boolean {
+        if (!hasLocationPermission(context)) {
+            permissionRequired = true
+            requestLocationPermissions()
+            return false
+        }
+        permissionRequired = false
+        startTracking(context, trackingMode)
+        return true
+    }
 
     // ask once if weight missing
     LaunchedEffect(weightKg) {
@@ -242,6 +259,11 @@ fun MapScreen(
     DisposableEffect(Unit) {
         val r = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, intent: Intent?) {
+                if (intent?.action == TrackingService.ACTION_PERMISSION_REQUIRED) {
+                    permissionRequired = true
+                    stopRecording.value.invoke()
+                    return
+                }
                 val lat = intent?.getDoubleExtra("lat", 0.0) ?: return
                 val lng = intent?.getDoubleExtra("lng", 0.0) ?: return
 
@@ -256,11 +278,11 @@ fun MapScreen(
         }
 
         receiver = r
-        context.registerReceiver(
-            r,
-            IntentFilter("TRACKING_LOCATION"),
-            Context.RECEIVER_NOT_EXPORTED
-        )
+        val filter = IntentFilter().apply {
+            addAction("TRACKING_LOCATION")
+            addAction(TrackingService.ACTION_PERMISSION_REQUIRED)
+        }
+        context.registerReceiver(r, filter, Context.RECEIVER_NOT_EXPORTED)
 
 
         onDispose {
@@ -273,7 +295,9 @@ fun MapScreen(
             if (event == Lifecycle.Event.ON_STOP && recording) {
                 stopTracking(context)
             } else if (event == Lifecycle.Event.ON_START && recording) {
-                startTracking(context, trackingMode)
+                if (!startTrackingIfPermitted()) {
+                    stopRecording.value.invoke()
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -304,6 +328,36 @@ fun MapScreen(
                 }
             }
 
+            if (permissionRequired) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = ComposeColor(0xFF3B1B1B))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Location permission required to track.",
+                            color = ComposeColor(0xFFFFB4B4),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Button(
+                            onClick = { requestLocationPermissions() },
+                            colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFFB3261E))
+                        ) {
+                            Text("Grant")
+                        }
+                    }
+                }
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -330,7 +384,9 @@ fun MapScreen(
                                 trackingMode = mode
                                 trackingMenuExpanded = false
                                 if (recording) {
-                                    startTracking(context, trackingMode)
+                                    if (!startTrackingIfPermitted()) {
+                                        stopRecording.value.invoke()
+                                    }
                                 }
                             }
                         )
@@ -503,7 +559,9 @@ fun MapScreen(
                                     lastMovementAt = System.currentTimeMillis()
 
                                     // Start Foreground GPS Tracking Service
-                                    startTracking(context, trackingMode)
+                                    if (!startTrackingIfPermitted()) {
+                                        return@Button
+                                    }
 
                                     // Start timer job
                                     timerJob?.cancel()
@@ -1061,6 +1119,18 @@ private fun clearOldCache(context: Context, maxAgeMs: Long = 7L * 24 * 3600 * 10
     context.cacheDir.listFiles()?.forEach {
         if (now - it.lastModified() > maxAgeMs) it.delete()
     }
+}
+
+private fun hasLocationPermission(context: Context): Boolean {
+    val fine = ActivityCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
+    val coarse = ActivityCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+    return fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED
 }
 
 /* ---------------- Small UI pieces ---------------- */
