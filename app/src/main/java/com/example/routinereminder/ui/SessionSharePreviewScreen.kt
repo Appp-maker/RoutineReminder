@@ -108,6 +108,7 @@ fun SessionSharePreviewScreen(
     var shareMode by remember { mutableStateOf(ShareMode.SATELLITE) }
     var backgroundHue by remember { mutableStateOf(200f) }
     var trailHue by remember { mutableStateOf(340f) }
+    var includeStats by remember { mutableStateOf(true) }
     var bgUri by remember { mutableStateOf<Uri?>(null) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -138,7 +139,7 @@ fun SessionSharePreviewScreen(
     }
 
     // Re-render preview whenever relevant state changes
-    LaunchedEffect(shareMode, backgroundHue, trailHue, bgUri, effectiveMapView) {
+    LaunchedEffect(shareMode, backgroundHue, trailHue, bgUri, effectiveMapView, includeStats) {
         previewBitmap = withContext(Dispatchers.Default) {
             generatePreviewBitmap(
                 context = context,
@@ -148,6 +149,7 @@ fun SessionSharePreviewScreen(
                 bgHue = backgroundHue,
                 trailHue = trailHue,
                 bgUri = bgUri,
+                includeStats = includeStats,
                 weight = weight,
                 height = height,
                 age = age,
@@ -221,6 +223,24 @@ fun SessionSharePreviewScreen(
                     selected = shareMode == ShareMode.STATIC,
                     onClick = { shareMode = ShareMode.STATIC },
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, start = 8.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Show stats", color = ComposeColor.White)
+                Switch(
+                    checked = includeStats,
+                    onCheckedChange = { includeStats = it },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = ComposeColor.White,
+                        checkedTrackColor = ComposeColor(0xFF00C853)
+                    )
                 )
             }
 
@@ -528,6 +548,7 @@ private suspend fun generatePreviewBitmap(
     bgHue: Float,
     trailHue: Float,
     bgUri: Uri?,
+    includeStats: Boolean,
     weight: Double,
     height: Double,
     age: Int,
@@ -548,7 +569,8 @@ private suspend fun generatePreviewBitmap(
     val canvas = Canvas(bmp)
 
     val paint = Paint()
-    val overlayTop = height - 300f
+    val statsHeight = if (includeStats) 300f else 0f
+    val overlayTop = height - statsHeight
     val mapRect = RectF(0f, 0f, width.toFloat(), overlayTop)
 
     fun ensureCorrectOrientation(context: Context, uri: Uri, bitmap: Bitmap): Bitmap {
@@ -659,86 +681,87 @@ private suspend fun generatePreviewBitmap(
     }
 
 
-    // ---- Bottom Overlay ----
-    val overlayPaint = Paint().apply {
-        shader = LinearGradient(
-            0f, overlayTop, 0f, height.toFloat(),
-            Color.argb(180, 0, 0, 0),
-            Color.argb(255, 0, 0, 0),
-            Shader.TileMode.CLAMP
+    if (includeStats) {
+        // ---- Bottom Overlay ----
+        val overlayPaint = Paint().apply {
+            shader = LinearGradient(
+                0f, overlayTop, 0f, height.toFloat(),
+                Color.argb(180, 0, 0, 0),
+                Color.argb(255, 0, 0, 0),
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRect(0f, overlayTop, width.toFloat(), height.toFloat(), overlayPaint)
+
+        // ---- Text ----
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 90f
+            typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
+        }
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 48f
+        }
+        val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.LTGRAY
+            textSize = 36f
+        }
+
+        // --- Bottom Info ---
+        val baseY = height - 130f // slightly lower than before
+        canvas.drawText(session.activity.uppercase(), 60f, baseY - 90f, titlePaint)
+
+        val spacing = width / 4f
+        val km = session.distanceMeters / 1000.0
+        val pace = if (km > 0) session.durationSec / 60.0 / km else 0.0 // min/km
+
+        val smallText = Paint(textPaint).apply { textSize = 44f } // a bit smaller for pace
+
+        // 🏃 Distance
+        canvas.drawText("%.2f km".format(km), 40f, baseY, textPaint)
+        canvas.drawText("Distance", 40f, baseY + 45f, subPaint)
+
+        // ⏱ Duration
+        canvas.drawText(formatHMS(session.durationSec), spacing + 20f, baseY, textPaint)
+        canvas.drawText("Duration", spacing + 20f, baseY + 45f, subPaint)
+
+        // 🕒 Pace (center-align the “min/km” a bit)
+        canvas.drawText("%.1f".format(pace), spacing * 2 + 60f, baseY, smallText)
+        canvas.drawText("min/km", spacing * 2 + 60f, baseY + 45f, subPaint)
+        canvas.drawText("Pace", spacing * 2 + 60f, baseY + 85f, subPaint)
+
+        // 🔥 Calories
+        // ------- REAL USER DATA CALORIES -------
+        val met = when (session.activity.lowercase()) {
+            "walking" -> 3.8
+            "running" -> 9.8
+            "cycling" -> 8.0
+            else -> 9.8
+        }
+
+        val caloriesBurned = calcCalories(
+            met = met,
+            weightKg = weight.toDouble(),
+            heightCm = height.toDouble(),
+            age = age,
+            gender = gender,
+            durationSec = session.durationSec
+        ).roundToInt()
+
+        canvas.drawText(
+            "$caloriesBurned cal",
+            spacing * 3 + 60f,
+            baseY,
+            textPaint
+        )
+        canvas.drawText(
+            "Calories",
+            spacing * 3 + 60f,
+            baseY + 45f,
+            subPaint
         )
     }
-    canvas.drawRect(0f, overlayTop, width.toFloat(), height.toFloat(), overlayPaint)
-
-    // ---- Text ----
-    val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textSize = 90f
-        typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
-    }
-    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textSize = 48f
-    }
-    val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.LTGRAY
-        textSize = 36f
-    }
-
-    // --- Bottom Info ---
-    val baseY = height - 130f // slightly lower than before
-    canvas.drawText(session.activity.uppercase(), 60f, baseY - 90f, titlePaint)
-
-    val spacing = width / 4f
-    val km = session.distanceMeters / 1000.0
-    val pace = if (km > 0) session.durationSec / 60.0 / km else 0.0 // min/km
-
-    val smallText = Paint(textPaint).apply { textSize = 44f } // a bit smaller for pace
-
-// 🏃 Distance
-    canvas.drawText("%.2f km".format(km), 40f, baseY, textPaint)
-    canvas.drawText("Distance", 40f, baseY + 45f, subPaint)
-
-// ⏱ Duration
-    canvas.drawText(formatHMS(session.durationSec), spacing + 20f, baseY, textPaint)
-    canvas.drawText("Duration", spacing + 20f, baseY + 45f, subPaint)
-
-// 🕒 Pace (center-align the “min/km” a bit)
-    canvas.drawText("%.1f".format(pace), spacing * 2 + 60f, baseY, smallText)
-    canvas.drawText("min/km", spacing * 2 + 60f, baseY + 45f, subPaint)
-    canvas.drawText("Pace", spacing * 2 + 60f, baseY + 85f, subPaint)
-
-
-// 🔥 Calories
-    // ------- REAL USER DATA CALORIES -------
-    val met = when (session.activity.lowercase()) {
-        "walking" -> 3.8
-        "running" -> 9.8
-        "cycling" -> 8.0
-        else -> 9.8
-    }
-
-    val caloriesBurned = calcCalories(
-        met = met,
-        weightKg = weight.toDouble(),
-        heightCm = height.toDouble(),
-        age = age,
-        gender = gender,
-        durationSec = session.durationSec
-    ).roundToInt()
-
-    canvas.drawText(
-        "$caloriesBurned cal",
-        spacing * 3 + 60f,
-        baseY,
-        textPaint
-    )
-    canvas.drawText(
-        "Calories",
-        spacing * 3 + 60f,
-        baseY + 45f,
-        subPaint
-    )
 
 
     bmp
