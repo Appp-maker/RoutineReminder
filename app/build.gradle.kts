@@ -12,16 +12,24 @@ android {
     namespace = "com.example.routinereminder"
     compileSdk = 35
 
+    val rapidApiKey = (project.findProperty("EXERCISEDB_RAPIDAPI_KEY") as String?) ?: ""
+    val rapidApiHost = (project.findProperty("EXERCISEDB_RAPIDAPI_HOST") as String?)
+        ?: "exercisedb.p.rapidapi.com"
+
     defaultConfig {
         applicationId = "com.example.routinereminder"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "EXERCISEDB_RAPIDAPI_KEY", "\"$rapidApiKey\"")
+        buildConfigField("String", "EXERCISEDB_RAPIDAPI_HOST", "\"$rapidApiHost\"")
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -119,5 +127,4 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
 }
-
 
