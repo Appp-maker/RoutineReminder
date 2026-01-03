@@ -74,6 +74,10 @@ class CalorieTrackerViewModel @Inject constructor(
         _pendingBundlePreview.value = bundleId
     }
 
+    fun clearBundlePreview() {
+        _pendingBundlePreview.value = null
+    }
+
 
     init {
         viewModelScope.launch {
@@ -98,6 +102,7 @@ class CalorieTrackerViewModel @Inject constructor(
 
     fun selectBundle(bundleId: Long) {
         viewModelScope.launch {
+            _pendingBundlePreview.value = bundleId
             val foodProduct = buildBundleAsFoodProduct(bundleId)
             _scannedFoodProduct.value = foodProduct
         }
@@ -119,7 +124,19 @@ class CalorieTrackerViewModel @Inject constructor(
             .sumOf { it.portionSizeG }
             .toDouble()
 
-        require(totalGrams > 0) { "Bundle has no items" }
+        if (totalGrams <= 0) {
+            return FoodProduct(
+                name = bundleWithItems.bundle.name,
+                caloriesPer100g = 0.0,
+                proteinPer100g = 0.0,
+                carbsPer100g = 0.0,
+                fatPer100g = 0.0,
+                fiberPer100g = 0.0,
+                saturatedFatPer100g = 0.0,
+                addedSugarsPer100g = 0.0,
+                sodiumPer100g = 0.0
+            )
+        }
 
         val factor = 100.0 / totalGrams
 
@@ -227,6 +244,7 @@ class CalorieTrackerViewModel @Inject constructor(
 
     fun clearScannedProduct() {
         _scannedFoodProduct.value = null
+        clearBundlePreview()
     }
 
 
@@ -367,7 +385,8 @@ class CalorieTrackerViewModel @Inject constructor(
 
     fun addBundleToTracker(
         bundleId: Long,
-        mealSlot: String
+        mealSlot: String,
+        portionSizeG: Double
     ) {
         viewModelScope.launch {
             val bundleDao = appDatabase.foodBundleDao()
@@ -375,23 +394,21 @@ class CalorieTrackerViewModel @Inject constructor(
             val today = selectedDate.value
 
             val bundleWithItems = bundleDao.getBundleWithItems(bundleId)
-            val totalGrams = bundleWithItems.items.sumOf { it.portionSizeG }.toDouble()
-            if (totalGrams <= 0.0) return@launch
-
-            val totalCalories = bundleWithItems.items.sumOf { it.calories }
-            val totalProtein = bundleWithItems.items.sumOf { it.proteinG }
-            val totalCarbs = bundleWithItems.items.sumOf { it.carbsG }
-            val totalFat = bundleWithItems.items.sumOf { it.fatG }
-            val totalFiber = bundleWithItems.items.sumOf { it.fiberG }
-            val totalSatFat = bundleWithItems.items.sumOf { it.saturatedFatG }
-            val totalSugar = bundleWithItems.items.sumOf { it.addedSugarsG }
-            val totalSodiumMg = bundleWithItems.items.sumOf { it.sodiumMg }
+            if (portionSizeG <= 0.0) return@launch
 
             val foodProduct = buildBundleAsFoodProduct(bundleId)
+            val totalCalories = (foodProduct.caloriesPer100g / 100.0) * portionSizeG
+            val totalProtein = (foodProduct.proteinPer100g / 100.0) * portionSizeG
+            val totalCarbs = (foodProduct.carbsPer100g / 100.0) * portionSizeG
+            val totalFat = (foodProduct.fatPer100g / 100.0) * portionSizeG
+            val totalFiber = (foodProduct.fiberPer100g / 100.0) * portionSizeG
+            val totalSatFat = (foodProduct.saturatedFatPer100g / 100.0) * portionSizeG
+            val totalSugar = (foodProduct.addedSugarsPer100g / 100.0) * portionSizeG
+            val totalSodiumMg = (foodProduct.sodiumPer100g * 1000.0 / 100.0) * portionSizeG
             val loggedFood = LoggedFood(
                 date = today.toString(),
                 foodProduct = foodProduct,
-                portionSizeG = totalGrams,
+                portionSizeG = portionSizeG,
                 calories = totalCalories,
                 proteinG = totalProtein,
                 carbsG = totalCarbs,
@@ -414,6 +431,10 @@ class CalorieTrackerViewModel @Inject constructor(
 
             calculateDailyTotals()
         }
+    }
+
+    suspend fun getBundleById(bundleId: Long): FoodBundle? {
+        return appDatabase.foodBundleDao().getBundleById(bundleId)
     }
 
 

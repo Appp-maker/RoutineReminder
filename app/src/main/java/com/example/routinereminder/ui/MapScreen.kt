@@ -28,6 +28,7 @@ import android.content.pm.PackageManager
 import android.graphics.*
 import android.location.Location
 import android.net.Uri
+import android.util.Log
 import com.example.routinereminder.data.SnapshotStorage
 
 import androidx.compose.foundation.background
@@ -107,6 +108,50 @@ private enum class TrackingMode(val label: String, val value: String) {
     }
 }
 
+private const val DEFAULT_WEIGHT_KG = 70.0
+private const val DEFAULT_HEIGHT_CM = 175.0
+private const val DEFAULT_AGE_YEARS = 30
+private const val DEFAULT_GENDER = "Male"
+private const val CALORIE_LOG_TAG = "CalorieProfile"
+
+private data class CalorieProfile(
+    val weightKg: Double,
+    val heightCm: Double,
+    val ageYears: Int,
+    val gender: String
+)
+
+private fun resolveCalorieProfile(
+    weightKg: Double?,
+    heightCm: Double?,
+    ageYears: Int?,
+    gender: String?,
+    source: String
+): CalorieProfile {
+    val resolvedWeight = weightKg ?: run {
+        Log.w(CALORIE_LOG_TAG, "$source: missing weight; using default $DEFAULT_WEIGHT_KG kg.")
+        DEFAULT_WEIGHT_KG
+    }
+    val resolvedHeight = heightCm ?: run {
+        Log.w(CALORIE_LOG_TAG, "$source: missing height; using default $DEFAULT_HEIGHT_CM cm.")
+        DEFAULT_HEIGHT_CM
+    }
+    val resolvedAge = ageYears ?: run {
+        Log.w(CALORIE_LOG_TAG, "$source: missing age; using default $DEFAULT_AGE_YEARS.")
+        DEFAULT_AGE_YEARS
+    }
+    val resolvedGender = gender ?: run {
+        Log.w(CALORIE_LOG_TAG, "$source: missing gender; using default $DEFAULT_GENDER.")
+        DEFAULT_GENDER
+    }
+    return CalorieProfile(
+        weightKg = resolvedWeight,
+        heightCm = resolvedHeight,
+        ageYears = resolvedAge,
+        gender = resolvedGender
+    )
+}
+
 @SuppressLint("MissingPermission")
 @Composable
 fun MapScreen(
@@ -155,11 +200,10 @@ fun MapScreen(
             viewModel.stopRun()
         }
     }
-    val noMovementTimeoutMs = remember { 2 * 60 * 1000L }
 
     // weight (read from MainViewModel if you already expose it; otherwise prompt will be handled there)
-    val weightKg by remember { mutableStateOf(viewModel.currentUserWeightKgOrNull()) } // implement in your MainViewModel; return null if unknown
-    var effectiveWeightKg by remember { mutableStateOf(weightKg ?: 70.0) } // default 70 if not provided yet
+    val weightKg by remember { mutableStateOf(viewModel.currentUserWeightKgOrNull()) }
+    var effectiveWeightKg by remember { mutableStateOf(weightKg ?: DEFAULT_WEIGHT_KG) }
 
 
     //Kalman filter
@@ -317,25 +361,35 @@ fun MapScreen(
     DisposableEffect(Unit) {
         val r = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, intent: Intent?) {
-                val lat = intent?.getDoubleExtra("lat", 0.0) ?: return
-                val lng = intent?.getDoubleExtra("lng", 0.0) ?: return
+                when (intent?.action) {
+                    TrackingService.ACTION_TRACKING_LOCATION -> {
+                        val lat = intent.getDoubleExtra("lat", 0.0)
+                        val lng = intent.getDoubleExtra("lng", 0.0)
 
-                // Convert broadcast into Location for your existing logic
-                val loc = Location("tracking").apply {
-                    latitude = lat
-                    longitude = lng
-                    accuracy = 5f
+                        // Convert broadcast into Location for your existing logic
+                        val loc = Location("tracking").apply {
+                            latitude = lat
+                            longitude = lng
+                            accuracy = 5f
+                        }
+                        onLocation(loc)
+                    }
+                    TrackingService.ACTION_TRACKING_IDLE -> {
+                        val idle = intent.getBooleanExtra(TrackingService.EXTRA_IDLE, false)
+                        if (idle) {
+                            stopRecording.value.invoke()
+                        }
+                    }
                 }
-                onLocation(loc)
             }
         }
 
         receiver = r
-        context.registerReceiver(
-            r,
-            IntentFilter("TRACKING_LOCATION"),
-            Context.RECEIVER_NOT_EXPORTED
-        )
+        val filter = IntentFilter().apply {
+            addAction(TrackingService.ACTION_TRACKING_LOCATION)
+            addAction(TrackingService.ACTION_TRACKING_IDLE)
+        }
+        context.registerReceiver(r, filter, Context.RECEIVER_NOT_EXPORTED)
 
 
         onDispose {
@@ -934,9 +988,20 @@ fun shareSessionImage(
     context: Context,
     mapView: MapView?,
     session: SessionStats,
-    includeMap: Boolean
+    includeMap: Boolean,
+    userWeightKg: Double?,
+    userHeightCm: Double?,
+    userAgeYears: Int?,
+    userGender: String?
 ) {
     clearOldCache(context)
+    val calorieProfile = resolveCalorieProfile(
+        weightKg = userWeightKg,
+        heightCm = userHeightCm,
+        ageYears = userAgeYears,
+        gender = userGender,
+        source = "shareSessionImage"
+    )
 
     fun drawTrailCentered(
         canvas: Canvas,
@@ -1067,16 +1132,12 @@ fun shareSessionImage(
             "cycling" -> ActivityType.CYCLING.met
             else -> ActivityType.RUNNING.met
         }
-        val defaultWeightKg = 70.0
-        val defaultHeightCm = 175.0
-        val defaultAge = 30
-        val defaultGender = "Male"
         val caloriesVal = calcCalories(
             met = met,
-            weightKg = defaultWeightKg,
-            heightCm = defaultHeightCm,
-            age = defaultAge,
-            gender = defaultGender,
+            weightKg = calorieProfile.weightKg,
+            heightCm = calorieProfile.heightCm,
+            age = calorieProfile.ageYears,
+            gender = calorieProfile.gender,
             durationSec = session.durationSec
         ).roundToInt()
 
@@ -1228,13 +1289,6 @@ private fun ModeChip(
 }
 
 /* --------- Hooks to your ViewModel for weight prompt (no-op defaults) --------- */
-// Implement these in your MainViewModel to read & store user weight from Room.
-// For now, these no-op fallbacks keep this file compile-safe.
-
-private fun MainViewModel.currentUserWeightKgOrNull(): Double? = null
-private fun MainViewModel.promptUserForWeightOnce(context: Context) {
-    /* show your dialog & save to DB */
-}
     // ------------ Kalman Filter for GPS ------------
     class KalmanLatLong(private var qMetersPerSecond: Float = 3f) {
 

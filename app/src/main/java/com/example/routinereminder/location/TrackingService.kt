@@ -125,10 +125,14 @@ class TrackingService : Service() {
                 if (idleNow != isIdle) {
                     isIdle = idleNow
                     updateLocationRequest()
+
+                    val idleIntent = Intent(ACTION_TRACKING_IDLE)
+                        .putExtra(EXTRA_IDLE, isIdle)
+                    sendBroadcast(idleIntent)
                 }
 
                 // Broadcast to your ViewModel
-                val intent = Intent("TRACKING_LOCATION")
+                val intent = Intent(ACTION_TRACKING_LOCATION)
                 intent.putExtra("lat", loc.latitude)
                 intent.putExtra("lng", loc.longitude)
                 sendBroadcast(intent)
@@ -144,7 +148,10 @@ class TrackingService : Service() {
     }
 
     companion object {
+        const val ACTION_TRACKING_LOCATION = "TRACKING_LOCATION"
+        const val ACTION_TRACKING_IDLE = "TRACKING_IDLE"
         const val EXTRA_TRACKING_MODE = "tracking_mode"
+        const val EXTRA_IDLE = "tracking_idle"
         const val MODE_HIGH_ACCURACY = "high_accuracy"
         const val MODE_BALANCED = "balanced"
 
@@ -154,7 +161,7 @@ class TrackingService : Service() {
         private const val BALANCED_MIN_DISTANCE_M = 7f
         private const val IDLE_INTERVAL_MS = 10000L
         private const val IDLE_MIN_DISTANCE_M = 10f
-        private const val IDLE_TIMEOUT_MS = 20000L
+        private const val IDLE_TIMEOUT_MS = 2 * 60 * 1000L
         private const val MOVEMENT_THRESHOLD_M = 8f
     }
 }

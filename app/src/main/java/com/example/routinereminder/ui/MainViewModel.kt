@@ -305,6 +305,23 @@ class MainViewModel @Inject constructor(
         // This is now handled by the SyncWorker
     }
 
+    fun currentUserWeightKgOrNull(): Double? = userSettings.value?.weightKg
+
+    fun currentUserHeightCmOrNull(): Double? = userSettings.value?.heightCm
+
+    fun currentUserAgeOrNull(): Int? = userSettings.value?.age
+
+    fun currentUserGenderOrNull(): String? = userSettings.value?.gender?.let { gender ->
+        when (gender) {
+            Gender.MALE -> "Male"
+            Gender.FEMALE -> "Female"
+        }
+    }
+
+    fun promptUserForWeightOnce(context: Context) {
+        // Hook up your own dialog flow here if needed.
+    }
+
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
         refreshScheduleItems()
