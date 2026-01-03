@@ -122,8 +122,6 @@ class WorkoutViewModel @Inject constructor(
                         it.copy(isLoading = false, errorMessage = error.message ?: "Unable to refresh ExerciseDB data.")
                     }
                 }
-                return@launch
-            }
             enqueueDownloadWork()
             monitorDownloadProgress()
         }
