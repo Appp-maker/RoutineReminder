@@ -35,6 +35,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val SELECTED_GOOGLE_ACCOUNT_NAME = stringPreferencesKey("selected_google_account_name")
     val SHOW_ALL_EVENTS = booleanPreferencesKey("show_all_events")
     val ENABLED_TABS = stringSetPreferencesKey("enabled_tabs")
+    val EXERCISE_DB_LAST_REFRESH = longPreferencesKey("exercise_db_last_refresh_epoch_ms")
+    val EXERCISE_DB_LAST_PROMPT = longPreferencesKey("exercise_db_last_prompt_epoch_ms")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -233,6 +235,30 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getEnabledTabs(): Flow<Set<String>?> {
         return dataStore.data.map { preferences ->
             preferences[ENABLED_TABS]
+        }
+    }
+
+    suspend fun saveExerciseDbLastRefresh(epochMillis: Long) {
+        dataStore.edit { preferences ->
+            preferences[EXERCISE_DB_LAST_REFRESH] = epochMillis
+        }
+    }
+
+    fun getExerciseDbLastRefresh(): Flow<Long> {
+        return dataStore.data.map { preferences ->
+            preferences[EXERCISE_DB_LAST_REFRESH] ?: 0L
+        }
+    }
+
+    suspend fun saveExerciseDbLastPrompt(epochMillis: Long) {
+        dataStore.edit { preferences ->
+            preferences[EXERCISE_DB_LAST_PROMPT] = epochMillis
+        }
+    }
+
+    fun getExerciseDbLastPrompt(): Flow<Long> {
+        return dataStore.data.map { preferences ->
+            preferences[EXERCISE_DB_LAST_PROMPT] ?: 0L
         }
     }
 }
