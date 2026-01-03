@@ -1,5 +1,6 @@
 package com.example.routinereminder.data.exercisedb
 
+import com.example.routinereminder.BuildConfig
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -8,6 +9,7 @@ import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -41,11 +43,7 @@ class ExerciseDbRepository(
         val path = when {
             trimmedQuery.isNotEmpty() -> "exercises/name/${trimmedQuery}"
             normalizedBodyPart != null -> "exercises/bodyPart/${normalizedBodyPart}"
-            else -> null
-        }
-
-        if (path == null) {
-            return Result.success(emptyList())
+            else -> "exercises"
         }
 
         return fetchExerciseList(path)
@@ -87,7 +85,7 @@ class ExerciseDbRepository(
     private suspend fun fetchJson(path: String): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             val url = baseUrl.toHttpUrl().newBuilder().addPathSegments(path).build()
-            val request = Request.Builder().url(url).build()
+            val request = buildRequest(url)
             client.newCall(request).execute().use { response ->
                 if (response.code == 404 || response.code == 204) {
                     return@runCatching "[]"
@@ -115,6 +113,19 @@ class ExerciseDbRepository(
                 response.body?.string() ?: throw IOException("ExerciseDB fallback response was empty")
             }
         }
+    }
+
+    private fun buildRequest(url: HttpUrl): Request {
+        val builder = Request.Builder().url(url)
+        val rapidApiKey = BuildConfig.EXERCISEDB_RAPIDAPI_KEY
+        val rapidApiHost = BuildConfig.EXERCISEDB_RAPIDAPI_HOST
+        if (rapidApiKey.isNotBlank()) {
+            builder.addHeader("x-rapidapi-key", rapidApiKey)
+        }
+        if (rapidApiHost.isNotBlank()) {
+            builder.addHeader("x-rapidapi-host", rapidApiHost)
+        }
+        return builder.build()
     }
 
     private fun parseExercise(item: JsonElement, index: Int): ExerciseDbExercise? {
@@ -209,7 +220,7 @@ class ExerciseDbRepository(
     }
 
     companion object {
-        const val DEFAULT_BASE_URL = "https://exercisedb-api.vercel.app/api/v1/"
+        const val DEFAULT_BASE_URL = "https://exercisedb.p.rapidapi.com/"
         const val FALLBACK_DATASET_URL =
             "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
     }
