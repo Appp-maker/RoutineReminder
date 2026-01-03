@@ -127,6 +127,38 @@ class WorkoutViewModel @Inject constructor(
         }
     }
 
+    private fun enqueueDownloadWork() {
+        val request = OneTimeWorkRequestBuilder<ExerciseDbDownloadWorker>().build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            ExerciseDbDownloadWorker.UNIQUE_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+            request
+        )
+    }
+
+    private fun monitorDownloadProgress() {
+        progressJob?.cancel()
+        progressJob = viewModelScope.launch {
+            while (true) {
+                val progress = repository.getDownloadProgress()
+                _uiState.update {
+                    it.copy(
+                        isExerciseDbReady = progress.isComplete,
+                        isExerciseDbDownloading = !progress.isComplete,
+                        exerciseDbDownloadedCount = progress.downloadedCount,
+                        exerciseDbTotalCount = progress.totalCount
+                    )
+                }
+                if (progress.isComplete) {
+                    refreshBodyParts()
+                    refreshExercises()
+                    return@launch
+                }
+                delay(1000)
+            }
+        }
+    }
+
     private fun scheduleRefresh() {
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
