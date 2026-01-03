@@ -216,7 +216,12 @@ fun RecipeIngredientEditorScreen(
                         searchResults.forEach { product ->
                             FoodSearchResultCard(
                                 product = product,
-                                onSelect = { applyFoodProduct(product) }
+                                onSelect = {
+                                    applyFoodProduct(product)
+                                    entryMode = IngredientEntryMode.CUSTOM
+                                    searchQuery = product.name
+                                    viewModel.clearSearchResults()
+                                }
                             )
                         }
                     }

@@ -116,6 +116,11 @@ class BundleViewModel @Inject constructor(
         }
     }
 
+    fun clearSearchResults() {
+        _searchResults.value = emptyList()
+        _searchError.value = null
+    }
+
     fun createBundle(
         name: String,
         description: String
