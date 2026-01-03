@@ -89,6 +89,9 @@ class ExerciseDbRepository(
             val url = baseUrl.toHttpUrl().newBuilder().addPathSegments(path).build()
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
+                if (response.code == 404 || response.code == 204) {
+                    return@runCatching "[]"
+                }
                 if (!response.isSuccessful) {
                     val message = if (response.code == 429) {
                         "ExerciseDB rate limit reached. Please try again shortly."
