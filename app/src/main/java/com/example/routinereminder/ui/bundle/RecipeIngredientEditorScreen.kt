@@ -43,14 +43,14 @@ fun RecipeIngredientEditorScreen(
 ) {
     var name by remember { mutableStateOf("") }
     var grams by remember { mutableStateOf("") }
-    var calories by remember { mutableStateOf("") }
-    var protein by remember { mutableStateOf("") }
-    var carbs by remember { mutableStateOf("") }
-    var fat by remember { mutableStateOf("") }
-    var fiber by remember { mutableStateOf("") }
-    var saturatedFat by remember { mutableStateOf("") }
-    var addedSugars by remember { mutableStateOf("") }
-    var sodium by remember { mutableStateOf("") }
+    var calories by remember { mutableStateOf("0") }
+    var protein by remember { mutableStateOf("0") }
+    var carbs by remember { mutableStateOf("0") }
+    var fat by remember { mutableStateOf("0") }
+    var fiber by remember { mutableStateOf("0") }
+    var saturatedFat by remember { mutableStateOf("0") }
+    var addedSugars by remember { mutableStateOf("0") }
+    var sodium by remember { mutableStateOf("0") }
     var entryMode by remember { mutableStateOf(IngredientEntryMode.CUSTOM) }
     var searchQuery by remember { mutableStateOf("") }
 
@@ -218,7 +218,6 @@ fun RecipeIngredientEditorScreen(
                                 product = product,
                                 onSelect = {
                                     applyFoodProduct(product)
-                                    entryMode = IngredientEntryMode.CUSTOM
                                     searchQuery = product.name
                                     viewModel.clearSearchResults()
                                 }
@@ -249,6 +248,7 @@ fun RecipeIngredientEditorScreen(
             onValueChange = { calories = it },
             label = { Text("Calories (kcal)") },
             keyboardOptions = decimalKeyboard,
+            enabled = entryMode == IngredientEntryMode.CUSTOM,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -257,6 +257,7 @@ fun RecipeIngredientEditorScreen(
             onValueChange = { protein = it },
             label = { Text("Protein (g)") },
             keyboardOptions = decimalKeyboard,
+            enabled = entryMode == IngredientEntryMode.CUSTOM,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -265,6 +266,7 @@ fun RecipeIngredientEditorScreen(
             onValueChange = { carbs = it },
             label = { Text("Carbs (g)") },
             keyboardOptions = decimalKeyboard,
+            enabled = entryMode == IngredientEntryMode.CUSTOM,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -273,6 +275,7 @@ fun RecipeIngredientEditorScreen(
             onValueChange = { fat = it },
             label = { Text("Fat (g)") },
             keyboardOptions = decimalKeyboard,
+            enabled = entryMode == IngredientEntryMode.CUSTOM,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -281,6 +284,7 @@ fun RecipeIngredientEditorScreen(
             onValueChange = { fiber = it },
             label = { Text("Fiber (g)") },
             keyboardOptions = decimalKeyboard,
+            enabled = entryMode == IngredientEntryMode.CUSTOM,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -289,6 +293,7 @@ fun RecipeIngredientEditorScreen(
             onValueChange = { saturatedFat = it },
             label = { Text("Saturated fat (g)") },
             keyboardOptions = decimalKeyboard,
+            enabled = entryMode == IngredientEntryMode.CUSTOM,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -297,6 +302,7 @@ fun RecipeIngredientEditorScreen(
             onValueChange = { addedSugars = it },
             label = { Text("Added sugars (g)") },
             keyboardOptions = decimalKeyboard,
+            enabled = entryMode == IngredientEntryMode.CUSTOM,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -305,6 +311,7 @@ fun RecipeIngredientEditorScreen(
             onValueChange = { sodium = it },
             label = { Text("Sodium (mg)") },
             keyboardOptions = decimalKeyboard,
+            enabled = entryMode == IngredientEntryMode.CUSTOM,
             modifier = Modifier.fillMaxWidth()
         )
 
