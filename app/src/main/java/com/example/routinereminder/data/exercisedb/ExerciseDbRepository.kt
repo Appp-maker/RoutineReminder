@@ -28,7 +28,11 @@ class ExerciseDbRepository(
     private val client: OkHttpClient = OkHttpClient(),
     private val gson: Gson = Gson()
 ) {
+    private var fallbackExercises: List<ExerciseDbExercise>? = null
+    private var fallbackBodyParts: List<String>? = null
+
     suspend fun fetchBodyParts(): Result<List<String>> = fetchStringList("exercises/bodyPartList")
+        .recoverCatching { loadFallbackBodyParts() }
 
     suspend fun fetchExercises(query: String, bodyPart: String?): Result<List<ExerciseDbExercise>> {
         val trimmedQuery = query.trim()
@@ -44,13 +48,17 @@ class ExerciseDbRepository(
             return Result.success(emptyList())
         }
 
-        return fetchExerciseList(path).map { exercises ->
-            if (normalizedBodyPart != null && trimmedQuery.isNotEmpty()) {
-                exercises.filter { it.bodyPart.equals(normalizedBodyPart, ignoreCase = true) }
-            } else {
-                exercises
+        return fetchExerciseList(path)
+            .recoverCatching {
+                loadFallbackExercises(trimmedQuery, normalizedBodyPart)
             }
-        }
+            .map { exercises ->
+                if (normalizedBodyPart != null && trimmedQuery.isNotEmpty()) {
+                    exercises.filter { it.bodyPart.equals(normalizedBodyPart, ignoreCase = true) }
+                } else {
+                    exercises
+                }
+            }
     }
 
     private suspend fun fetchExerciseList(path: String): Result<List<ExerciseDbExercise>> =
@@ -81,6 +89,9 @@ class ExerciseDbRepository(
             val url = baseUrl.toHttpUrl().newBuilder().addPathSegments(path).build()
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
+                if (response.code == 404 || response.code == 204) {
+                    return@runCatching "[]"
+                }
                 if (!response.isSuccessful) {
                     val message = if (response.code == 429) {
                         "ExerciseDB rate limit reached. Please try again shortly."
@@ -90,6 +101,18 @@ class ExerciseDbRepository(
                     throw IOException(message)
                 }
                 response.body?.string() ?: throw IOException("ExerciseDB response was empty")
+            }
+        }
+    }
+
+    private suspend fun fetchJsonFromUrl(url: String): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val request = Request.Builder().url(url).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("ExerciseDB fallback request failed: ${response.code}")
+                }
+                response.body?.string() ?: throw IOException("ExerciseDB fallback response was empty")
             }
         }
     }
@@ -124,7 +147,70 @@ class ExerciseDbRepository(
         return null
     }
 
+    private suspend fun loadFallbackBodyParts(): List<String> {
+        val cached = fallbackBodyParts
+        if (cached != null) return cached
+        val exercises = loadFallbackExercisesFromDataset()
+        val bodyParts = exercises.map { it.bodyPart }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+        fallbackBodyParts = bodyParts
+        return bodyParts
+    }
+
+    private suspend fun loadFallbackExercises(query: String, bodyPart: String?): List<ExerciseDbExercise> {
+        val exercises = loadFallbackExercisesFromDataset()
+        val queryNormalized = query.trim().lowercase()
+        return exercises.filter { exercise ->
+            val matchesQuery = queryNormalized.isBlank() || exercise.name.lowercase().contains(queryNormalized)
+            val matchesBodyPart = bodyPart.isNullOrBlank() || exercise.bodyPart.equals(bodyPart, ignoreCase = true)
+            matchesQuery && matchesBodyPart
+        }
+    }
+
+    private suspend fun loadFallbackExercisesFromDataset(): List<ExerciseDbExercise> {
+        val cached = fallbackExercises
+        if (cached != null) return cached
+        val json = fetchJsonFromUrl(FALLBACK_DATASET_URL).getOrThrow()
+        val element = JsonParser.parseString(json)
+        if (!element.isJsonArray) {
+            return emptyList()
+        }
+        val exercises = element.asJsonArray.mapIndexedNotNull { index, item ->
+            if (!item.isJsonObject) return@mapIndexedNotNull null
+            val obj = item.asJsonObject
+            val name = obj.readString("name") ?: return@mapIndexedNotNull null
+            val equipment = obj.readString("equipment") ?: "Unknown equipment"
+            val id = obj.readString("id") ?: "${name}-${index}"
+            val primaryMuscles = obj.readStringList("primaryMuscles")
+            val secondaryMuscles = obj.readStringList("secondaryMuscles")
+            val bodyPart = primaryMuscles.firstOrNull() ?: "Unknown body part"
+            val target = secondaryMuscles.firstOrNull() ?: "General"
+            ExerciseDbExercise(
+                id = id,
+                name = name,
+                bodyPart = bodyPart,
+                target = target,
+                equipment = equipment,
+                gifUrl = null
+            )
+        }
+        fallbackExercises = exercises
+        return exercises
+    }
+
+    private fun JsonObject.readStringList(key: String): List<String> {
+        val value = this.get(key)
+        if (value == null || !value.isJsonArray) return emptyList()
+        return value.asJsonArray.mapNotNull { item ->
+            if (item.isJsonNull) null else item.asString
+        }
+    }
+
     companion object {
         const val DEFAULT_BASE_URL = "https://exercisedb-api.vercel.app/api/v1/"
+        const val FALLBACK_DATASET_URL =
+            "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
     }
 }
