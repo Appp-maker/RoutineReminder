@@ -2,14 +2,16 @@ package com.example.routinereminder.ui
 import com.example.routinereminder.data.entities.ScheduleDone
 
 import android.app.Application
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.data.AppDatabase
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.RunSessionRepository
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.data.UserSettings
+import com.example.routinereminder.data.model.ActiveRunState
+import com.example.routinereminder.data.model.TrailPoint
 import com.example.routinereminder.data.mappers.toEntity
 import com.example.routinereminder.data.mappers.toItem
 import com.example.routinereminder.util.NotificationScheduler
@@ -26,6 +28,9 @@ import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.distinctUntilChanged
+import java.util.UUID
+import org.maplibre.geojson.Point
 
 data class CalendarInfo(val id: String, val displayName: String, val accountName: String)
 
@@ -33,7 +38,8 @@ data class CalendarInfo(val id: String, val displayName: String, val accountName
 class MainViewModel @Inject constructor(
     application: Application,
     private val database: AppDatabase,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val runSessionRepository: RunSessionRepository
 ) : AndroidViewModel(application) {
 
     private val scheduleDao = database.scheduleDao()
@@ -111,6 +117,14 @@ class MainViewModel @Inject constructor(
     private val _userSettings = MutableStateFlow<UserSettings?>(null)
     val userSettings: StateFlow<UserSettings?> = _userSettings.asStateFlow()
 
+    private val _activeRunState = MutableStateFlow<ActiveRunState?>(null)
+    val activeRunState: StateFlow<ActiveRunState?> = _activeRunState.asStateFlow()
+
+    private val _trailPoints = MutableStateFlow<List<Point>>(emptyList())
+    val trailPoints: StateFlow<List<Point>> = _trailPoints.asStateFlow()
+
+    private var trailJob: Job? = null
+
     init {
         viewModelScope.launch {
             settingsRepository.getUserSettings().collectLatest {
@@ -172,7 +186,107 @@ class MainViewModel @Inject constructor(
             }
         }
 
+        viewModelScope.launch {
+            runSessionRepository.activeRunState.collectLatest { state ->
+                _activeRunState.value = state
+                trackTrailForSession(state?.sessionId)
+            }
+        }
+
         refreshScheduleItems()
+    }
+
+    private fun trackTrailForSession(sessionId: String?) {
+        trailJob?.cancel()
+        if (sessionId == null) {
+            _trailPoints.value = emptyList()
+            return
+        }
+        trailJob = viewModelScope.launch {
+            runSessionRepository.trailPoints(sessionId)
+                .distinctUntilChanged()
+                .collectLatest { points ->
+                    _trailPoints.value = points.map { Point.fromLngLat(it.lng, it.lat) }
+                }
+        }
+    }
+
+    fun startRun(activity: String, trackingMode: String) {
+        val sessionId = UUID.randomUUID().toString()
+        val startEpochMs = System.currentTimeMillis()
+        val state = ActiveRunState(
+            sessionId = sessionId,
+            activity = activity,
+            isRecording = true,
+            trackingMode = trackingMode,
+            startEpochMs = startEpochMs,
+            distanceMeters = 0.0,
+            durationSec = 0L,
+            calories = 0.0
+        )
+        _activeRunState.value = state
+        _trailPoints.value = emptyList()
+        viewModelScope.launch {
+            runSessionRepository.saveActiveRunState(state)
+            runSessionRepository.saveTrailPoints(sessionId, emptyList())
+        }
+    }
+
+    fun resumeRun() {
+        val state = _activeRunState.value ?: return
+        if (state.isRecording) return
+        val updated = state.copy(isRecording = true)
+        _activeRunState.value = updated
+        viewModelScope.launch {
+            runSessionRepository.saveActiveRunState(updated)
+        }
+    }
+
+    fun stopRun() {
+        val state = _activeRunState.value ?: return
+        val updated = state.copy(isRecording = false)
+        _activeRunState.value = updated
+        viewModelScope.launch {
+            runSessionRepository.saveActiveRunState(updated)
+        }
+    }
+
+    fun updateTrackingMode(trackingMode: String) {
+        updateActiveRunState { it.copy(trackingMode = trackingMode) }
+    }
+
+    fun updateRunStats(distanceMeters: Double, durationSec: Long, calories: Double) {
+        updateActiveRunState {
+            it.copy(distanceMeters = distanceMeters, durationSec = durationSec, calories = calories)
+        }
+    }
+
+    fun setTrailPoints(points: List<Point>) {
+        val state = _activeRunState.value ?: return
+        _trailPoints.value = points
+        val stored = points.map { TrailPoint(lat = it.latitude(), lng = it.longitude()) }
+        viewModelScope.launch {
+            runSessionRepository.saveTrailPoints(state.sessionId, stored)
+        }
+    }
+
+    fun discardRun() {
+        val state = _activeRunState.value ?: return
+        _activeRunState.value = null
+        _trailPoints.value = emptyList()
+        viewModelScope.launch {
+            runSessionRepository.saveActiveRunState(null)
+            runSessionRepository.clearTrailPoints(state.sessionId)
+        }
+    }
+
+    private fun updateActiveRunState(transform: (ActiveRunState) -> ActiveRunState) {
+        val current = _activeRunState.value ?: return
+        val updated = transform(current)
+        _activeRunState.value = updated
+        viewModelScope.launch {
+            runSessionRepository.saveActiveRunState(updated)
+        }
     }
 
     fun saveUserSettings(userSettings: UserSettings) {

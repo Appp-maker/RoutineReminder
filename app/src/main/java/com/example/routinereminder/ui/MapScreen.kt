@@ -17,6 +17,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import android.app.ActivityManager
 import android.Manifest
 import android.annotation.SuppressLint
 import org.maplibre.android.maps.MapLibreMap
@@ -40,6 +41,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color as ComposeColor
@@ -75,6 +77,8 @@ import kotlin.math.roundToInt
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import com.example.routinereminder.location.TrackingService
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalLifecycleOwner
 
 
@@ -82,11 +86,25 @@ private enum class ActivityType(val label: String, val met: Double) {
     WALKING("Walking", 3.8),
     RUNNING("Running", 9.8),
     CYCLING("Cycling", 8.0)
+    ;
+
+    companion object {
+        fun fromLabel(label: String?): ActivityType {
+            return values().firstOrNull { it.label.equals(label, ignoreCase = true) } ?: RUNNING
+        }
+    }
 }
 
 private enum class TrackingMode(val label: String, val value: String) {
     BALANCED("Balanced", TrackingService.MODE_BALANCED),
     HIGH_ACCURACY("High accuracy", TrackingService.MODE_HIGH_ACCURACY)
+    ;
+
+    companion object {
+        fun fromValue(value: String?): TrackingMode {
+            return values().firstOrNull { it.value == value } ?: BALANCED
+        }
+    }
 }
 
 @SuppressLint("MissingPermission")
@@ -105,25 +123,27 @@ fun MapScreen(
     // UI state
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var mapView by remember { mutableStateOf<MapView?>(null) }
-    var recording by remember { mutableStateOf(false) }
-    var firstFix by remember { mutableStateOf(true) }
-    var userZoom by remember { mutableStateOf(15.5) }
-    var includeMapInShare by remember { mutableStateOf(true) }
-    var activity by remember { mutableStateOf(ActivityType.RUNNING) }
-    var trackingMode by remember { mutableStateOf(TrackingMode.BALANCED) }
-    var trackingMenuExpanded by remember { mutableStateOf(false) }
+    var userZoom by rememberSaveable { mutableStateOf(15.5) }
+    var selectedActivity by rememberSaveable { mutableStateOf(ActivityType.RUNNING) }
+    var selectedTrackingMode by rememberSaveable { mutableStateOf(TrackingMode.BALANCED) }
+    var trackingMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
     // live stats
-    var distanceMeters by remember { mutableStateOf(0.0) }
-    var durationSec by remember { mutableStateOf(0L) }
-    var calories by remember { mutableStateOf(0.0) }
-    val trail = remember { mutableStateListOf<Point>() }
+    val runState by viewModel.activeRunState.collectAsState()
+    val trailPoints by viewModel.trailPoints.collectAsState()
+    val recording = runState?.isRecording == true
+    val activity = runState?.activity?.let { ActivityType.fromLabel(it) } ?: selectedActivity
+    val trackingMode = TrackingMode.fromValue(runState?.trackingMode ?: selectedTrackingMode.value)
+    val distanceMeters = runState?.distanceMeters ?: 0.0
+    val durationSec = runState?.durationSec ?: 0L
+    val calories = runState?.calories ?: 0.0
 
     // timer
     val scope = rememberCoroutineScope()
     var timerJob by remember { mutableStateOf<Job?>(null) }
     var inactivityJob by remember { mutableStateOf<Job?>(null) }
-    var lastMovementAt by remember { mutableStateOf<Long?>(null) }
+    var lastMovementAt by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showResumePrompt by rememberSaveable { mutableStateOf(false) }
     val stopRecording = rememberUpdatedState {
         if (recording) {
             stopTracking(context)
@@ -131,7 +151,8 @@ fun MapScreen(
             timerJob = null
             inactivityJob?.cancel()
             inactivityJob = null
-            recording = false
+            showResumePrompt = false
+            viewModel.stopRun()
         }
     }
     val noMovementTimeoutMs = remember { 2 * 60 * 1000L }
@@ -147,10 +168,59 @@ fun MapScreen(
     var smoothedLng by remember { mutableStateOf<Double?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    fun startRunTimers() {
+        timerJob?.cancel()
+        timerJob = scope.launch {
+            while (isActive) {
+                delay(1000L)
+                val newDuration = durationSec + 1
+                val met = activity.met
+                val heightCm = 175.0
+                val ageYears = 30
+                val gender = "Male"
+                val newCalories = calcCalories(
+                    met = met,
+                    weightKg = effectiveWeightKg,
+                    heightCm = heightCm,
+                    age = ageYears,
+                    gender = gender,
+                    durationSec = newDuration
+                )
+                viewModel.updateRunStats(distanceMeters, newDuration, newCalories)
+            }
+        }
+        inactivityJob?.cancel()
+        inactivityJob = scope.launch {
+            while (isActive) {
+                delay(5000L)
+                val lastMove = lastMovementAt
+                if (lastMove != null &&
+                    System.currentTimeMillis() - lastMove > noMovementTimeoutMs
+                ) {
+                    stopRecording.value.invoke()
+                    break
+                }
+            }
+        }
+    }
+
     // ask once if weight missing
     LaunchedEffect(weightKg) {
         if (weightKg == null) {
             viewModel.promptUserForWeightOnce(context) // show your own dialog flow wired to DB
+        }
+    }
+
+    LaunchedEffect(runState?.sessionId, runState?.isRecording) {
+        showResumePrompt = runState != null && !isTrackingServiceRunning(context)
+    }
+
+    LaunchedEffect(runState?.sessionId, runState?.isRecording) {
+        if (runState?.isRecording == true && isTrackingServiceRunning(context)) {
+            startTracking(context, TrackingMode.fromValue(runState.trackingMode))
+            if (timerJob == null) {
+                startRunTimers()
+            }
         }
     }
 
@@ -194,7 +264,7 @@ fun MapScreen(
         // -----------------------------
         // 4) Min-movement filter (removes jitter)
         // -----------------------------
-        val last = trail.lastOrNull()
+        val last = trailPoints.lastOrNull()
         var allowTrailUpdate = true
         if (last != null) {
             val delta = haversineMeters(last, newPoint)
@@ -222,13 +292,18 @@ fun MapScreen(
 
         // trail update
         if (allowTrailUpdate && (last == null || last != newPoint)) {
-            // distance increment
-            if (last != null) distanceMeters += haversineMeters(last, newPoint)
+            val newDistance = if (last != null) {
+                distanceMeters + haversineMeters(last, newPoint)
+            } else {
+                distanceMeters
+            }
 
-            trail.add(newPoint)
+            val updatedTrail = trailPoints + newPoint
+            viewModel.updateRunStats(newDistance, durationSec, calories)
+            viewModel.setTrailPoints(updatedTrail)
             lastMovementAt = System.currentTimeMillis()
 
-            val line = LineString.fromLngLats(trail.toList())
+            val line = LineString.fromLngLats(updatedTrail)
             val trailSource = s.getSourceAs("trail-source") as? GeoJsonSource
             trailSource?.setGeoJson(Feature.fromGeometry(line))
         }
@@ -281,6 +356,49 @@ fun MapScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
+
+    LaunchedEffect(map, trailPoints) {
+        val m = map ?: return@LaunchedEffect
+        val s = m.style ?: return@LaunchedEffect
+        val source = s.getSourceAs("trail-source") as? GeoJsonSource ?: return@LaunchedEffect
+        val line = LineString.fromLngLats(trailPoints)
+        source.setGeoJson(Feature.fromGeometry(line))
+    }
+
+    if (showResumePrompt && runState != null) {
+        AlertDialog(
+            onDismissRequest = { showResumePrompt = false },
+            title = { Text(text = "Resume run?") },
+            text = {
+                Text(
+                    text = "We found an in-progress run. Would you like to resume or discard it?"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.resumeRun()
+                        startTracking(context, TrackingMode.fromValue(runState.trackingMode))
+                        lastMovementAt = System.currentTimeMillis()
+                        startRunTimers()
+                        showResumePrompt = false
+                    }
+                ) {
+                    Text("Resume")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.discardRun()
+                        showResumePrompt = false
+                    }
+                ) {
+                    Text("Discard")
+                }
+            }
+        )
+    }
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
@@ -327,10 +445,11 @@ fun MapScreen(
                         DropdownMenuItem(
                             text = { Text(mode.label) },
                             onClick = {
-                                trackingMode = mode
+                                selectedTrackingMode = mode
                                 trackingMenuExpanded = false
                                 if (recording) {
-                                    startTracking(context, trackingMode)
+                                    viewModel.updateTrackingMode(mode.value)
+                                    startTracking(context, mode)
                                 }
                             }
                         )
@@ -382,9 +501,9 @@ fun MapScreen(
 
                                     m.addOnCameraMoveListener { userZoom = m.cameraPosition.zoom }
 
-                                    if (trail.isNotEmpty()) {
+                                    if (trailPoints.isNotEmpty()) {
                                         // Zoom to full trail if points exist
-                                        zoomToTrailOnMapOpen(m, trail.toList())
+                                        zoomToTrailOnMapOpen(m, trailPoints)
                                     } else {
                                         // Safe LocationComponent setup — run only after style is loaded
                                         try {
@@ -462,8 +581,8 @@ fun MapScreen(
                     if (!recording) {
                         // Show activity selector only before recording
                         ActivitySelector(
-                            current = activity,
-                            onChange = { activity = it }
+                            current = selectedActivity,
+                            onChange = { selectedActivity = it }
                         )
                         Spacer(Modifier.height(12.dp))
                     }
@@ -495,52 +614,13 @@ fun MapScreen(
                             onClick = {
                                 if (!recording) {
                                     // --- Start logic ---
-                                    distanceMeters = 0.0
-                                    durationSec = 0L
-                                    calories = 0.0
-                                    trail.clear()
-                                    firstFix = true
                                     lastMovementAt = System.currentTimeMillis()
+                                    viewModel.startRun(selectedActivity.label, selectedTrackingMode.value)
 
                                     // Start Foreground GPS Tracking Service
                                     startTracking(context, trackingMode)
 
-                                    // Start timer job
-                                    timerJob?.cancel()
-                                    timerJob = scope.launch {
-                                        while (isActive) {
-                                            delay(1000L)
-                                            durationSec += 1
-
-                                            val met = activity.met
-                                            val heightCm = 175.0
-                                            val ageYears = 30
-                                            val gender = "Male"
-                                            calories = calcCalories(
-                                                met = met,
-                                                weightKg = effectiveWeightKg,
-                                                heightCm = heightCm,
-                                                age = ageYears,
-                                                gender = gender,
-                                                durationSec = durationSec
-                                            )
-                                        }
-                                    }
-                                    inactivityJob?.cancel()
-                                    inactivityJob = scope.launch {
-                                        while (isActive) {
-                                            delay(5000L)
-                                            val lastMove = lastMovementAt
-                                            if (lastMove != null &&
-                                                System.currentTimeMillis() - lastMove > noMovementTimeoutMs
-                                            ) {
-                                                stopRecording.value.invoke()
-                                                break
-                                            }
-                                        }
-                                    }
-
-                                    recording = true
+                                    startRunTimers()
 
                                 } else {
                                     // --- Stop logic ---
@@ -549,30 +629,34 @@ fun MapScreen(
                                     timerJob = null
                                     inactivityJob?.cancel()
                                     inactivityJob = null
-                                    recording = false
+                                    showResumePrompt = false
+                                    viewModel.stopRun()
 
                                     // Avoid saving empty or invalid sessions
-                                    if (distanceMeters < 5 || durationSec < 5) return@Button
+                                    if (distanceMeters < 5 || durationSec < 5) {
+                                        viewModel.discardRun()
+                                        return@Button
+                                    }
 
                                     val now = System.currentTimeMillis()
-                                    val startTime = now - (durationSec * 1000).coerceAtLeast(1000L)
+                                    val startTime = runState?.startEpochMs ?: now
                                     val pace = avgPaceSecPerKm(distanceMeters, durationSec)
 
                                     val session = SessionStats(
-                                        id = now.toString(),
+                                        id = runState?.sessionId ?: now.toString(),
                                         activity = activity.label,
                                         startEpochMs = startTime,
                                         endEpochMs = now,
                                         durationSec = durationSec,
                                         distanceMeters = distanceMeters,
                                         avgPaceSecPerKm = pace,
-                                        polyline = trail.toList()
+                                        polyline = trailPoints
                                     )
 
                                     SessionStore.saveSession(context, session)
 
                                     mapView?.getMapAsync { map ->
-                                        if (trail.size < 2) {
+                                        if (trailPoints.size < 2) {
                                             map.snapshot { bmp ->
                                                 if (bmp != null) {
                                                     val path = SnapshotStorage.saveSnapshotForSession(context, session.id, bmp)
@@ -582,7 +666,7 @@ fun MapScreen(
                                             }
                                         } else {
                                             val boundsBuilder = org.maplibre.android.geometry.LatLngBounds.Builder()
-                                            trail.forEach { point ->
+                                            trailPoints.forEach { point ->
                                                 boundsBuilder.include(
                                                     org.maplibre.android.geometry.LatLng(point.latitude(), point.longitude())
                                                 )
@@ -615,6 +699,7 @@ fun MapScreen(
                                             })
                                         }
                                     }
+                                    viewModel.discardRun()
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -659,6 +744,13 @@ private fun launchSharePreview(context: Context, session: SessionStats, bmp: Bit
             putExtra("sessionId", session.id)
         }
         context.startActivity(intent)
+    }
+}
+
+private fun isTrackingServiceRunning(context: Context): Boolean {
+    val manager = context.getSystemService(ActivityManager::class.java) ?: return false
+    return manager.getRunningServices(Int.MAX_VALUE).any { service ->
+        service.service.className == TrackingService::class.java.name
     }
 }
 
