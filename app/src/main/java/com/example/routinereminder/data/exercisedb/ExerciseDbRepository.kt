@@ -2,6 +2,8 @@ package com.example.routinereminder.data.exercisedb
 
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
@@ -32,13 +34,19 @@ class ExerciseDbRepository(
         val trimmedQuery = query.trim()
         val normalizedBodyPart = bodyPart?.takeIf { it.isNotBlank() }
 
-        val path = when {
-            trimmedQuery.isNotEmpty() -> "exercises/name/${trimmedQuery}"
-            normalizedBodyPart != null -> "exercises/bodyPart/${normalizedBodyPart}"
-            else -> "exercises"
+        val path = if (normalizedBodyPart != null) {
+            "exercises/bodyPart/${normalizedBodyPart}"
+        } else {
+            "exercises"
         }
 
-        return fetchExerciseList(path)
+        return fetchExerciseList(path).map { exercises ->
+            if (trimmedQuery.isEmpty()) {
+                exercises
+            } else {
+                exercises.filter { it.name.contains(trimmedQuery, ignoreCase = true) }
+            }
+        }
     }
 
     private suspend fun fetchExerciseList(path: String): Result<List<ExerciseDbExercise>> =
@@ -50,8 +58,7 @@ class ExerciseDbRepository(
                 element.isJsonObject && element.asJsonObject.has("results") -> element.asJsonObject.getAsJsonArray("results")
                 else -> JsonArray()
             }
-            val type = object : TypeToken<List<ExerciseDbExercise>>() {}.type
-            gson.fromJson(array, type)
+            array.mapIndexedNotNull { index, item -> parseExercise(item, index) }
         }
 
     private suspend fun fetchStringList(path: String): Result<List<String>> = fetchJson(path).mapCatching { json ->
@@ -76,6 +83,36 @@ class ExerciseDbRepository(
                 response.body?.string() ?: throw IOException("ExerciseDB response was empty")
             }
         }
+    }
+
+    private fun parseExercise(item: JsonElement, index: Int): ExerciseDbExercise? {
+        if (!item.isJsonObject) return null
+        val obj = item.asJsonObject
+        val name = obj.readString("name") ?: return null
+        val bodyPart = obj.readString("bodyPart", "body_part") ?: "Unknown body part"
+        val target = obj.readString("target") ?: "Unknown target"
+        val equipment = obj.readString("equipment") ?: "Unknown equipment"
+        val id = obj.readString("id", "_id", "uuid", "exerciseId")
+            ?: "${name}-${bodyPart}-${target}-${equipment}-${index}"
+        val gifUrl = obj.readString("gifUrl", "gif_url")
+        return ExerciseDbExercise(
+            id = id,
+            name = name,
+            bodyPart = bodyPart,
+            target = target,
+            equipment = equipment,
+            gifUrl = gifUrl
+        )
+    }
+
+    private fun JsonObject.readString(vararg keys: String): String? {
+        for (key in keys) {
+            val value = this.get(key)
+            if (value != null && !value.isJsonNull) {
+                return value.asString
+            }
+        }
+        return null
     }
 
     companion object {
