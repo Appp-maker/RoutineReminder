@@ -40,9 +40,9 @@ class ExerciseDbRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val client: OkHttpClient,
-    private val gson: Gson
-) {
+    private val gson: Gson,
     private val baseUrl: String = DEFAULT_BASE_URL
+) {
     private val cacheMutex = Mutex()
     private val refreshMutex = Mutex()
     private val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
