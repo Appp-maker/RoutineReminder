@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
 import com.example.routinereminder.data.exercisedb.ExerciseDbRepository
 import com.example.routinereminder.data.workout.WorkoutPlan
+import com.example.routinereminder.data.workout.WorkoutPlanRepository
 import com.example.routinereminder.workers.ExerciseDbDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,7 +43,8 @@ data class WorkoutUiState(
 @HiltViewModel
 class WorkoutViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val repository: ExerciseDbRepository
+    private val repository: ExerciseDbRepository,
+    private val workoutPlanRepository: WorkoutPlanRepository
 ) : ViewModel() {
     private val requiredBodyParts = listOf(
         "back",
@@ -63,6 +65,7 @@ class WorkoutViewModel @Inject constructor(
     private var progressJob: Job? = null
 
     init {
+        observeWorkoutPlans()
         initializeExerciseDatabase()
         checkRefreshPrompt()
     }
@@ -299,56 +302,60 @@ class WorkoutViewModel @Inject constructor(
             return false
         }
         val newPlan = WorkoutPlan(id = UUID.randomUUID().toString(), name = trimmed)
+        val updatedPlans = _uiState.value.plans + newPlan
         _uiState.update {
             it.copy(
-                plans = it.plans + newPlan,
+                plans = updatedPlans,
                 selectedPlanId = newPlan.id,
                 errorMessage = null
             )
         }
+        persistPlans(updatedPlans, newPlan.id)
         return true
     }
 
     fun selectPlan(planId: String?) {
         _uiState.update { it.copy(selectedPlanId = planId) }
+        persistPlans(_uiState.value.plans, planId)
     }
 
     fun removePlan(planId: String) {
-        _uiState.update { state ->
-            val updatedPlans = state.plans.filterNot { it.id == planId }
-            val updatedSelected = if (state.selectedPlanId == planId) updatedPlans.firstOrNull()?.id else state.selectedPlanId
-            state.copy(plans = updatedPlans, selectedPlanId = updatedSelected)
+        val updatedPlans = _uiState.value.plans.filterNot { it.id == planId }
+        val updatedSelected = if (_uiState.value.selectedPlanId == planId) {
+            updatedPlans.firstOrNull()?.id
+        } else {
+            _uiState.value.selectedPlanId
         }
+        _uiState.update { state -> state.copy(plans = updatedPlans, selectedPlanId = updatedSelected) }
+        persistPlans(updatedPlans, updatedSelected)
     }
 
     fun addExerciseToPlan(planId: String, exercise: ExerciseDbExercise) {
-        _uiState.update { state ->
-            val updatedPlans = state.plans.map { plan ->
-                if (plan.id == planId) {
-                    if (plan.exercises.any { it.id == exercise.id }) {
-                        plan
-                    } else {
-                        plan.copy(exercises = plan.exercises + exercise)
-                    }
-                } else {
+        val updatedPlans = _uiState.value.plans.map { plan ->
+            if (plan.id == planId) {
+                if (plan.exercises.any { it.id == exercise.id }) {
                     plan
+                } else {
+                    plan.copy(exercises = plan.exercises + exercise)
                 }
+            } else {
+                plan
             }
-            state.copy(plans = updatedPlans)
         }
+        _uiState.update { state -> state.copy(plans = updatedPlans) }
+        persistPlans(updatedPlans, _uiState.value.selectedPlanId)
     }
 
     fun removeExerciseFromPlan(planId: String, exerciseId: String) {
-        _uiState.update { state ->
-            val updatedPlans = state.plans.map { plan ->
-                if (plan.id == planId) {
-                    plan.copy(exercises = plan.exercises.filterNot { it.id == exerciseId })
-                } else {
-                    plan
-                }
+        val updatedPlans = _uiState.value.plans.map { plan ->
+            if (plan.id == planId) {
+                plan.copy(exercises = plan.exercises.filterNot { it.id == exerciseId })
+            } else {
+                plan
             }
-            state.copy(plans = updatedPlans)
         }
+        _uiState.update { state -> state.copy(plans = updatedPlans) }
+        persistPlans(updatedPlans, _uiState.value.selectedPlanId)
     }
 
     private fun filterExercises(
@@ -363,6 +370,22 @@ class WorkoutViewModel @Inject constructor(
             val matchesBodyPart = normalizedBodyPart.isNullOrBlank() ||
                 exercise.bodyPart.equals(normalizedBodyPart, ignoreCase = true)
             matchesQuery && matchesBodyPart
+        }
+    }
+
+    private fun observeWorkoutPlans() {
+        viewModelScope.launch {
+            workoutPlanRepository.planState.collect { state ->
+                _uiState.update { uiState ->
+                    uiState.copy(plans = state.plans, selectedPlanId = state.selectedPlanId)
+                }
+            }
+        }
+    }
+
+    private fun persistPlans(plans: List<WorkoutPlan>, selectedPlanId: String?) {
+        viewModelScope.launch {
+            workoutPlanRepository.savePlans(plans, selectedPlanId)
         }
     }
 }
