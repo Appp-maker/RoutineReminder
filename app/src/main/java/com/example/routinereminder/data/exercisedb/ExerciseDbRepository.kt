@@ -23,6 +23,7 @@ import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 
@@ -41,7 +42,7 @@ class ExerciseDbRepository @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val client: OkHttpClient,
     private val gson: Gson,
-    private val baseUrl: String = DEFAULT_BASE_URL
+    @Named("exerciseDbBaseUrl") private val baseUrl: String = DEFAULT_BASE_URL
 ) {
     private val cacheMutex = Mutex()
     private val refreshMutex = Mutex()
