@@ -34,6 +34,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val IMPORT_TARGET_CALENDAR_ID_FOR_BOTH_MODE = stringPreferencesKey("import_target_calendar_id_for_both_mode")
     val SELECTED_GOOGLE_ACCOUNT_NAME = stringPreferencesKey("selected_google_account_name")
     val SHOW_ALL_EVENTS = booleanPreferencesKey("show_all_events")
+    val ENABLED_TABS = stringSetPreferencesKey("enabled_tabs")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -220,6 +221,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getShowAllEvents(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[SHOW_ALL_EVENTS] ?: false
+        }
+    }
+
+    suspend fun saveEnabledTabs(tabIds: Set<String>) {
+        dataStore.edit { preferences ->
+            preferences[ENABLED_TABS] = tabIds
+        }
+    }
+
+    fun getEnabledTabs(): Flow<Set<String>?> {
+        return dataStore.data.map { preferences ->
+            preferences[ENABLED_TABS]
         }
     }
 }

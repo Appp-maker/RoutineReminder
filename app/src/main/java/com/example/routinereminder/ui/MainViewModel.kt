@@ -96,6 +96,9 @@ class MainViewModel @Inject constructor(
     private val _calendarEventCounts = MutableStateFlow(CalendarEventCounts())
     val calendarEventCounts: StateFlow<CalendarEventCounts> = _calendarEventCounts.asStateFlow()
 
+    private val _enabledTabs = MutableStateFlow<Set<AppTab>?>(null)
+    val enabledTabs: StateFlow<Set<AppTab>?> = _enabledTabs.asStateFlow()
+
     val showGoogleCalendarChooser = Channel<Unit>()
 
     private val _syncStatus = Channel<String>()
@@ -294,6 +297,12 @@ class MainViewModel @Inject constructor(
     fun saveUserSettings(userSettings: UserSettings) {
         viewModelScope.launch {
             settingsRepository.saveUserSettings(userSettings)
+        }
+    }
+
+    fun saveEnabledTabs(tabs: Set<AppTab>) {
+        viewModelScope.launch {
+            settingsRepository.saveEnabledTabs(tabs.map { it.id }.toSet())
         }
     }
 

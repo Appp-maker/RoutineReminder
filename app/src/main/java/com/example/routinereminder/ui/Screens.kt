@@ -1,6 +1,7 @@
 package com.example.routinereminder.ui
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Restaurant
@@ -33,6 +34,12 @@ sealed class Screen(
         icon = { Icon(Icons.Filled.LocationOn, contentDescription = "Map") }
     )
 
+    object Workout : Screen(
+        route = "workout",
+        title = "Workout",
+        icon = { Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout") }
+    )
+
     // Other routes
     object BarcodeScanner : Screen("barcode_scanner")
     object FoodSearch : Screen("calories?mode=search")
@@ -58,14 +65,15 @@ sealed class Screen(
         val bottomBarScreens = listOf(
             RoutineReminder,
             CalorieTracker,
-
-            Map
+            Map,
+            Workout
         )
 
         val allScreens = listOf(
             RoutineReminder,
             CalorieTracker,
             Map,
+            Workout,
             BarcodeScanner,
             FoodSearch,
             CustomFood,
