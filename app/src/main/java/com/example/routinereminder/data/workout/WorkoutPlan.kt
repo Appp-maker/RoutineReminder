@@ -9,11 +9,10 @@ data class WorkoutPlanExercise(
     val target: String,
     val equipment: String,
     val gifUrl: String? = null,
-    val sets: Int = 1,
-    val repetitionsPerSet: Int? = null,
-    val durationSecondsPerSet: Int? = null,
-    val restSecondsBetweenSets: Int = 0,
-    val weightKgPerSet: Float? = null
+    val repetitions: Int? = null,
+    val durationMinutes: Int? = null,
+    val restSeconds: Int? = null,
+    val weight: Double? = null
 )
 
 data class WorkoutPlan(
