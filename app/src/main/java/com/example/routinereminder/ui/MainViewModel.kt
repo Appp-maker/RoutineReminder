@@ -184,6 +184,12 @@ class MainViewModel @Inject constructor(
             }
         }
 
+        viewModelScope.launch {
+            settingsRepository.getEnabledTabs().collectLatest { tabIds ->
+                _enabledTabs.value = tabIds?.let { AppTab.fromIds(it) }
+            }
+        }
+
 
         viewModelScope.launch {
             settingsRepository.getShowAllEvents().collectLatest { showAll ->
@@ -303,6 +309,7 @@ class MainViewModel @Inject constructor(
     fun saveEnabledTabs(tabs: Set<AppTab>) {
         viewModelScope.launch {
             settingsRepository.saveEnabledTabs(tabs.map { it.id }.toSet())
+            _enabledTabs.value = tabs
         }
     }
 
