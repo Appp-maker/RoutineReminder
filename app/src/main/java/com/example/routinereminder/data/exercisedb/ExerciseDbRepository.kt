@@ -144,7 +144,11 @@ class ExerciseDbRepository @Inject constructor(
         queryParams: Map<String, String> = emptyMap()
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            val urlBuilder = baseUrl.toHttpUrl().newBuilder().addPathSegments(path)
+            val urlBuilder = if (path.startsWith("http://") || path.startsWith("https://")) {
+                path.toHttpUrl().newBuilder()
+            } else {
+                baseUrl.toHttpUrl().newBuilder().addPathSegments(path)
+            }
             queryParams.forEach { (key, value) ->
                 urlBuilder.addQueryParameter(key, value)
             }
@@ -249,7 +253,7 @@ class ExerciseDbRepository @Inject constructor(
 
     companion object {
         const val DEFAULT_BASE_URL = "https://exercisedb.dev/"
-        private const val EXERCISES_PATH = "api/exercises"
+        private const val EXERCISES_PATH = "https://exercisedb.dev/api/exercises"
         private const val CACHE_FILE_NAME = "exercisedb_cache.json"
         private val REFRESH_PROMPT_INTERVAL_MS = TimeUnit.DAYS.toMillis(28)
     }
