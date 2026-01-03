@@ -1,10 +1,16 @@
 package com.example.routinereminder.ui
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
 import com.example.routinereminder.data.exercisedb.ExerciseDbRepository
 import com.example.routinereminder.data.workout.WorkoutPlan
+import com.example.routinereminder.workers.ExerciseDbDownloadWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +41,7 @@ data class WorkoutUiState(
 
 @HiltViewModel
 class WorkoutViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: ExerciseDbRepository
 ) : ViewModel() {
     private val requiredBodyParts = listOf(
@@ -53,6 +60,7 @@ class WorkoutViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(WorkoutUiState())
     val uiState: StateFlow<WorkoutUiState> = _uiState.asStateFlow()
     private var refreshJob: Job? = null
+    private var progressJob: Job? = null
 
     init {
         initializeExerciseDatabase()
@@ -114,6 +122,10 @@ class WorkoutViewModel @Inject constructor(
                         it.copy(isLoading = false, errorMessage = error.message ?: "Unable to refresh ExerciseDB data.")
                     }
                 }
+                return@launch
+            }
+            enqueueDownloadWork()
+            monitorDownloadProgress()
         }
     }
 

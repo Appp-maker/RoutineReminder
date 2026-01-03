@@ -4,6 +4,7 @@ import com.example.routinereminder.data.entities.ScheduleDone
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkManager
 import com.example.routinereminder.data.AppDatabase
 import com.example.routinereminder.data.DefaultEventSettings
 import com.example.routinereminder.data.Gender
@@ -16,6 +17,7 @@ import com.example.routinereminder.data.model.TrailPoint
 import com.example.routinereminder.data.mappers.toEntity
 import com.example.routinereminder.data.mappers.toItem
 import com.example.routinereminder.util.NotificationScheduler
+import com.example.routinereminder.workers.ExerciseDbDownloadWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -310,6 +312,10 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.saveEnabledTabs(tabs.map { it.id }.toSet())
             _enabledTabs.value = tabs
+            if (!tabs.contains(AppTab.Workout)) {
+                WorkManager.getInstance(getApplication())
+                    .cancelUniqueWork(ExerciseDbDownloadWorker.UNIQUE_WORK_NAME)
+            }
         }
     }
 
