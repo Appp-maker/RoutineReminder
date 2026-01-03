@@ -124,6 +124,11 @@
     <string name="workout_empty_results">No exercises matched your search.</string>
     <string name="workout_exercise_add">Add exercise</string>
     <string name="workout_exercisedb_attribution">Exercise data sourced from ExerciseDB (exercisedb.dev).</string>
+    <string name="workout_exercise_sets_label">Sets</string>
+    <string name="workout_exercise_repetitions_label">Reps per set</string>
+    <string name="workout_exercise_duration_label">Duration per set (min)</string>
+    <string name="workout_exercise_rest_label">Rest between sets (sec)</string>
+    <string name="workout_exercise_weight_label">Weight per set (kg)</string>
     <string name="workout_snackbar_select_plan">Select or create a workout plan first.</string>
     <string name="workout_refresh_title">Refresh ExerciseDB data?</string>
     <string name="workout_refresh_body">It has been a few weeks since the exercise database was updated. Refresh now to get the latest exercises for offline use.</string>
