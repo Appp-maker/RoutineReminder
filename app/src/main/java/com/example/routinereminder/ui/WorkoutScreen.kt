@@ -24,6 +24,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -312,85 +313,123 @@ fun WorkoutScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Text(
-                        text = stringResource(R.string.workout_exercises_subtitle),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    TextField(
-                        value = uiState.searchQuery,
-                        onValueChange = viewModel::updateSearchQuery,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.workout_search_label)) }
-                    )
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(
-                            onClick = { bodyPartMenuExpanded = true },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(uiState.selectedBodyPart ?: stringResource(R.string.workout_body_part_all))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.Filled.ExpandMore, contentDescription = null)
-                        }
-                        DropdownMenu(
-                            expanded = bodyPartMenuExpanded,
-                            onDismissRequest = { bodyPartMenuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.workout_body_part_all)) },
-                                onClick = {
-                                    viewModel.selectBodyPart(null)
-                                    bodyPartMenuExpanded = false
-                                }
+                    if (!uiState.isExerciseDbReady) {
+                        Text(
+                            text = stringResource(R.string.workout_download_title),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = stringResource(R.string.workout_download_body),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        val totalCount = uiState.exerciseDbTotalCount
+                        val downloadedCount = uiState.exerciseDbDownloadedCount
+                        if (totalCount != null && totalCount > 0) {
+                            LinearProgressIndicator(
+                                progress = downloadedCount.toFloat() / totalCount.toFloat(),
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            uiState.bodyParts.forEach { bodyPart ->
+                            Text(
+                                text = stringResource(
+                                    R.string.workout_download_progress_known,
+                                    downloadedCount,
+                                    totalCount
+                                ),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        } else {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            Text(
+                                text = stringResource(
+                                    R.string.workout_download_progress_unknown,
+                                    downloadedCount
+                                ),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.workout_exercises_subtitle),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                        TextField(
+                            value = uiState.searchQuery,
+                            onValueChange = viewModel::updateSearchQuery,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(stringResource(R.string.workout_search_label)) }
+                        )
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedButton(
+                                onClick = { bodyPartMenuExpanded = true },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(uiState.selectedBodyPart ?: stringResource(R.string.workout_body_part_all))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(Icons.Filled.ExpandMore, contentDescription = null)
+                            }
+                            DropdownMenu(
+                                expanded = bodyPartMenuExpanded,
+                                onDismissRequest = { bodyPartMenuExpanded = false }
+                            ) {
                                 DropdownMenuItem(
-                                    text = { Text(bodyPart) },
+                                    text = { Text(stringResource(R.string.workout_body_part_all)) },
                                     onClick = {
-                                        viewModel.selectBodyPart(bodyPart)
+                                        viewModel.selectBodyPart(null)
                                         bodyPartMenuExpanded = false
                                     }
                                 )
+                                uiState.bodyParts.forEach { bodyPart ->
+                                    DropdownMenuItem(
+                                        text = { Text(bodyPart) },
+                                        onClick = {
+                                            viewModel.selectBodyPart(bodyPart)
+                                            bodyPartMenuExpanded = false
+                                        }
+                                    )
+                                }
                             }
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = { viewModel.refreshExercises() }) {
-                            Text(stringResource(R.string.workout_search_action))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(onClick = { viewModel.refreshExercises() }) {
+                                Text(stringResource(R.string.workout_search_action))
+                            }
                         }
                     }
                 }
             }
 
-            if (uiState.isLoading) {
-                item {
-                    Text(
-                        text = stringResource(R.string.workout_loading_message),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            } else if (uiState.exercises.isEmpty()) {
-                item {
-                    Text(
-                        text = stringResource(R.string.workout_empty_results),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            } else {
-                items(uiState.exercises, key = { it.id }) { exercise ->
-                    ExerciseSearchRow(
-                        exercise = exercise,
-                        onAdd = {
-                            val planId = selectedPlan?.id
-                            if (planId == null) {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(message = selectPlanMessage)
+            if (uiState.isExerciseDbReady) {
+                if (uiState.isLoading) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.workout_loading_message),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                } else if (uiState.exercises.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.workout_empty_results),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                } else {
+                    items(uiState.exercises, key = { it.id }) { exercise ->
+                        ExerciseSearchRow(
+                            exercise = exercise,
+                            onAdd = {
+                                val planId = selectedPlan?.id
+                                if (planId == null) {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(message = selectPlanMessage)
+                                    }
+                                } else {
+                                    viewModel.addExerciseToPlan(planId, exercise)
                                 }
-                            } else {
-                                viewModel.addExerciseToPlan(planId, exercise)
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
 

@@ -36,6 +36,12 @@ data class ExerciseDbExercise(
     val gifUrl: String? = null
 )
 
+data class ExerciseDbDownloadProgress(
+    val downloadedCount: Int,
+    val totalCount: Int?,
+    val isComplete: Boolean
+)
+
 @Singleton
 class ExerciseDbRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -46,13 +52,10 @@ class ExerciseDbRepository @Inject constructor(
 ) {
     private val cacheMutex = Mutex()
     private val refreshMutex = Mutex()
+    private val downloadMutex = Mutex()
     private val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
 
     private var cachedExercises: List<ExerciseDbExercise>? = null
-
-    suspend fun preloadExerciseDatabase(): Result<List<ExerciseDbExercise>> = runCatching {
-        loadCachedExercises()
-    }
 
     suspend fun fetchBodyParts(): Result<List<String>> = runCatching {
         val exercises = loadCachedExercises()
@@ -75,17 +78,97 @@ class ExerciseDbRepository @Inject constructor(
     }
 
     suspend fun refreshExerciseDatabase(): Result<List<ExerciseDbExercise>> = refreshMutex.withLock {
-        fetchJson("exercises")
-            .mapCatching { json -> parseExerciseListFromJson(json) }
-            .mapCatching { exercises ->
-                if (exercises.isEmpty()) {
-                    throw IOException("ExerciseDB refresh returned no exercises.")
-                }
-                saveCache(exercises)
-                cachedExercises = exercises
-                settingsRepository.saveExerciseDbLastRefresh(System.currentTimeMillis())
-                exercises
+        cacheMutex.withLock {
+            cachedExercises = null
+            if (cacheFile.exists()) {
+                cacheFile.delete()
             }
+            settingsRepository.saveExerciseDbCacheComplete(false)
+            settingsRepository.saveExerciseDbCacheTotal(null)
+        }
+        downloadExerciseDatabase()
+    }
+
+    suspend fun getDownloadProgress(): ExerciseDbDownloadProgress {
+        val cached = readCache().orEmpty()
+        val total = settingsRepository.getExerciseDbCacheTotal().first()
+        val isComplete = settingsRepository.getExerciseDbCacheComplete().first()
+        if (cached.isNotEmpty() && !isComplete && total == null) {
+            settingsRepository.saveExerciseDbCacheComplete(true)
+            settingsRepository.saveExerciseDbCacheTotal(cached.size)
+            return ExerciseDbDownloadProgress(cached.size, cached.size, true)
+        }
+        val complete = (isComplete && cached.isNotEmpty()) || (total != null && cached.size >= total && cached.isNotEmpty())
+        return ExerciseDbDownloadProgress(cached.size, total, complete)
+    }
+
+    suspend fun downloadExerciseDatabase(
+        onProgress: (ExerciseDbDownloadProgress) -> Unit = {}
+    ): Result<List<ExerciseDbExercise>> = downloadMutex.withLock {
+        runCatching {
+            val cached = readCache().orEmpty().toMutableList()
+            val cachedComplete = settingsRepository.getExerciseDbCacheComplete().first()
+            if (cached.isNotEmpty() && cachedComplete) {
+                cachedExercises = cached
+                onProgress(ExerciseDbDownloadProgress(cached.size, cached.size, true))
+                return@runCatching cached
+            }
+
+            val totalFromPrefs = settingsRepository.getExerciseDbCacheTotal().first()
+            onProgress(ExerciseDbDownloadProgress(cached.size, totalFromPrefs, false))
+
+            var offset = cached.size
+            var requestCount = 0
+            var total = totalFromPrefs
+            val accumulated = cached
+            var completed = false
+
+            while (requestCount < MAX_DOWNLOAD_REQUESTS) {
+                val json = fetchJson(
+                    "exercises",
+                    mapOf(
+                        "limit" to DOWNLOAD_PAGE_SIZE.toString(),
+                        "offset" to offset.toString()
+                    )
+                ).getOrThrow()
+                val exercises = parseExerciseListFromJson(json)
+                total = total ?: parseTotalCount(json)
+                if (exercises.isEmpty()) {
+                    completed = true
+                    break
+                }
+                accumulated.addAll(exercises)
+                offset = accumulated.size
+                requestCount += 1
+                saveCache(accumulated)
+                settingsRepository.saveExerciseDbCacheTotal(total)
+                onProgress(ExerciseDbDownloadProgress(accumulated.size, total, false))
+                if (total != null && accumulated.size >= total) {
+                    completed = true
+                    break
+                }
+                if (exercises.size < DOWNLOAD_PAGE_SIZE) {
+                    completed = true
+                    break
+                }
+                kotlinx.coroutines.delay(DOWNLOAD_REQUEST_DELAY_MS)
+            }
+
+            val isComplete = completed || (total != null && accumulated.size >= total)
+            settingsRepository.saveExerciseDbCacheComplete(isComplete)
+            val resolvedTotal = if (isComplete) {
+                total ?: accumulated.size
+            } else {
+                total
+            }
+            settingsRepository.saveExerciseDbCacheTotal(resolvedTotal)
+            if (isComplete) {
+                settingsRepository.saveExerciseDbLastRefresh(System.currentTimeMillis())
+            }
+            cachedExercises = accumulated
+            onProgress(ExerciseDbDownloadProgress(accumulated.size, resolvedTotal, isComplete))
+            accumulated
+        }
     }
 
     suspend fun shouldPromptForRefresh(nowEpochMs: Long = System.currentTimeMillis()): Boolean {
@@ -103,9 +186,16 @@ class ExerciseDbRepository @Inject constructor(
         settingsRepository.saveExerciseDbLastPrompt(nowEpochMs)
     }
 
-    private suspend fun fetchJson(path: String): Result<String> = withContext(Dispatchers.IO) {
+    private suspend fun fetchJson(
+        path: String,
+        queryParams: Map<String, String> = emptyMap()
+    ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            val url = baseUrl.toHttpUrl().newBuilder().addPathSegments(path).build()
+            val urlBuilder = baseUrl.toHttpUrl().newBuilder().addPathSegments(path)
+            queryParams.forEach { (key, value) ->
+                urlBuilder.addQueryParameter(key, value)
+            }
+            val url = urlBuilder.build()
             val request = buildRequest(url)
             client.newCall(request).execute().use { response ->
                 if (response.code == 404 || response.code == 204) {
@@ -173,14 +263,18 @@ class ExerciseDbRepository @Inject constructor(
         val diskExercises = readCache()
         if (diskExercises != null && diskExercises.isNotEmpty()) {
             cachedExercises = diskExercises
+            val total = settingsRepository.getExerciseDbCacheTotal().first()
+            val isComplete = settingsRepository.getExerciseDbCacheComplete().first()
+            if (!isComplete && (total == null || diskExercises.size >= total)) {
+                settingsRepository.saveExerciseDbCacheComplete(true)
+                settingsRepository.saveExerciseDbCacheTotal(diskExercises.size)
+            }
             if (settingsRepository.getExerciseDbLastRefresh().first() == 0L) {
                 settingsRepository.saveExerciseDbLastRefresh(cacheFile.lastModified())
             }
             return diskExercises
         }
-        val refreshed = refreshExerciseDatabase().getOrThrow()
-        cachedExercises = refreshed
-        return refreshed
+        throw IOException("Exercise database has not finished downloading yet.")
     }
 
     private suspend fun readCache(): List<ExerciseDbExercise>? = withContext(Dispatchers.IO) {
@@ -207,9 +301,26 @@ class ExerciseDbRepository @Inject constructor(
         return array.mapIndexedNotNull { index, item -> parseExercise(item, index) }
     }
 
+    private fun parseTotalCount(json: String): Int? {
+        val element = JsonParser.parseString(json)
+        if (!element.isJsonObject) return null
+        val obj = element.asJsonObject
+        val keys = listOf("total", "count", "totalCount")
+        return keys.firstNotNullOfOrNull { key ->
+            if (obj.has(key) && obj.get(key).isJsonPrimitive) {
+                obj.get(key).asInt
+            } else {
+                null
+            }
+        }
+    }
+
     companion object {
         const val DEFAULT_BASE_URL = "https://exercisedb.p.rapidapi.com/"
         private const val CACHE_FILE_NAME = "exercisedb_cache.json"
         private val REFRESH_PROMPT_INTERVAL_MS = TimeUnit.DAYS.toMillis(28)
+        private const val DOWNLOAD_PAGE_SIZE = 250
+        private const val MAX_DOWNLOAD_REQUESTS = 20
+        private const val DOWNLOAD_REQUEST_DELAY_MS = 500L
     }
 }
