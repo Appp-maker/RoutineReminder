@@ -185,9 +185,13 @@ class ExerciseDbRepository @Inject constructor(
     private fun parseExercise(item: JsonElement, index: Int): ExerciseDbExercise? {
         if (!item.isJsonObject) return null
         val obj = item.asJsonObject
+        val primaryMuscles = obj.readStringList("primaryMuscles", "primary_muscles")
+        val category = obj.readString("category")
         val name = obj.readString("name") ?: return null
-        val bodyPart = obj.readString("bodyPart", "body_part") ?: "Unknown body part"
-        val target = obj.readString("target") ?: "Unknown target"
+        val bodyPart = obj.readString("bodyPart", "body_part")
+            ?: deriveBodyPart(primaryMuscles, category)
+            ?: "Unknown body part"
+        val target = obj.readString("target") ?: primaryMuscles.firstOrNull() ?: "Unknown target"
         val equipment = obj.readString("equipment") ?: "Unknown equipment"
         val id = obj.readString("id", "_id", "uuid", "exerciseId")
             ?: "${name}-${bodyPart}-${target}-${equipment}-${index}"
@@ -226,6 +230,42 @@ class ExerciseDbRepository @Inject constructor(
             }
         }
         return null
+    }
+
+    private fun JsonObject.readStringList(vararg keys: String): List<String> {
+        for (key in keys) {
+            val value = this.get(key)
+            if (value != null && value.isJsonArray) {
+                return value.asJsonArray.mapNotNull { element ->
+                    if (element.isJsonPrimitive && element.asJsonPrimitive.isString) {
+                        element.asString
+                    } else {
+                        null
+                    }
+                }
+            }
+        }
+        return emptyList()
+    }
+
+    private fun deriveBodyPart(primaryMuscles: List<String>, category: String?): String? {
+        if (category?.equals("cardio", ignoreCase = true) == true) {
+            return "cardio"
+        }
+        return primaryMuscles.firstNotNullOfOrNull { muscle ->
+            when (muscle.lowercase()) {
+                "abdominals" -> "waist"
+                "abductors", "adductors", "glutes", "hamstrings", "quadriceps" -> "upper legs"
+                "calves" -> "lower legs"
+                "biceps", "triceps" -> "upper arms"
+                "forearms" -> "lower arms"
+                "chest" -> "chest"
+                "lats", "lower back", "middle back", "traps" -> "back"
+                "shoulders" -> "shoulders"
+                "neck" -> "neck"
+                else -> null
+            }
+        }
     }
 
     private suspend fun loadCachedExercises(): List<ExerciseDbExercise> = cacheMutex.withLock {
@@ -285,6 +325,29 @@ class ExerciseDbRepository @Inject constructor(
     private suspend fun downloadAllExercises(
         onProgress: (ExerciseDbDownloadProgress) -> Unit
     ): ExerciseDbResponse {
+        val primaryResult = runCatching { downloadExercisesFromApi(onProgress) }
+        val primaryResponse = primaryResult.getOrNull()
+        if (primaryResponse != null && primaryResponse.exercises.isNotEmpty()) {
+            return primaryResponse
+        }
+        val fallbackResponse = downloadExercisesFromFallback()
+        if (fallbackResponse.exercises.isNotEmpty()) {
+            onProgress(
+                ExerciseDbDownloadProgress(
+                    fallbackResponse.exercises.size,
+                    fallbackResponse.totalCount ?: fallbackResponse.exercises.size,
+                    false
+                )
+            )
+            return fallbackResponse
+        }
+        primaryResult.exceptionOrNull()?.let { throw it }
+        throw IOException("Exercise database was empty.")
+    }
+
+    private suspend fun downloadExercisesFromApi(
+        onProgress: (ExerciseDbDownloadProgress) -> Unit
+    ): ExerciseDbResponse {
         val exercisesById = LinkedHashMap<String, ExerciseDbExercise>()
         var offset = 0
         var totalCount: Int? = null
@@ -315,9 +378,20 @@ class ExerciseDbRepository @Inject constructor(
         return ExerciseDbResponse(exercisesById.values.toList(), totalCount ?: exercisesById.size)
     }
 
+    private suspend fun downloadExercisesFromFallback(): ExerciseDbResponse {
+        val json = fetchJson(FALLBACK_EXERCISES_PATH).getOrThrow()
+        val response = parseExerciseResponse(json)
+        if (response.exercises.isEmpty()) {
+            throw IOException("Exercise database was empty.")
+        }
+        return response
+    }
+
     companion object {
         const val DEFAULT_BASE_URL = "https://exercisedb.dev/"
         private const val EXERCISES_PATH = "https://exercisedb.dev/api/exercises"
+        private const val FALLBACK_EXERCISES_PATH =
+            "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
         private const val CACHE_FILE_NAME = "exercisedb_cache.json"
         private const val DOWNLOAD_BATCH_SIZE = 250
         private val REFRESH_PROMPT_INTERVAL_MS = TimeUnit.DAYS.toMillis(28)
