@@ -26,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -70,6 +69,7 @@ fun WorkoutScreen(
     var newPlanName by remember { mutableStateOf("") }
     var planMenuExpanded by remember { mutableStateOf(false) }
     var bodyPartMenuExpanded by remember { mutableStateOf(false) }
+    var showNewPlanDialog by remember { mutableStateOf(false) }
     var planToSchedule by remember { mutableStateOf<WorkoutPlan?>(null) }
     var planToDelete by remember { mutableStateOf<WorkoutPlan?>(null) }
 
@@ -97,6 +97,37 @@ fun WorkoutScreen(
             },
             dismissButton = {
                 TextButton(onClick = { planToDelete = null }) {
+                    Text(stringResource(R.string.alert_action_cancel))
+                }
+            }
+        )
+    }
+
+    if (showNewPlanDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewPlanDialog = false },
+            title = { Text(stringResource(R.string.workout_plan_new_title)) },
+            text = {
+                TextField(
+                    value = newPlanName,
+                    onValueChange = { newPlanName = it },
+                    label = { Text(stringResource(R.string.workout_plan_name_label)) },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val created = viewModel.createPlan(newPlanName)
+                    if (created) {
+                        newPlanName = ""
+                        showNewPlanDialog = false
+                    }
+                }) {
+                    Text(stringResource(R.string.workout_plan_create_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNewPlanDialog = false }) {
                     Text(stringResource(R.string.alert_action_cancel))
                 }
             }
@@ -188,6 +219,15 @@ fun WorkoutScreen(
                                     )
                                 }
                             }
+                            Divider()
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.workout_plan_new_menu)) },
+                                onClick = {
+                                    planMenuExpanded = false
+                                    newPlanName = ""
+                                    showNewPlanDialog = true
+                                }
+                            )
                         }
 
                         IconButton(
@@ -198,25 +238,6 @@ fun WorkoutScreen(
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = newPlanName,
-                            onValueChange = { newPlanName = it },
-                            label = { Text(stringResource(R.string.workout_plan_name_label)) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = {
-                            val created = viewModel.createPlan(newPlanName)
-                            if (created) {
-                                newPlanName = ""
-                            }
-                        }) {
-                            Icon(Icons.Filled.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.workout_plan_create_action))
-                        }
-                    }
                 }
             }
 
