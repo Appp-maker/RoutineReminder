@@ -58,6 +58,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.routinereminder.ui.components.FoodBundlePickerDialog
 import java.time.LocalTime
+import com.example.routinereminder.data.entities.PORTION_TYPE_CUSTOM
 private const val TAG = "CalorieTrackerScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,6 +88,13 @@ fun CalorieTrackerScreen(
     val swipeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
     var showBundlePicker by remember { mutableStateOf(false) }
     val bundles by viewModel.foodBundles.collectAsState()
+    val pendingBundleId by viewModel.pendingBundlePreview.collectAsState()
+    val bundleForPortion by produceState<com.example.routinereminder.data.entities.FoodBundle?>(
+        initialValue = null,
+        key1 = pendingBundleId
+    ) {
+        value = pendingBundleId?.let { viewModel.getBundleById(it) }
+    }
 
 
 
@@ -154,10 +162,7 @@ fun CalorieTrackerScreen(
         FoodBundlePickerDialog(
             bundles = bundles,
             onPick = { bundle ->
-                viewModel.addBundleToTracker(
-                    bundleId = bundle.id,
-                    mealSlot = activeMealSlot!!
-                )
+                viewModel.selectBundle(bundle.id)
             },
             onDismiss = { showBundlePicker = false }
         )
@@ -166,24 +171,58 @@ fun CalorieTrackerScreen(
 
     // Portion dialog after scanning
     scannedFoodProduct?.let { food ->
+        val isBundlePreview = pendingBundleId != null
+        val portionDefinitionText = if (isBundlePreview) {
+            if (bundleForPortion?.portionType == PORTION_TYPE_CUSTOM) {
+                val portionGrams = bundleForPortion?.customPortionGrams ?: 0.0
+                "Template portion: 1 portion = ${portionGrams.toInt()} g"
+            } else {
+                "Template portion: grams"
+            }
+        } else {
+            null
+        }
+        val portionUnitLabel = if (isBundlePreview && bundleForPortion?.portionType == PORTION_TYPE_CUSTOM) {
+            "portion(s)"
+        } else {
+            "g"
+        }
+        val portionMultiplier = if (isBundlePreview && bundleForPortion?.portionType == PORTION_TYPE_CUSTOM) {
+            bundleForPortion?.customPortionGrams ?: 1.0
+        } else {
+            1.0
+        }
+
         PortionDialog(
             foodProduct = food,
             onDismiss = { viewModel.clearScannedProduct() },
             // IMPORTANT: call addFood(...) with the scheduling values from the dialog
             onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate ->
-                viewModel.addFood(
-                    portion = portion,
-                    foodProduct = finalFood,
-                    time = time,
-                    mealSlot = mealSlot,
-                    isOneTime = isOneTime,
-                    repeatDays = repeatDays,
-                    repeatEveryWeeks = repeatEveryWeeks,
-                    startDate = anchorDate
-                )
+                if (isBundlePreview) {
+                    viewModel.addBundleToTracker(
+                        bundleId = pendingBundleId!!,
+                        mealSlot = mealSlot,
+                        portionSizeG = portion
+                    )
+                } else {
+                    viewModel.addFood(
+                        portion = portion,
+                        foodProduct = finalFood,
+                        time = time,
+                        mealSlot = mealSlot,
+                        isOneTime = isOneTime,
+                        repeatDays = repeatDays,
+                        repeatEveryWeeks = repeatEveryWeeks,
+                        startDate = anchorDate
+                    )
+                }
 
                 viewModel.clearScannedProduct()
             },
+            portionUnitLabel = portionUnitLabel,
+            portionToGramsMultiplier = portionMultiplier,
+            portionDefinitionText = portionDefinitionText,
+            showSchedulingOptions = !isBundlePreview,
             currentTotals = viewModel.dailyTotals.value ?: CalorieTrackerViewModel.DailyTotals(
                 calories = 0.0,
                 proteinG = 0.0,
