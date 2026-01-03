@@ -247,6 +247,7 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
         val navController = rememberNavController()
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
+        val currentBaseRoute = currentRoute?.substringBefore("?")
         val enabledTabsState by viewModel.enabledTabs.collectAsState()
         val enabledTabs = enabledTabsState ?: AppTab.defaultTabs
         val allTabScreens = remember { AppTab.entries.map { it.screen } }
@@ -254,7 +255,7 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
         val mainTabRoutes = allTabScreens.map { it.route }
         val enabledTabRoutes = enabledTabScreens.map { it.route }
 
-        val showBottomBar = enabledTabScreens.size > 1 && currentRoute in enabledTabRoutes
+        val showBottomBar = enabledTabScreens.size > 1 && currentBaseRoute in enabledTabRoutes
 
         val showFab = currentRoute == Screen.RoutineReminder.route && enabledTabs.contains(AppTab.Routine)
 
@@ -361,7 +362,7 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                                 NavigationBarItem(
                                     icon = { s.icon?.invoke() },
                                     label = { Text(s.title) },
-                                    selected = currentRoute == s.route,
+                                    selected = currentBaseRoute == s.route,
                                     onClick = {
                                         val targetRoute =
                                             if (s == Screen.CalorieTracker) {
