@@ -248,8 +248,8 @@ class ExerciseDbRepository @Inject constructor(
     }
 
     companion object {
-        const val DEFAULT_BASE_URL = "https://www.exercisedb.dev/"
-        private const val EXERCISES_PATH = "api/v1/exercises"
+        const val DEFAULT_BASE_URL = "https://exercisedb.dev/"
+        private const val EXERCISES_PATH = "api/exercises"
         private const val CACHE_FILE_NAME = "exercisedb_cache.json"
         private val REFRESH_PROMPT_INTERVAL_MS = TimeUnit.DAYS.toMillis(28)
     }
