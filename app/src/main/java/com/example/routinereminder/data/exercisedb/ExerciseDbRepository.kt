@@ -34,17 +34,21 @@ class ExerciseDbRepository(
         val trimmedQuery = query.trim()
         val normalizedBodyPart = bodyPart?.takeIf { it.isNotBlank() }
 
-        val path = if (normalizedBodyPart != null) {
-            "exercises/bodyPart/${normalizedBodyPart}"
-        } else {
-            "exercises"
+        val path = when {
+            trimmedQuery.isNotEmpty() -> "exercises/name/${trimmedQuery}"
+            normalizedBodyPart != null -> "exercises/bodyPart/${normalizedBodyPart}"
+            else -> null
+        }
+
+        if (path == null) {
+            return Result.success(emptyList())
         }
 
         return fetchExerciseList(path).map { exercises ->
-            if (trimmedQuery.isEmpty()) {
-                exercises
+            if (normalizedBodyPart != null && trimmedQuery.isNotEmpty()) {
+                exercises.filter { it.bodyPart.equals(normalizedBodyPart, ignoreCase = true) }
             } else {
-                exercises.filter { it.name.contains(trimmedQuery, ignoreCase = true) }
+                exercises
             }
         }
     }
@@ -78,7 +82,15 @@ class ExerciseDbRepository(
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw IOException("ExerciseDB request failed: ${response.code}")
+                    if (response.code == 404 && path.startsWith("exercises")) {
+                        return@use "[]"
+                    }
+                    val message = if (response.code == 429) {
+                        "ExerciseDB rate limit reached. Please try again shortly."
+                    } else {
+                        "ExerciseDB request failed: ${response.code}"
+                    }
+                    throw IOException(message)
                 }
                 response.body?.string() ?: throw IOException("ExerciseDB response was empty")
             }
