@@ -145,6 +145,7 @@ class ExerciseDbRepository @Inject constructor(
         queryParams: Map<String, String> = emptyMap()
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
+            ensureApiConfig()
             val urlBuilder = baseUrl.toHttpUrl().newBuilder().addPathSegments(path)
             queryParams.forEach { (key, value) ->
                 urlBuilder.addQueryParameter(key, value)
@@ -165,6 +166,21 @@ class ExerciseDbRepository @Inject constructor(
                 }
                 response.body?.string() ?: throw IOException("ExerciseDB response was empty")
             }
+        }
+    }
+
+    private fun ensureApiConfig() {
+        val rapidApiKey = BuildConfig.EXERCISEDB_RAPIDAPI_KEY
+        val rapidApiHost = BuildConfig.EXERCISEDB_RAPIDAPI_HOST
+        if (rapidApiKey.isBlank()) {
+            throw IOException(
+                "Missing ExerciseDB RapidAPI key. Set EXERCISEDB_RAPIDAPI_KEY in gradle.properties."
+            )
+        }
+        if (rapidApiHost.isBlank()) {
+            throw IOException(
+                "Missing ExerciseDB RapidAPI host. Set EXERCISEDB_RAPIDAPI_HOST in gradle.properties."
+            )
         }
     }
 
