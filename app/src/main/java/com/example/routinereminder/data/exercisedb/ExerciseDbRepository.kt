@@ -43,11 +43,7 @@ class ExerciseDbRepository(
         val path = when {
             trimmedQuery.isNotEmpty() -> "exercises/name/${trimmedQuery}"
             normalizedBodyPart != null -> "exercises/bodyPart/${normalizedBodyPart}"
-            else -> null
-        }
-
-        if (path == null) {
-            return Result.success(emptyList())
+            else -> "exercises"
         }
 
         return fetchExerciseList(path)
