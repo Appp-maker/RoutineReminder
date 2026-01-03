@@ -8,6 +8,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.routinereminder.data.SettingsRepository
+import com.example.routinereminder.data.exercisedb.ExerciseDbRepository
 import com.example.routinereminder.workers.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +28,9 @@ class RoutineReminderApp : Application(), Configuration.Provider {
 
     @Inject
     lateinit var settingsRepository: SettingsRepository
+
+    @Inject
+    lateinit var exerciseDbRepository: ExerciseDbRepository
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -50,6 +54,10 @@ class RoutineReminderApp : Application(), Configuration.Provider {
         // Keep existing WorkManager setup
         applicationScope.launch {
             setupRecurringWork()
+        }
+
+        applicationScope.launch {
+            exerciseDbRepository.preloadExerciseDatabase()
         }
     }
     private fun createNotificationChannel() {

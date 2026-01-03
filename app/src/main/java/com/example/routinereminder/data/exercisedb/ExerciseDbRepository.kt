@@ -1,19 +1,29 @@
 package com.example.routinereminder.data.exercisedb
 
+import android.content.Context
 import com.example.routinereminder.BuildConfig
+import com.example.routinereminder.data.SettingsRepository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
 import java.io.IOException
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
 
 
 data class ExerciseDbExercise(
@@ -25,61 +35,71 @@ data class ExerciseDbExercise(
     val gifUrl: String? = null
 )
 
-class ExerciseDbRepository(
-    private val baseUrl: String = DEFAULT_BASE_URL,
-    private val client: OkHttpClient = OkHttpClient(),
-    private val gson: Gson = Gson()
+@Singleton
+class ExerciseDbRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val settingsRepository: SettingsRepository,
+    private val client: OkHttpClient,
+    private val gson: Gson
 ) {
-    private var fallbackExercises: List<ExerciseDbExercise>? = null
-    private var fallbackBodyParts: List<String>? = null
+    private val baseUrl: String = DEFAULT_BASE_URL
+    private val cacheMutex = Mutex()
+    private val refreshMutex = Mutex()
+    private val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
 
-    suspend fun fetchBodyParts(): Result<List<String>> = fetchStringList("exercises/bodyPartList")
-        .recoverCatching { loadFallbackBodyParts() }
+    private var cachedExercises: List<ExerciseDbExercise>? = null
 
-    suspend fun fetchExercises(query: String, bodyPart: String?): Result<List<ExerciseDbExercise>> {
-        val trimmedQuery = query.trim()
+    suspend fun preloadExerciseDatabase(): Result<List<ExerciseDbExercise>> = runCatching {
+        loadCachedExercises()
+    }
+
+    suspend fun fetchBodyParts(): Result<List<String>> = runCatching {
+        val exercises = loadCachedExercises()
+        exercises.map { it.bodyPart }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+    }
+
+    suspend fun fetchExercises(query: String, bodyPart: String?): Result<List<ExerciseDbExercise>> = runCatching {
+        val exercises = loadCachedExercises()
+        val trimmedQuery = query.trim().lowercase()
         val normalizedBodyPart = bodyPart?.takeIf { it.isNotBlank() }
-
-        val path = when {
-            trimmedQuery.isNotEmpty() -> "exercises/name/${trimmedQuery}"
-            normalizedBodyPart != null -> "exercises/bodyPart/${normalizedBodyPart}"
-            else -> "exercises"
+        exercises.filter { exercise ->
+            val matchesQuery = trimmedQuery.isBlank() || exercise.name.lowercase().contains(trimmedQuery)
+            val matchesBodyPart = normalizedBodyPart.isNullOrBlank() ||
+                exercise.bodyPart.equals(normalizedBodyPart, ignoreCase = true)
+            matchesQuery && matchesBodyPart
         }
+    }
 
-        return fetchExerciseList(path)
-            .recoverCatching {
-                loadFallbackExercises(trimmedQuery, normalizedBodyPart)
-            }
-            .map { exercises ->
-                if (normalizedBodyPart != null && trimmedQuery.isNotEmpty()) {
-                    exercises.filter { it.bodyPart.equals(normalizedBodyPart, ignoreCase = true) }
-                } else {
-                    exercises
+    suspend fun refreshExerciseDatabase(): Result<List<ExerciseDbExercise>> = refreshMutex.withLock {
+        fetchJson("exercises")
+            .mapCatching { json -> parseExerciseListFromJson(json) }
+            .mapCatching { exercises ->
+                if (exercises.isEmpty()) {
+                    throw IOException("ExerciseDB refresh returned no exercises.")
                 }
+                saveCache(exercises)
+                cachedExercises = exercises
+                settingsRepository.saveExerciseDbLastRefresh(System.currentTimeMillis())
+                exercises
             }
     }
 
-    private suspend fun fetchExerciseList(path: String): Result<List<ExerciseDbExercise>> =
-        fetchJson(path).mapCatching { json ->
-            val element = JsonParser.parseString(json)
-            val array = when {
-                element.isJsonArray -> element.asJsonArray
-                element.isJsonObject && element.asJsonObject.has("data") -> element.asJsonObject.getAsJsonArray("data")
-                element.isJsonObject && element.asJsonObject.has("results") -> element.asJsonObject.getAsJsonArray("results")
-                else -> JsonArray()
-            }
-            array.mapIndexedNotNull { index, item -> parseExercise(item, index) }
-        }
+    suspend fun shouldPromptForRefresh(nowEpochMs: Long = System.currentTimeMillis()): Boolean {
+        val lastRefresh = settingsRepository.getExerciseDbLastRefresh().first()
+        val lastPrompt = settingsRepository.getExerciseDbLastPrompt().first()
+        val baseline = maxOf(lastRefresh, lastPrompt)
+        return baseline > 0 && nowEpochMs - baseline >= REFRESH_PROMPT_INTERVAL_MS
+    }
 
-    private suspend fun fetchStringList(path: String): Result<List<String>> = fetchJson(path).mapCatching { json ->
-        val element = JsonParser.parseString(json)
-        val array = when {
-            element.isJsonArray -> element.asJsonArray
-            element.isJsonObject && element.asJsonObject.has("data") -> element.asJsonObject.getAsJsonArray("data")
-            else -> JsonArray()
-        }
-        val type = object : TypeToken<List<String>>() {}.type
-        gson.fromJson(array, type)
+    suspend fun recordRefreshPromptShown(nowEpochMs: Long = System.currentTimeMillis()) {
+        settingsRepository.saveExerciseDbLastPrompt(nowEpochMs)
+    }
+
+    suspend fun recordRefreshPromptDismissed(nowEpochMs: Long = System.currentTimeMillis()) {
+        settingsRepository.saveExerciseDbLastPrompt(nowEpochMs)
     }
 
     private suspend fun fetchJson(path: String): Result<String> = withContext(Dispatchers.IO) {
@@ -99,18 +119,6 @@ class ExerciseDbRepository(
                     throw IOException(message)
                 }
                 response.body?.string() ?: throw IOException("ExerciseDB response was empty")
-            }
-        }
-    }
-
-    private suspend fun fetchJsonFromUrl(url: String): Result<String> = withContext(Dispatchers.IO) {
-        runCatching {
-            val request = Request.Builder().url(url).build()
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw IOException("ExerciseDB fallback request failed: ${response.code}")
-                }
-                response.body?.string() ?: throw IOException("ExerciseDB fallback response was empty")
             }
         }
     }
@@ -158,70 +166,49 @@ class ExerciseDbRepository(
         return null
     }
 
-    private suspend fun loadFallbackBodyParts(): List<String> {
-        val cached = fallbackBodyParts
+    private suspend fun loadCachedExercises(): List<ExerciseDbExercise> = cacheMutex.withLock {
+        val cached = cachedExercises
         if (cached != null) return cached
-        val exercises = loadFallbackExercisesFromDataset()
-        val bodyParts = exercises.map { it.bodyPart }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
-        fallbackBodyParts = bodyParts
-        return bodyParts
-    }
-
-    private suspend fun loadFallbackExercises(query: String, bodyPart: String?): List<ExerciseDbExercise> {
-        val exercises = loadFallbackExercisesFromDataset()
-        val queryNormalized = query.trim().lowercase()
-        return exercises.filter { exercise ->
-            val matchesQuery = queryNormalized.isBlank() || exercise.name.lowercase().contains(queryNormalized)
-            val matchesBodyPart = bodyPart.isNullOrBlank() || exercise.bodyPart.equals(bodyPart, ignoreCase = true)
-            matchesQuery && matchesBodyPart
+        val diskExercises = readCache()
+        if (diskExercises != null && diskExercises.isNotEmpty()) {
+            cachedExercises = diskExercises
+            if (settingsRepository.getExerciseDbLastRefresh().first() == 0L) {
+                settingsRepository.saveExerciseDbLastRefresh(cacheFile.lastModified())
+            }
+            return diskExercises
         }
+        val refreshed = refreshExerciseDatabase().getOrThrow()
+        cachedExercises = refreshed
+        return refreshed
     }
 
-    private suspend fun loadFallbackExercisesFromDataset(): List<ExerciseDbExercise> {
-        val cached = fallbackExercises
-        if (cached != null) return cached
-        val json = fetchJsonFromUrl(FALLBACK_DATASET_URL).getOrThrow()
+    private suspend fun readCache(): List<ExerciseDbExercise>? = withContext(Dispatchers.IO) {
+        if (!cacheFile.exists()) return@withContext null
+        val text = cacheFile.readText()
+        if (text.isBlank()) return@withContext null
+        val type = object : TypeToken<List<ExerciseDbExercise>>() {}.type
+        gson.fromJson<List<ExerciseDbExercise>>(text, type)
+    }
+
+    private suspend fun saveCache(exercises: List<ExerciseDbExercise>) = withContext(Dispatchers.IO) {
+        val json = gson.toJson(exercises)
+        cacheFile.writeText(json)
+    }
+
+    private fun parseExerciseListFromJson(json: String): List<ExerciseDbExercise> {
         val element = JsonParser.parseString(json)
-        if (!element.isJsonArray) {
-            return emptyList()
+        val array = when {
+            element.isJsonArray -> element.asJsonArray
+            element.isJsonObject && element.asJsonObject.has("data") -> element.asJsonObject.getAsJsonArray("data")
+            element.isJsonObject && element.asJsonObject.has("results") -> element.asJsonObject.getAsJsonArray("results")
+            else -> JsonArray()
         }
-        val exercises = element.asJsonArray.mapIndexedNotNull { index, item ->
-            if (!item.isJsonObject) return@mapIndexedNotNull null
-            val obj = item.asJsonObject
-            val name = obj.readString("name") ?: return@mapIndexedNotNull null
-            val equipment = obj.readString("equipment") ?: "Unknown equipment"
-            val id = obj.readString("id") ?: "${name}-${index}"
-            val primaryMuscles = obj.readStringList("primaryMuscles")
-            val secondaryMuscles = obj.readStringList("secondaryMuscles")
-            val bodyPart = primaryMuscles.firstOrNull() ?: "Unknown body part"
-            val target = secondaryMuscles.firstOrNull() ?: "General"
-            ExerciseDbExercise(
-                id = id,
-                name = name,
-                bodyPart = bodyPart,
-                target = target,
-                equipment = equipment,
-                gifUrl = null
-            )
-        }
-        fallbackExercises = exercises
-        return exercises
-    }
-
-    private fun JsonObject.readStringList(key: String): List<String> {
-        val value = this.get(key)
-        if (value == null || !value.isJsonArray) return emptyList()
-        return value.asJsonArray.mapNotNull { item ->
-            if (item.isJsonNull) null else item.asString
-        }
+        return array.mapIndexedNotNull { index, item -> parseExercise(item, index) }
     }
 
     companion object {
         const val DEFAULT_BASE_URL = "https://exercisedb.p.rapidapi.com/"
-        const val FALLBACK_DATASET_URL =
-            "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
+        private const val CACHE_FILE_NAME = "exercisedb_cache.json"
+        private val REFRESH_PROMPT_INTERVAL_MS = TimeUnit.DAYS.toMillis(28)
     }
 }
