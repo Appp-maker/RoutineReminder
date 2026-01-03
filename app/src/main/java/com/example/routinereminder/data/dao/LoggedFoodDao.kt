@@ -19,6 +19,9 @@ interface LoggedFoodDao {
     @Query("SELECT * FROM logged_food WHERE date = :date")
     suspend fun getFoodsForDate(date: String): List<LoggedFood>
 
+    @Query("SELECT * FROM logged_food WHERE bundleId = :bundleId")
+    suspend fun getFoodsForBundle(bundleId: Long): List<LoggedFood>
+
     // Get one item by ID (for editing or deletion)
     @Query("SELECT * FROM logged_food WHERE id = :id LIMIT 1")
     suspend fun getItemById(id: Long): LoggedFood?

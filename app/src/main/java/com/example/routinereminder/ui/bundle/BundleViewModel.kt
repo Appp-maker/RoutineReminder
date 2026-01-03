@@ -18,6 +18,7 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 @HiltViewModel
 class BundleViewModel @Inject constructor(
@@ -123,13 +124,17 @@ class BundleViewModel @Inject constructor(
 
     fun createBundle(
         name: String,
-        description: String
+        description: String,
+        portionType: String,
+        customPortionGrams: Double?
     ) {
         viewModelScope.launch {
             database.foodBundleDao().insertBundle(
                 FoodBundle(
                     name = name.trim(),
-                    description = description.trim()
+                    description = description.trim(),
+                    portionType = portionType,
+                    customPortionGrams = customPortionGrams
                 )
             )
             loadBundles() // refresh list so UI updates immediately
@@ -178,14 +183,25 @@ class BundleViewModel @Inject constructor(
     fun updateBundle(
         bundleId: Long,
         name: String,
-        description: String
+        description: String,
+        portionType: String,
+        customPortionGrams: Double?,
+        updateScope: BundleUpdateScope
     ) {
         viewModelScope.launch {
             database.foodBundleDao().updateBundle(
                 id = bundleId,
                 name = name,
-                description = description
+                description = description,
+                portionType = portionType,
+                customPortionGrams = customPortionGrams
             )
+            updateLoggedFoodsForBundle(
+                bundleId = bundleId,
+                bundleName = name.trim(),
+                updateScope = updateScope
+            )
+            loadBundles()
         }
     }
     fun deleteIngredient(ingredientId: Long) {
@@ -193,4 +209,90 @@ class BundleViewModel @Inject constructor(
             database.foodBundleDao().deleteIngredientById(ingredientId)
         }
     }
+
+    private suspend fun buildBundleFoodProduct(bundleId: Long, bundleName: String): FoodProduct {
+        val bundleWithItems = database.foodBundleDao().getBundleWithItems(bundleId)
+        val totalGrams = bundleWithItems.items.sumOf { it.portionSizeG }.toDouble()
+
+        if (totalGrams <= 0.0) {
+            return FoodProduct(
+                name = bundleName,
+                caloriesPer100g = 0.0,
+                proteinPer100g = 0.0,
+                carbsPer100g = 0.0,
+                fatPer100g = 0.0,
+                fiberPer100g = 0.0,
+                saturatedFatPer100g = 0.0,
+                addedSugarsPer100g = 0.0,
+                sodiumPer100g = 0.0
+            )
+        }
+
+        val per100Factor = 100.0 / totalGrams
+        return FoodProduct(
+            name = bundleName,
+            caloriesPer100g = bundleWithItems.items.sumOf { it.calories } * per100Factor,
+            proteinPer100g = bundleWithItems.items.sumOf { it.proteinG } * per100Factor,
+            carbsPer100g = bundleWithItems.items.sumOf { it.carbsG } * per100Factor,
+            fatPer100g = bundleWithItems.items.sumOf { it.fatG } * per100Factor,
+            fiberPer100g = bundleWithItems.items.sumOf { it.fiberG } * per100Factor,
+            saturatedFatPer100g = bundleWithItems.items.sumOf { it.saturatedFatG } * per100Factor,
+            addedSugarsPer100g = bundleWithItems.items.sumOf { it.addedSugarsG } * per100Factor,
+            sodiumPer100g = (bundleWithItems.items.sumOf { it.sodiumMg } * per100Factor) / 1000.0
+        )
+    }
+
+    private suspend fun updateLoggedFoodsForBundle(
+        bundleId: Long,
+        bundleName: String,
+        updateScope: BundleUpdateScope
+    ) {
+        val loggedFoods = database.loggedFoodDao().getFoodsForBundle(bundleId)
+        if (loggedFoods.isEmpty()) return
+
+        val foodProduct = buildBundleFoodProduct(bundleId, bundleName)
+        val today = LocalDate.now()
+
+        loggedFoods.forEach { entry ->
+            val shouldUpdate = when (updateScope) {
+                BundleUpdateScope.ALL -> true
+                BundleUpdateScope.FUTURE -> {
+                    val entryDate = runCatching { LocalDate.parse(entry.date) }.getOrNull()
+                    entryDate?.isAfter(today.minusDays(1)) ?: true
+                }
+            }
+
+            if (shouldUpdate) {
+                val portion = entry.portionSizeG
+                val calories = (foodProduct.caloriesPer100g / 100.0) * portion
+                val protein = (foodProduct.proteinPer100g / 100.0) * portion
+                val carbs = (foodProduct.carbsPer100g / 100.0) * portion
+                val fat = (foodProduct.fatPer100g / 100.0) * portion
+                val fiber = (foodProduct.fiberPer100g / 100.0) * portion
+                val saturatedFat = (foodProduct.saturatedFatPer100g / 100.0) * portion
+                val addedSugars = (foodProduct.addedSugarsPer100g / 100.0) * portion
+                val sodium = (foodProduct.sodiumPer100g * 1000.0 / 100.0) * portion
+
+                database.loggedFoodDao().upsert(
+                    entry.copy(
+                        foodProduct = foodProduct,
+                        calories = calories,
+                        proteinG = protein,
+                        carbsG = carbs,
+                        fatG = fat,
+                        fiberG = fiber,
+                        saturatedFatG = saturatedFat,
+                        addedSugarsG = addedSugars,
+                        sodiumMg = sodium,
+                        bundleName = bundleName
+                    )
+                )
+            }
+        }
+    }
+}
+
+enum class BundleUpdateScope {
+    ALL,
+    FUTURE
 }
