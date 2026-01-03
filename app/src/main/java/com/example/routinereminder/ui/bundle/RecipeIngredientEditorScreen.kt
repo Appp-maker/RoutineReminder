@@ -52,6 +52,7 @@ fun RecipeIngredientEditorScreen(
     var addedSugars by remember { mutableStateOf("0") }
     var sodium by remember { mutableStateOf("0") }
     var entryMode by remember { mutableStateOf(IngredientEntryMode.CUSTOM) }
+    var hasNonCustomSelection by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
     val searchResults by viewModel.searchResults.collectAsState()
@@ -73,6 +74,7 @@ fun RecipeIngredientEditorScreen(
         saturatedFat = (food.saturatedFatPer100g * multiplier).toDisplayString()
         addedSugars = (food.addedSugarsPer100g * multiplier).toDisplayString()
         sodium = (food.sodiumPer100g * multiplier * 1000).toDisplayString()
+        hasNonCustomSelection = entryMode != IngredientEntryMode.CUSTOM
     }
 
     LaunchedEffect(ingredientId) {
@@ -136,19 +138,28 @@ fun RecipeIngredientEditorScreen(
             IngredientModeButton(
                 text = "Custom",
                 selected = entryMode == IngredientEntryMode.CUSTOM,
-                onClick = { entryMode = IngredientEntryMode.CUSTOM },
+                onClick = {
+                    entryMode = IngredientEntryMode.CUSTOM
+                    hasNonCustomSelection = false
+                },
                 modifier = Modifier.weight(1f)
             )
             IngredientModeButton(
                 text = "Scan barcode",
                 selected = entryMode == IngredientEntryMode.BARCODE,
-                onClick = { entryMode = IngredientEntryMode.BARCODE },
+                onClick = {
+                    entryMode = IngredientEntryMode.BARCODE
+                    hasNonCustomSelection = false
+                },
                 modifier = Modifier.weight(1f)
             )
             IngredientModeButton(
                 text = "Search",
                 selected = entryMode == IngredientEntryMode.SEARCH,
-                onClick = { entryMode = IngredientEntryMode.SEARCH },
+                onClick = {
+                    entryMode = IngredientEntryMode.SEARCH
+                    hasNonCustomSelection = false
+                },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -218,6 +229,7 @@ fun RecipeIngredientEditorScreen(
                                 product = product,
                                 onSelect = {
                                     applyFoodProduct(product)
+                                    hasNonCustomSelection = true
                                     searchQuery = product.name
                                     viewModel.clearSearchResults()
                                 }
@@ -228,92 +240,94 @@ fun RecipeIngredientEditorScreen(
             }
         }
 
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Ingredient name") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        if (entryMode == IngredientEntryMode.CUSTOM || hasNonCustomSelection) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Ingredient name") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = grams,
-            onValueChange = { grams = it },
-            label = { Text("Amount (g)") },
-            keyboardOptions = numericKeyboard,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = grams,
+                onValueChange = { grams = it },
+                label = { Text("Amount (g)") },
+                keyboardOptions = numericKeyboard,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = calories,
-            onValueChange = { calories = it },
-            label = { Text("Calories (kcal)") },
-            keyboardOptions = decimalKeyboard,
-            enabled = entryMode == IngredientEntryMode.CUSTOM,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = calories,
+                onValueChange = { calories = it },
+                label = { Text("Calories (kcal)") },
+                keyboardOptions = decimalKeyboard,
+                enabled = entryMode == IngredientEntryMode.CUSTOM,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = protein,
-            onValueChange = { protein = it },
-            label = { Text("Protein (g)") },
-            keyboardOptions = decimalKeyboard,
-            enabled = entryMode == IngredientEntryMode.CUSTOM,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = protein,
+                onValueChange = { protein = it },
+                label = { Text("Protein (g)") },
+                keyboardOptions = decimalKeyboard,
+                enabled = entryMode == IngredientEntryMode.CUSTOM,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = carbs,
-            onValueChange = { carbs = it },
-            label = { Text("Carbs (g)") },
-            keyboardOptions = decimalKeyboard,
-            enabled = entryMode == IngredientEntryMode.CUSTOM,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = carbs,
+                onValueChange = { carbs = it },
+                label = { Text("Carbs (g)") },
+                keyboardOptions = decimalKeyboard,
+                enabled = entryMode == IngredientEntryMode.CUSTOM,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = fat,
-            onValueChange = { fat = it },
-            label = { Text("Fat (g)") },
-            keyboardOptions = decimalKeyboard,
-            enabled = entryMode == IngredientEntryMode.CUSTOM,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = fat,
+                onValueChange = { fat = it },
+                label = { Text("Fat (g)") },
+                keyboardOptions = decimalKeyboard,
+                enabled = entryMode == IngredientEntryMode.CUSTOM,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = fiber,
-            onValueChange = { fiber = it },
-            label = { Text("Fiber (g)") },
-            keyboardOptions = decimalKeyboard,
-            enabled = entryMode == IngredientEntryMode.CUSTOM,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = fiber,
+                onValueChange = { fiber = it },
+                label = { Text("Fiber (g)") },
+                keyboardOptions = decimalKeyboard,
+                enabled = entryMode == IngredientEntryMode.CUSTOM,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = saturatedFat,
-            onValueChange = { saturatedFat = it },
-            label = { Text("Saturated fat (g)") },
-            keyboardOptions = decimalKeyboard,
-            enabled = entryMode == IngredientEntryMode.CUSTOM,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = saturatedFat,
+                onValueChange = { saturatedFat = it },
+                label = { Text("Saturated fat (g)") },
+                keyboardOptions = decimalKeyboard,
+                enabled = entryMode == IngredientEntryMode.CUSTOM,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = addedSugars,
-            onValueChange = { addedSugars = it },
-            label = { Text("Added sugars (g)") },
-            keyboardOptions = decimalKeyboard,
-            enabled = entryMode == IngredientEntryMode.CUSTOM,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = addedSugars,
+                onValueChange = { addedSugars = it },
+                label = { Text("Added sugars (g)") },
+                keyboardOptions = decimalKeyboard,
+                enabled = entryMode == IngredientEntryMode.CUSTOM,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = sodium,
-            onValueChange = { sodium = it },
-            label = { Text("Sodium (mg)") },
-            keyboardOptions = decimalKeyboard,
-            enabled = entryMode == IngredientEntryMode.CUSTOM,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = sodium,
+                onValueChange = { sodium = it },
+                label = { Text("Sodium (mg)") },
+                keyboardOptions = decimalKeyboard,
+                enabled = entryMode == IngredientEntryMode.CUSTOM,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         Spacer(Modifier.height(8.dp))
 
