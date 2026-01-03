@@ -28,7 +28,7 @@ import android.content.pm.PackageManager
 import android.graphics.*
 import android.location.Location
 import android.net.Uri
-import android.util.Log
+import com.example.routinereminder.MainActivity
 import com.example.routinereminder.data.SnapshotStorage
 
 import androidx.compose.foundation.background
@@ -168,10 +168,14 @@ fun MapScreen(
     // UI state
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var mapView by remember { mutableStateOf<MapView?>(null) }
-    var userZoom by rememberSaveable { mutableStateOf(15.5) }
-    var selectedActivity by rememberSaveable { mutableStateOf(ActivityType.RUNNING) }
-    var selectedTrackingMode by rememberSaveable { mutableStateOf(TrackingMode.BALANCED) }
-    var trackingMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var recording by remember { mutableStateOf(false) }
+    var firstFix by remember { mutableStateOf(true) }
+    var userZoom by remember { mutableStateOf(15.5) }
+    var includeMapInShare by remember { mutableStateOf(true) }
+    var activity by remember { mutableStateOf(ActivityType.RUNNING) }
+    var trackingMode by remember { mutableStateOf(TrackingMode.BALANCED) }
+    var trackingMenuExpanded by remember { mutableStateOf(false) }
+    var permissionRequired by remember { mutableStateOf(false) }
 
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
@@ -212,40 +216,19 @@ fun MapScreen(
     var smoothedLng by remember { mutableStateOf<Double?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    fun startRunTimers() {
-        timerJob?.cancel()
-        timerJob = scope.launch {
-            while (isActive) {
-                delay(1000L)
-                val newDuration = durationSec + 1
-                val met = activity.met
-                val heightCm = 175.0
-                val ageYears = 30
-                val gender = "Male"
-                val newCalories = calcCalories(
-                    met = met,
-                    weightKg = effectiveWeightKg,
-                    heightCm = heightCm,
-                    age = ageYears,
-                    gender = gender,
-                    durationSec = newDuration
-                )
-                viewModel.updateRunStats(distanceMeters, newDuration, newCalories)
-            }
+    fun requestLocationPermissions() {
+        (context as? MainActivity)?.requestLocationPermissions()
+    }
+
+    fun startTrackingIfPermitted(): Boolean {
+        if (!hasLocationPermission(context)) {
+            permissionRequired = true
+            requestLocationPermissions()
+            return false
         }
-        inactivityJob?.cancel()
-        inactivityJob = scope.launch {
-            while (isActive) {
-                delay(5000L)
-                val lastMove = lastMovementAt
-                if (lastMove != null &&
-                    System.currentTimeMillis() - lastMove > noMovementTimeoutMs
-                ) {
-                    stopRecording.value.invoke()
-                    break
-                }
-            }
-        }
+        permissionRequired = false
+        startTracking(context, trackingMode)
+        return true
     }
 
     // ask once if weight missing
@@ -361,33 +344,27 @@ fun MapScreen(
     DisposableEffect(Unit) {
         val r = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, intent: Intent?) {
-                when (intent?.action) {
-                    TrackingService.ACTION_TRACKING_LOCATION -> {
-                        val lat = intent.getDoubleExtra("lat", 0.0)
-                        val lng = intent.getDoubleExtra("lng", 0.0)
+                if (intent?.action == TrackingService.ACTION_PERMISSION_REQUIRED) {
+                    permissionRequired = true
+                    stopRecording.value.invoke()
+                    return
+                }
+                val lat = intent?.getDoubleExtra("lat", 0.0) ?: return
+                val lng = intent?.getDoubleExtra("lng", 0.0) ?: return
 
-                        // Convert broadcast into Location for your existing logic
-                        val loc = Location("tracking").apply {
-                            latitude = lat
-                            longitude = lng
-                            accuracy = 5f
-                        }
-                        onLocation(loc)
-                    }
-                    TrackingService.ACTION_TRACKING_IDLE -> {
-                        val idle = intent.getBooleanExtra(TrackingService.EXTRA_IDLE, false)
-                        if (idle) {
-                            stopRecording.value.invoke()
-                        }
-                    }
+                // Convert broadcast into Location for your existing logic
+                val loc = Location("tracking").apply {
+                    latitude = lat
+                    longitude = lng
+                    accuracy = 5f
                 }
             }
         }
 
         receiver = r
         val filter = IntentFilter().apply {
-            addAction(TrackingService.ACTION_TRACKING_LOCATION)
-            addAction(TrackingService.ACTION_TRACKING_IDLE)
+            addAction("TRACKING_LOCATION")
+            addAction(TrackingService.ACTION_PERMISSION_REQUIRED)
         }
         context.registerReceiver(r, filter, Context.RECEIVER_NOT_EXPORTED)
 
@@ -402,7 +379,9 @@ fun MapScreen(
             if (event == Lifecycle.Event.ON_STOP && recording) {
                 stopTracking(context)
             } else if (event == Lifecycle.Event.ON_START && recording) {
-                startTracking(context, trackingMode)
+                if (!startTrackingIfPermitted()) {
+                    stopRecording.value.invoke()
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -476,6 +455,36 @@ fun MapScreen(
                 }
             }
 
+            if (permissionRequired) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = ComposeColor(0xFF3B1B1B))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Location permission required to track.",
+                            color = ComposeColor(0xFFFFB4B4),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Button(
+                            onClick = { requestLocationPermissions() },
+                            colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFFB3261E))
+                        ) {
+                            Text("Grant")
+                        }
+                    }
+                }
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -502,8 +511,9 @@ fun MapScreen(
                                 selectedTrackingMode = mode
                                 trackingMenuExpanded = false
                                 if (recording) {
-                                    viewModel.updateTrackingMode(mode.value)
-                                    startTracking(context, mode)
+                                    if (!startTrackingIfPermitted()) {
+                                        stopRecording.value.invoke()
+                                    }
                                 }
                             }
                         )
@@ -672,7 +682,9 @@ fun MapScreen(
                                     viewModel.startRun(selectedActivity.label, selectedTrackingMode.value)
 
                                     // Start Foreground GPS Tracking Service
-                                    startTracking(context, trackingMode)
+                                    if (!startTrackingIfPermitted()) {
+                                        return@Button
+                                    }
 
                                     startRunTimers()
 
@@ -1214,6 +1226,18 @@ private fun clearOldCache(context: Context, maxAgeMs: Long = 7L * 24 * 3600 * 10
     context.cacheDir.listFiles()?.forEach {
         if (now - it.lastModified() > maxAgeMs) it.delete()
     }
+}
+
+private fun hasLocationPermission(context: Context): Boolean {
+    val fine = ActivityCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
+    val coarse = ActivityCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+    return fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED
 }
 
 /* ---------------- Small UI pieces ---------------- */
