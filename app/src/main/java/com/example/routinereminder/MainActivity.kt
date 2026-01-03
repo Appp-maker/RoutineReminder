@@ -567,7 +567,7 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                         }
 
                         composable(Screen.Workout.route) {
-                            WorkoutScreen()
+                            WorkoutScreen(mainViewModel = viewModel)
                         }
 
                         composable("share_preview/{sessionId}") { backStackEntry ->
