@@ -1,7 +1,6 @@
 package com.example.routinereminder.data.exercisedb
 
 import android.content.Context
-import com.example.routinereminder.BuildConfig
 import com.example.routinereminder.data.SettingsRepository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -113,7 +112,7 @@ class ExerciseDbRepository @Inject constructor(
             val totalFromPrefs = settingsRepository.getExerciseDbCacheTotal().first()
             onProgress(ExerciseDbDownloadProgress(cached.size, totalFromPrefs, false))
 
-            val json = fetchJson("api/exercises").getOrThrow()
+            val json = fetchJson(EXERCISES_PATH).getOrThrow()
             val exercises = parseExerciseListFromJson(json)
             saveCache(exercises)
             settingsRepository.saveExerciseDbCacheComplete(true)
@@ -145,7 +144,6 @@ class ExerciseDbRepository @Inject constructor(
         queryParams: Map<String, String> = emptyMap()
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            ensureApiConfig()
             val urlBuilder = baseUrl.toHttpUrl().newBuilder().addPathSegments(path)
             queryParams.forEach { (key, value) ->
                 urlBuilder.addQueryParameter(key, value)
@@ -169,32 +167,10 @@ class ExerciseDbRepository @Inject constructor(
         }
     }
 
-    private fun ensureApiConfig() {
-        val rapidApiKey = BuildConfig.EXERCISEDB_RAPIDAPI_KEY
-        val rapidApiHost = BuildConfig.EXERCISEDB_RAPIDAPI_HOST
-        if (rapidApiKey.isBlank()) {
-            throw IOException(
-                "Missing ExerciseDB RapidAPI key. Set EXERCISEDB_RAPIDAPI_KEY in gradle.properties."
-            )
-        }
-        if (rapidApiHost.isBlank()) {
-            throw IOException(
-                "Missing ExerciseDB RapidAPI host. Set EXERCISEDB_RAPIDAPI_HOST in gradle.properties."
-            )
-        }
-    }
-
     private fun buildRequest(url: HttpUrl): Request {
-        val builder = Request.Builder().url(url)
-        val rapidApiKey = BuildConfig.EXERCISEDB_RAPIDAPI_KEY
-        val rapidApiHost = BuildConfig.EXERCISEDB_RAPIDAPI_HOST
-        if (rapidApiKey.isNotBlank()) {
-            builder.addHeader("x-rapidapi-key", rapidApiKey)
-        }
-        if (rapidApiHost.isNotBlank()) {
-            builder.addHeader("x-rapidapi-host", rapidApiHost)
-        }
-        return builder.build()
+        return Request.Builder()
+            .url(url)
+            .build()
     }
 
     private fun parseExercise(item: JsonElement, index: Int): ExerciseDbExercise? {
@@ -272,7 +248,8 @@ class ExerciseDbRepository @Inject constructor(
     }
 
     companion object {
-        const val DEFAULT_BASE_URL = "https://exercisedb.p.rapidapi.com/"
+        const val DEFAULT_BASE_URL = "https://www.exercisedb.dev/"
+        private const val EXERCISES_PATH = "api/v1/exercises"
         private const val CACHE_FILE_NAME = "exercisedb_cache.json"
         private val REFRESH_PROMPT_INTERVAL_MS = TimeUnit.DAYS.toMillis(28)
     }
