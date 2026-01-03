@@ -1,9 +1,12 @@
 package com.example.routinereminder.location
 
 import android.app.*
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.location.Location
 import android.os.IBinder
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.example.routinereminder.R
 import com.google.android.gms.location.*
@@ -26,6 +29,10 @@ class TrackingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!hasLocationPermission()) {
+            handleMissingPermissions()
+            return START_NOT_STICKY
+        }
         val requestedMode = intent?.getStringExtra(EXTRA_TRACKING_MODE) ?: currentMode
         if (requestedMode != currentMode) {
             currentMode = requestedMode
@@ -61,6 +68,10 @@ class TrackingService : Service() {
     }
 
     private fun startLocationUpdates() {
+        if (!hasLocationPermission()) {
+            handleMissingPermissions()
+            return
+        }
         fused.requestLocationUpdates(
             locationRequest,
             locationCallback,
@@ -76,6 +87,24 @@ class TrackingService : Service() {
         lastRequestSignature = signature
         fused.removeLocationUpdates(locationCallback)
         startLocationUpdates()
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        val fine = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        val coarse = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        return fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun handleMissingPermissions() {
+        sendBroadcast(Intent(ACTION_PERMISSION_REQUIRED))
+        stopForeground(true)
+        stopSelf()
     }
 
     private fun buildLocationRequest(mode: String, idle: Boolean): LocationRequest {
@@ -125,10 +154,14 @@ class TrackingService : Service() {
                 if (idleNow != isIdle) {
                     isIdle = idleNow
                     updateLocationRequest()
+
+                    val idleIntent = Intent(ACTION_TRACKING_IDLE)
+                        .putExtra(EXTRA_IDLE, isIdle)
+                    sendBroadcast(idleIntent)
                 }
 
                 // Broadcast to your ViewModel
-                val intent = Intent("TRACKING_LOCATION")
+                val intent = Intent(ACTION_TRACKING_LOCATION)
                 intent.putExtra("lat", loc.latitude)
                 intent.putExtra("lng", loc.longitude)
                 sendBroadcast(intent)
@@ -144,9 +177,13 @@ class TrackingService : Service() {
     }
 
     companion object {
+        const val ACTION_TRACKING_LOCATION = "TRACKING_LOCATION"
+        const val ACTION_TRACKING_IDLE = "TRACKING_IDLE"
         const val EXTRA_TRACKING_MODE = "tracking_mode"
+        const val EXTRA_IDLE = "tracking_idle"
         const val MODE_HIGH_ACCURACY = "high_accuracy"
         const val MODE_BALANCED = "balanced"
+        const val ACTION_PERMISSION_REQUIRED = "TRACKING_PERMISSION_REQUIRED"
 
         private const val HIGH_ACCURACY_INTERVAL_MS = 2000L
         private const val HIGH_ACCURACY_MIN_DISTANCE_M = 2f
@@ -154,7 +191,7 @@ class TrackingService : Service() {
         private const val BALANCED_MIN_DISTANCE_M = 7f
         private const val IDLE_INTERVAL_MS = 10000L
         private const val IDLE_MIN_DISTANCE_M = 10f
-        private const val IDLE_TIMEOUT_MS = 20000L
+        private const val IDLE_TIMEOUT_MS = 2 * 60 * 1000L
         private const val MOVEMENT_THRESHOLD_M = 8f
     }
 }

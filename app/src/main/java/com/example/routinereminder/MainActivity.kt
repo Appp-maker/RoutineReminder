@@ -248,11 +248,7 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
         val enabledTabsState by viewModel.enabledTabs.collectAsState()
-        var firstLaunchSelection by remember { mutableStateOf<Set<AppTab>?>(null) }
-        var firstLaunchAccepted by rememberSaveable { mutableStateOf(false) }
-        val enabledTabs = enabledTabsState
-            ?: firstLaunchSelection
-            ?: AppTab.defaultTabs
+        val enabledTabs = enabledTabsState ?: AppTab.defaultTabs
         val allTabScreens = remember { AppTab.entries.map { it.screen } }
         val enabledTabScreens = enabledTabs.map { it.screen }
         val mainTabRoutes = allTabScreens.map { it.route }
@@ -320,13 +316,11 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
         val defaultEventSettings by viewModel.defaultEventSettings.collectAsState()
         val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
 
-        if (enabledTabsState == null && !firstLaunchAccepted) {
+        if (enabledTabsState == null) {
             FirstLaunchTabSelectionDialog(
                 selectedTabs = enabledTabs,
                 onTabSelectionChange = { updatedTabs ->
                     if (updatedTabs.isNotEmpty()) {
-                        firstLaunchSelection = updatedTabs
-                        firstLaunchAccepted = true
                         viewModel.saveEnabledTabs(updatedTabs)
                     } else {
                         Toast.makeText(
