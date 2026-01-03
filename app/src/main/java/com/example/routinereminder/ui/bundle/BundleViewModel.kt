@@ -3,22 +3,43 @@ package com.example.routinereminder.ui.bundle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.data.AppDatabase
+import com.example.routinereminder.data.OpenFoodFactsApiClient
 import com.example.routinereminder.data.entities.FoodBundle
+import com.example.routinereminder.data.entities.FoodProduct
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.example.routinereminder.data.entities.FoodBundleWithItems
 import com.example.routinereminder.data.entities.RecipeIngredient
+import java.io.IOException
+import java.net.SocketTimeoutException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class BundleViewModel @Inject constructor(
     private val database: AppDatabase
 ) : ViewModel() {
 
+    private val openFoodFactsApiClient = OpenFoodFactsApiClient()
+
     private val _bundles = MutableStateFlow<List<FoodBundle>>(emptyList())
     val bundles: StateFlow<List<FoodBundle>> = _bundles
+
+    private val _searchResults = MutableStateFlow<List<FoodProduct>>(emptyList())
+    val searchResults: StateFlow<List<FoodProduct>> = _searchResults.asStateFlow()
+
+    private val _searchError = MutableStateFlow<String?>(null)
+    val searchError: StateFlow<String?> = _searchError.asStateFlow()
+
+    private val _barcodeError = MutableStateFlow<String?>(null)
+    val barcodeError: StateFlow<String?> = _barcodeError.asStateFlow()
+
+    private val _scannedFoodProduct = MutableStateFlow<FoodProduct?>(null)
+    val scannedFoodProduct: StateFlow<FoodProduct?> = _scannedFoodProduct.asStateFlow()
 
     init {
         loadBundles()
@@ -35,6 +56,64 @@ class BundleViewModel @Inject constructor(
 
     suspend fun getIngredientOnce(ingredientId: Long): RecipeIngredient? {
         return database.foodBundleDao().getIngredientById(ingredientId)
+    }
+
+    fun onBarcodeScanned(barcode: String) {
+        viewModelScope.launch {
+            _barcodeError.value = null
+            try {
+                val result = openFoodFactsApiClient.getFoodProduct(barcode)
+                if (result == null) {
+                    _barcodeError.value = "No nutrition data found for this barcode."
+                }
+                _scannedFoodProduct.value = result
+            } catch (e: SocketTimeoutException) {
+                _barcodeError.value = "Network timeout. Try again."
+            } catch (e: IOException) {
+                _barcodeError.value = "Network error. Check your connection."
+            } catch (e: Exception) {
+                _barcodeError.value = "Barcode lookup failed."
+            }
+        }
+    }
+
+    fun clearScannedProduct() {
+        _scannedFoodProduct.value = null
+    }
+
+    fun searchFood(query: String) {
+        val cleanedQuery = query.trim()
+
+        if (cleanedQuery.length < 3) {
+            _searchResults.value = emptyList()
+            _searchError.value = "Please enter at least 3 characters"
+            return
+        }
+
+        viewModelScope.launch {
+            _searchError.value = null
+            _searchResults.value = emptyList()
+
+            try {
+                val results = withContext(Dispatchers.IO) {
+                    openFoodFactsApiClient.searchFood(cleanedQuery)
+                }
+                _searchResults.value = results
+
+                if (results.isEmpty()) {
+                    _searchError.value = "No results found"
+                }
+            } catch (e: SocketTimeoutException) {
+                _searchError.value = "Network timeout. Try again."
+                _searchResults.value = emptyList()
+            } catch (e: IOException) {
+                _searchError.value = "Network error. Check your connection."
+                _searchResults.value = emptyList()
+            } catch (e: Exception) {
+                _searchError.value = "Search failed"
+                _searchResults.value = emptyList()
+            }
+        }
     }
 
     fun createBundle(
