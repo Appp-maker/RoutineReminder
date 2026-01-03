@@ -26,17 +26,11 @@ class ExerciseDbDownloadWorker @AssistedInject constructor(
             return Result.success()
         }
         return repository
-            .downloadExerciseDatabase(shouldContinue = { shouldContinueDownload() })
+            .downloadExerciseDatabase()
             .fold(
                 onSuccess = { Result.success() },
                 onFailure = { Result.retry() }
             )
-    }
-
-    private suspend fun shouldContinueDownload(): Boolean {
-        if (isStopped) return false
-        val enabledTabs = settingsRepository.getEnabledTabs().first()
-        return enabledTabs?.contains(AppTab.Workout.id) ?: true
     }
 
     companion object {

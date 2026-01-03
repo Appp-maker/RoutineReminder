@@ -122,10 +122,40 @@ class WorkoutViewModel @Inject constructor(
                         it.copy(isLoading = false, errorMessage = error.message ?: "Unable to refresh ExerciseDB data.")
                     }
                 }
-                return@launch
-            }
             enqueueDownloadWork()
             monitorDownloadProgress()
+        }
+    }
+
+    private fun enqueueDownloadWork() {
+        val request = OneTimeWorkRequestBuilder<ExerciseDbDownloadWorker>().build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            ExerciseDbDownloadWorker.UNIQUE_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+            request
+        )
+    }
+
+    private fun monitorDownloadProgress() {
+        progressJob?.cancel()
+        progressJob = viewModelScope.launch {
+            while (true) {
+                val progress = repository.getDownloadProgress()
+                _uiState.update {
+                    it.copy(
+                        isExerciseDbReady = progress.isComplete,
+                        isExerciseDbDownloading = !progress.isComplete,
+                        exerciseDbDownloadedCount = progress.downloadedCount,
+                        exerciseDbTotalCount = progress.totalCount
+                    )
+                }
+                if (progress.isComplete) {
+                    refreshBodyParts()
+                    refreshExercises()
+                    return@launch
+                }
+                delay(1000)
+            }
         }
     }
 
