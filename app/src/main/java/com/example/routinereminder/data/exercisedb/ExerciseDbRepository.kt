@@ -41,6 +41,11 @@ data class ExerciseDbDownloadProgress(
     val isComplete: Boolean
 )
 
+data class ExerciseDbResponse(
+    val exercises: List<ExerciseDbExercise>,
+    val totalCount: Int?
+)
+
 @Singleton
 class ExerciseDbRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -112,11 +117,11 @@ class ExerciseDbRepository @Inject constructor(
             val totalFromPrefs = settingsRepository.getExerciseDbCacheTotal().first()
             onProgress(ExerciseDbDownloadProgress(cached.size, totalFromPrefs, false))
 
-            val json = fetchJson(EXERCISES_PATH).getOrThrow()
-            val exercises = parseExerciseListFromJson(json)
+            val response = downloadAllExercises(onProgress)
+            val exercises = response.exercises
             saveCache(exercises)
             settingsRepository.saveExerciseDbCacheComplete(true)
-            settingsRepository.saveExerciseDbCacheTotal(exercises.size)
+            settingsRepository.saveExerciseDbCacheTotal(response.totalCount ?: exercises.size)
             settingsRepository.saveExerciseDbLastRefresh(System.currentTimeMillis())
             cachedExercises = exercises
             onProgress(ExerciseDbDownloadProgress(exercises.size, exercises.size, true))
@@ -207,6 +212,22 @@ class ExerciseDbRepository @Inject constructor(
         return null
     }
 
+    private fun JsonObject.readInt(vararg keys: String): Int? {
+        for (key in keys) {
+            val value = this.get(key)
+            if (value != null && !value.isJsonNull) {
+                val primitive = value.asJsonPrimitive
+                if (primitive.isNumber) {
+                    return primitive.asInt
+                }
+                if (primitive.isString) {
+                    return primitive.asString.toIntOrNull()
+                }
+            }
+        }
+        return null
+    }
+
     private suspend fun loadCachedExercises(): List<ExerciseDbExercise> = cacheMutex.withLock {
         val cached = cachedExercises
         if (cached != null) return cached
@@ -240,21 +261,65 @@ class ExerciseDbRepository @Inject constructor(
         cacheFile.writeText(json)
     }
 
-    private fun parseExerciseListFromJson(json: String): List<ExerciseDbExercise> {
+    private fun parseExerciseResponse(json: String): ExerciseDbResponse {
         val element = JsonParser.parseString(json)
+        var totalCount: Int? = null
         val array = when {
             element.isJsonArray -> element.asJsonArray
-            element.isJsonObject && element.asJsonObject.has("data") -> element.asJsonObject.getAsJsonArray("data")
-            element.isJsonObject && element.asJsonObject.has("results") -> element.asJsonObject.getAsJsonArray("results")
+            element.isJsonObject -> {
+                val obj = element.asJsonObject
+                totalCount = obj.readInt("total", "count", "totalCount", "total_count")
+                when {
+                    obj.has("data") -> obj.getAsJsonArray("data")
+                    obj.has("results") -> obj.getAsJsonArray("results")
+                    obj.has("exercises") -> obj.getAsJsonArray("exercises")
+                    else -> JsonArray()
+                }
+            }
             else -> JsonArray()
         }
-        return array.mapIndexedNotNull { index, item -> parseExercise(item, index) }
+        val exercises = array.mapIndexedNotNull { index, item -> parseExercise(item, index) }
+        return ExerciseDbResponse(exercises = exercises, totalCount = totalCount)
+    }
+
+    private suspend fun downloadAllExercises(
+        onProgress: (ExerciseDbDownloadProgress) -> Unit
+    ): ExerciseDbResponse {
+        val exercisesById = LinkedHashMap<String, ExerciseDbExercise>()
+        var offset = 0
+        var totalCount: Int? = null
+        while (true) {
+            val json = fetchJson(
+                EXERCISES_PATH,
+                mapOf("limit" to DOWNLOAD_BATCH_SIZE.toString(), "offset" to offset.toString())
+            ).getOrThrow()
+            val response = parseExerciseResponse(json)
+            val startSize = exercisesById.size
+            response.exercises.forEach { exercise ->
+                exercisesById.putIfAbsent(exercise.id, exercise)
+            }
+            val added = exercisesById.size - startSize
+            totalCount = totalCount ?: response.totalCount
+            onProgress(ExerciseDbDownloadProgress(exercisesById.size, totalCount, false))
+            if (response.exercises.isEmpty() || added == 0) {
+                break
+            }
+            offset += response.exercises.size
+            if (response.exercises.size < DOWNLOAD_BATCH_SIZE) {
+                break
+            }
+        }
+        if (exercisesById.isEmpty()) {
+            throw IOException("Exercise database was empty.")
+        }
+        return ExerciseDbResponse(exercisesById.values.toList(), totalCount ?: exercisesById.size)
     }
 
     companion object {
         const val DEFAULT_BASE_URL = "https://exercisedb.dev/"
         private const val EXERCISES_PATH = "https://exercisedb.dev/api/exercises"
         private const val CACHE_FILE_NAME = "exercisedb_cache.json"
+        private const val DOWNLOAD_BATCH_SIZE = 250
         private val REFRESH_PROMPT_INTERVAL_MS = TimeUnit.DAYS.toMillis(28)
     }
 }
