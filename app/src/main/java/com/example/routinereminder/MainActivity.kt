@@ -73,10 +73,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -91,8 +93,10 @@ import com.example.routinereminder.data.DefaultEventSettings
 import com.example.routinereminder.data.ScheduleItem
 
 import com.example.routinereminder.ui.CalorieTrackerScreen
+import com.example.routinereminder.ui.AppTab
 import com.example.routinereminder.ui.MainViewModel
 import com.example.routinereminder.ui.SettingsScreen
+import com.example.routinereminder.ui.WorkoutScreen
 import com.example.routinereminder.ui.bundle.BundleDetailScreen
 import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 
@@ -243,22 +247,24 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
         val navController = rememberNavController()
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
-        val mainTabRoutes = listOf(
-            Screen.RoutineReminder.route,
-            Screen.CalorieTracker.route,
-            Screen.Map.route
-        )
+        val enabledTabsState by viewModel.enabledTabs.collectAsState()
+        var firstLaunchSelection by remember { mutableStateOf<Set<AppTab>?>(null) }
+        var firstLaunchAccepted by rememberSaveable { mutableStateOf(false) }
+        val enabledTabs = enabledTabsState
+            ?: firstLaunchSelection
+            ?: AppTab.defaultTabs
+        val allTabScreens = remember { AppTab.entries.map { it.screen } }
+        val enabledTabScreens = enabledTabs.map { it.screen }
+        val mainTabRoutes = allTabScreens.map { it.route }
+        val enabledTabRoutes = enabledTabScreens.map { it.route }
 
-        val showBottomBar = currentRoute in mainTabRoutes
+        val showBottomBar = enabledTabScreens.size > 1 && currentRoute in enabledTabRoutes
 
-        val showFab = currentRoute == Screen.RoutineReminder.route
+        val showFab = currentRoute == Screen.RoutineReminder.route && enabledTabs.contains(AppTab.Routine)
 
-        // ✅ FIXED: include ALL possible screens (including Map) for route lookup
         val currentScreen by remember(currentRoute) {
             derivedStateOf {
-                Screen.allScreens
-                    .plus(Screen.Map) // include map here
-                    .firstOrNull { it.route == currentRoute } ?: Screen.RoutineReminder
+                Screen.allScreens.firstOrNull { it.route == currentRoute } ?: Screen.RoutineReminder
             }
         }
 
@@ -292,6 +298,19 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
             }
         }
 
+        LaunchedEffect(enabledTabRoutes, currentRoute) {
+            if (currentRoute in mainTabRoutes && currentRoute !in enabledTabRoutes) {
+                val fallbackRoute = enabledTabRoutes.firstOrNull() ?: Screen.RoutineReminder.route
+                navController.navigate(fallbackRoute) {
+                    popUpTo(navController.graph.startDestinationId) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+
         var showEditDialog by remember { mutableStateOf(false) }
         var itemToEdit by remember { mutableStateOf<ScheduleItem?>(null) }
         var showDeleteCalendarConfirmDialog by remember { mutableStateOf(false) }
@@ -300,6 +319,25 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
         val selectedDate by viewModel.selectedDate.collectAsState()
         val defaultEventSettings by viewModel.defaultEventSettings.collectAsState()
         val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
+
+        if (enabledTabsState == null && !firstLaunchAccepted) {
+            FirstLaunchTabSelectionDialog(
+                selectedTabs = enabledTabs,
+                onTabSelectionChange = { updatedTabs ->
+                    if (updatedTabs.isNotEmpty()) {
+                        firstLaunchSelection = updatedTabs
+                        firstLaunchAccepted = true
+                        viewModel.saveEnabledTabs(updatedTabs)
+                    } else {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.settings_tabs_select_at_least_one),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+        }
 
         if (showSettingsScreen) {
             SettingsScreen(
@@ -321,19 +359,8 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                     }
                 },
                 bottomBar = {
-                    val showBottomBar = currentRoute in listOf(
-                        Screen.RoutineReminder.route,
-                        Screen.CalorieTracker.route,
-                        Screen.Map.route
-                    )
-
                     if (showBottomBar) {
-                        // Hard-coded list of bottom bar screens – cannot contain nulls
-                        val barScreens = listOf(
-                            Screen.RoutineReminder,
-                            Screen.CalorieTracker,
-                            Screen.Map
-                        )
+                        val barScreens = enabledTabScreens
 
                         NavigationBar {
                             barScreens.forEach { s ->
@@ -381,7 +408,8 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                     // ✅ NavHost defines all your routes
                     NavHost(
                         navController = navController,
-                        startDestination = Screen.RoutineReminder.route
+                        startDestination = enabledTabRoutes.firstOrNull()
+                            ?: Screen.RoutineReminder.route
                     ) {
                         composable(Screen.RoutineReminder.route) {
                             MainScreenContent(
@@ -544,6 +572,10 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                             MapScreen(navController = navController)
                         }
 
+                        composable(Screen.Workout.route) {
+                            WorkoutScreen()
+                        }
+
                         composable("share_preview/{sessionId}") { backStackEntry ->
                             val context = LocalContext.current
                             val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
@@ -625,6 +657,85 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
             }
         }
     }
+}
+
+@Composable
+private fun FirstLaunchTabSelectionDialog(
+    selectedTabs: Set<AppTab>,
+    onTabSelectionChange: (Set<AppTab>) -> Unit
+) {
+    val context = LocalContext.current
+    var pendingSelection by remember { mutableStateOf(selectedTabs) }
+
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text(stringResource(R.string.settings_tabs_first_launch_title)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.settings_tabs_first_launch_message))
+                Spacer(modifier = Modifier.height(12.dp))
+                AppTab.entries.forEach { tab ->
+                    val checked = pendingSelection.contains(tab)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                pendingSelection = if (checked) {
+                                    pendingSelection - tab
+                                } else {
+                                    pendingSelection + tab
+                                }
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = checked,
+                            onCheckedChange = { isChecked ->
+                                pendingSelection = if (isChecked) {
+                                    pendingSelection + tab
+                                } else {
+                                    pendingSelection - tab
+                                }
+                            }
+                        )
+                        Text(
+                            text = stringResource(tab.labelRes),
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.settings_tabs_disabled_notice),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (pendingSelection.isNotEmpty()) {
+                        onTabSelectionChange(pendingSelection)
+                    } else {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.settings_tabs_select_at_least_one),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                enabled = pendingSelection.isNotEmpty()
+            ) {
+                Text(stringResource(R.string.settings_tabs_first_launch_confirm))
+            }
+        },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        )
+    )
 }
 
 
