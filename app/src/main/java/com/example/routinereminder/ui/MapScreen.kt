@@ -1,6 +1,7 @@
 package com.example.routinereminder.ui
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
@@ -168,19 +169,18 @@ fun MapScreen(
     // UI state
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var mapView by remember { mutableStateOf<MapView?>(null) }
-    var recording by remember { mutableStateOf(false) }
     var firstFix by remember { mutableStateOf(true) }
     var userZoom by remember { mutableStateOf(15.5) }
     var includeMapInShare by remember { mutableStateOf(true) }
-    var activity by remember { mutableStateOf(ActivityType.RUNNING) }
-    var trackingMode by remember { mutableStateOf(TrackingMode.BALANCED) }
+    var selectedActivity by remember { mutableStateOf(ActivityType.RUNNING) }
+    var selectedTrackingMode by remember { mutableStateOf(TrackingMode.BALANCED) }
     var trackingMenuExpanded by remember { mutableStateOf(false) }
     var permissionRequired by remember { mutableStateOf(false) }
 
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
     val trailPoints by viewModel.trailPoints.collectAsState()
-    val recording = runState?.isRecording == true
+    val isRecording = runState?.isRecording == true
     val activity = runState?.activity?.let { ActivityType.fromLabel(it) } ?: selectedActivity
     val trackingMode = TrackingMode.fromValue(runState?.trackingMode ?: selectedTrackingMode.value)
     val distanceMeters = runState?.distanceMeters ?: 0.0
@@ -194,7 +194,7 @@ fun MapScreen(
     var lastMovementAt by rememberSaveable { mutableStateOf<Long?>(null) }
     var showResumePrompt by rememberSaveable { mutableStateOf(false) }
     val stopRecording = rememberUpdatedState {
-        if (recording) {
+        if (isRecording) {
             stopTracking(context)
             timerJob?.cancel()
             timerJob = null
@@ -202,6 +202,36 @@ fun MapScreen(
             inactivityJob = null
             showResumePrompt = false
             viewModel.stopRun()
+        }
+    }
+
+    fun startRunTimers() {
+        timerJob?.cancel()
+        inactivityJob?.cancel()
+        inactivityJob = null
+        val calorieProfile = resolveCalorieProfile(
+            weightKg = viewModel.currentUserWeightKgOrNull(),
+            heightCm = viewModel.currentUserHeightCmOrNull(),
+            ageYears = viewModel.currentUserAgeOrNull(),
+            gender = viewModel.currentUserGenderOrNull(),
+            source = "MapScreen"
+        )
+        timerJob = scope.launch {
+            while (isActive) {
+                delay(1000)
+                val state = runState ?: continue
+                if (!state.isRecording) continue
+                val nextDuration = state.durationSec + 1
+                val nextCalories = calcCalories(
+                    met = activity.met,
+                    weightKg = calorieProfile.weightKg,
+                    heightCm = calorieProfile.heightCm,
+                    age = calorieProfile.ageYears,
+                    gender = calorieProfile.gender,
+                    durationSec = nextDuration
+                )
+                viewModel.updateRunStats(state.distanceMeters, nextDuration, nextCalories)
+            }
         }
     }
 
@@ -243,8 +273,9 @@ fun MapScreen(
     }
 
     LaunchedEffect(runState?.sessionId, runState?.isRecording) {
-        if (runState?.isRecording == true && isTrackingServiceRunning(context)) {
-            startTracking(context, TrackingMode.fromValue(runState.trackingMode))
+        val state = runState ?: return@LaunchedEffect
+        if (state.isRecording && isTrackingServiceRunning(context)) {
+            startTracking(context, TrackingMode.fromValue(state.trackingMode))
             if (timerJob == null) {
                 startRunTimers()
             }
@@ -374,11 +405,11 @@ fun MapScreen(
         }
     }
 
-    DisposableEffect(lifecycleOwner, recording, trackingMode) {
+    DisposableEffect(lifecycleOwner, isRecording, trackingMode) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && recording) {
+            if (event == Lifecycle.Event.ON_STOP && isRecording) {
                 stopTracking(context)
-            } else if (event == Lifecycle.Event.ON_START && recording) {
+            } else if (event == Lifecycle.Event.ON_START && isRecording) {
                 if (!startTrackingIfPermitted()) {
                     stopRecording.value.invoke()
                 }
@@ -398,7 +429,8 @@ fun MapScreen(
         source.setGeoJson(Feature.fromGeometry(line))
     }
 
-    if (showResumePrompt && runState != null) {
+    val resumeState = runState
+    if (showResumePrompt && resumeState != null) {
         AlertDialog(
             onDismissRequest = { showResumePrompt = false },
             title = { Text(text = "Resume run?") },
@@ -411,7 +443,7 @@ fun MapScreen(
                 TextButton(
                     onClick = {
                         viewModel.resumeRun()
-                        startTracking(context, TrackingMode.fromValue(runState.trackingMode))
+                        startTracking(context, TrackingMode.fromValue(resumeState.trackingMode))
                         lastMovementAt = System.currentTimeMillis()
                         startRunTimers()
                         showResumePrompt = false
@@ -510,7 +542,7 @@ fun MapScreen(
                             onClick = {
                                 selectedTrackingMode = mode
                                 trackingMenuExpanded = false
-                                if (recording) {
+                                if (isRecording) {
                                     if (!startTrackingIfPermitted()) {
                                         stopRecording.value.invoke()
                                     }
@@ -642,7 +674,7 @@ fun MapScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    if (!recording) {
+                    if (!isRecording) {
                         // Show activity selector only before recording
                         ActivitySelector(
                             current = selectedActivity,
@@ -659,7 +691,7 @@ fun MapScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // 🔹 Show "Log" button only when NOT recording
-                        if (!recording) {
+                        if (!isRecording) {
                             Button(
                                 onClick = { navController.navigate("history") },
                                 colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFF424242)),
@@ -676,7 +708,7 @@ fun MapScreen(
                         // 🔹 Start / Stop button
                         Button(
                             onClick = {
-                                if (!recording) {
+                                if (!isRecording) {
                                     // --- Start logic ---
                                     lastMovementAt = System.currentTimeMillis()
                                     viewModel.startRun(selectedActivity.label, selectedTrackingMode.value)
@@ -769,16 +801,16 @@ fun MapScreen(
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (recording) ComposeColor.Red else ComposeColor(0xFF00C853)
+                                containerColor = if (isRecording) ComposeColor.Red else ComposeColor(0xFF00C853)
                             ),
                             shape = RoundedCornerShape(30.dp),
                             modifier = Modifier
                                 .weight(1.5f)
                                 .height(48.dp)
-                                .padding(start = if (recording) 0.dp else 8.dp)
+                                .padding(start = if (isRecording) 0.dp else 8.dp)
                         ) {
                             Text(
-                                if (!recording) "Start" else "Stop & Share",
+                                if (!isRecording) "Start" else "Stop & Share",
                                 color = ComposeColor.White
                             )
                         }

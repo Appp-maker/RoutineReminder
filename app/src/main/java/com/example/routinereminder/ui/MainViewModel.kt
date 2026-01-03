@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.data.AppDatabase
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.Gender
 import com.example.routinereminder.data.RunSessionRepository
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
@@ -31,6 +32,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.util.UUID
 import org.maplibre.geojson.Point
+import android.content.Context
 
 data class CalendarInfo(val id: String, val displayName: String, val accountName: String)
 
