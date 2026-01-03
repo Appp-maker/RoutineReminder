@@ -121,6 +121,10 @@
     <string name="workout_exercise_add">Add exercise</string>
     <string name="workout_exercisedb_attribution">Exercise data sourced from ExerciseDB (exercisedb.p.rapidapi.com).</string>
     <string name="workout_snackbar_select_plan">Select or create a workout plan first.</string>
+    <string name="workout_refresh_title">Refresh ExerciseDB data?</string>
+    <string name="workout_refresh_body">It has been a few weeks since the exercise database was updated. Refresh now to get the latest exercises for offline use.</string>
+    <string name="workout_refresh_confirm">Refresh data</string>
+    <string name="workout_refresh_dismiss">Not now</string>
 
     <!-- First Launch -->
     <string name="settings_tabs_first_launch_title">What do you want to use this app for?</string>

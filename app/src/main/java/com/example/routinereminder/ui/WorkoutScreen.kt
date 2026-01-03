@@ -103,6 +103,24 @@ fun WorkoutScreen(
         )
     }
 
+    if (uiState.showRefreshPrompt) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissRefreshPrompt,
+            title = { Text(stringResource(R.string.workout_refresh_title)) },
+            text = { Text(stringResource(R.string.workout_refresh_body)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::refreshExerciseDatabase) {
+                    Text(stringResource(R.string.workout_refresh_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissRefreshPrompt) {
+                    Text(stringResource(R.string.workout_refresh_dismiss))
+                }
+            }
+        )
+    }
+
     if (showNewPlanDialog) {
         AlertDialog(
             onDismissRequest = { showNewPlanDialog = false },

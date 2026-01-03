@@ -25,12 +25,14 @@ data class WorkoutUiState(
     val searchQuery: String = "",
     val selectedBodyPart: String? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val showRefreshPrompt: Boolean = false
 )
 
 @HiltViewModel
-class WorkoutViewModel @Inject constructor() : ViewModel() {
-    private val repository = ExerciseDbRepository()
+class WorkoutViewModel @Inject constructor(
+    private val repository: ExerciseDbRepository
+) : ViewModel() {
     private val requiredBodyParts = listOf(
         "back",
         "cardio",
@@ -49,8 +51,12 @@ class WorkoutViewModel @Inject constructor() : ViewModel() {
     private var refreshJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            repository.preloadExerciseDatabase()
+        }
         refreshBodyParts()
         refreshExercises()
+        checkRefreshPrompt()
     }
 
     fun updateSearchQuery(query: String) {
@@ -80,6 +86,26 @@ class WorkoutViewModel @Inject constructor() : ViewModel() {
         }
     }
 
+    fun refreshExerciseDatabase() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, showRefreshPrompt = false, errorMessage = null) }
+            repository.refreshExerciseDatabase()
+                .onSuccess { exercises ->
+                    val bodyParts = (exercises.map { it.bodyPart } + requiredBodyParts)
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                        .sorted()
+                    val filtered = filterExercises(exercises, _uiState.value.searchQuery, _uiState.value.selectedBodyPart)
+                    _uiState.update { it.copy(exercises = filtered, bodyParts = bodyParts, isLoading = false) }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(isLoading = false, errorMessage = error.message ?: "Unable to refresh ExerciseDB data.")
+                    }
+                }
+        }
+    }
+
     private fun scheduleRefresh() {
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
@@ -103,6 +129,22 @@ class WorkoutViewModel @Inject constructor() : ViewModel() {
                         )
                     }
                 }
+        }
+    }
+
+    private fun checkRefreshPrompt() {
+        viewModelScope.launch {
+            if (repository.shouldPromptForRefresh()) {
+                repository.recordRefreshPromptShown()
+                _uiState.update { it.copy(showRefreshPrompt = true) }
+            }
+        }
+    }
+
+    fun dismissRefreshPrompt() {
+        viewModelScope.launch {
+            repository.recordRefreshPromptDismissed()
+            _uiState.update { it.copy(showRefreshPrompt = false) }
         }
     }
 
@@ -170,6 +212,21 @@ class WorkoutViewModel @Inject constructor() : ViewModel() {
                 }
             }
             state.copy(plans = updatedPlans)
+        }
+    }
+
+    private fun filterExercises(
+        exercises: List<ExerciseDbExercise>,
+        query: String,
+        bodyPart: String?
+    ): List<ExerciseDbExercise> {
+        val trimmedQuery = query.trim().lowercase()
+        val normalizedBodyPart = bodyPart?.takeIf { it.isNotBlank() }
+        return exercises.filter { exercise ->
+            val matchesQuery = trimmedQuery.isBlank() || exercise.name.lowercase().contains(trimmedQuery)
+            val matchesBodyPart = normalizedBodyPart.isNullOrBlank() ||
+                exercise.bodyPart.equals(normalizedBodyPart, ignoreCase = true)
+            matchesQuery && matchesBodyPart
         }
     }
 }
