@@ -122,19 +122,14 @@ fun MapScreen(
     // timer
     val scope = rememberCoroutineScope()
     var timerJob by remember { mutableStateOf<Job?>(null) }
-    var inactivityJob by remember { mutableStateOf<Job?>(null) }
-    var lastMovementAt by remember { mutableStateOf<Long?>(null) }
     val stopRecording = rememberUpdatedState {
         if (recording) {
             stopTracking(context)
             timerJob?.cancel()
             timerJob = null
-            inactivityJob?.cancel()
-            inactivityJob = null
             recording = false
         }
     }
-    val noMovementTimeoutMs = remember { 2 * 60 * 1000L }
 
     // weight (read from MainViewModel if you already expose it; otherwise prompt will be handled there)
     val weightKg by remember { mutableStateOf(viewModel.currentUserWeightKgOrNull()) } // implement in your MainViewModel; return null if unknown
@@ -226,8 +221,6 @@ fun MapScreen(
             if (last != null) distanceMeters += haversineMeters(last, newPoint)
 
             trail.add(newPoint)
-            lastMovementAt = System.currentTimeMillis()
-
             val line = LineString.fromLngLats(trail.toList())
             val trailSource = s.getSourceAs("trail-source") as? GeoJsonSource
             trailSource?.setGeoJson(Feature.fromGeometry(line))
@@ -242,25 +235,35 @@ fun MapScreen(
     DisposableEffect(Unit) {
         val r = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, intent: Intent?) {
-                val lat = intent?.getDoubleExtra("lat", 0.0) ?: return
-                val lng = intent?.getDoubleExtra("lng", 0.0) ?: return
+                when (intent?.action) {
+                    TrackingService.ACTION_TRACKING_LOCATION -> {
+                        val lat = intent.getDoubleExtra("lat", 0.0)
+                        val lng = intent.getDoubleExtra("lng", 0.0)
 
-                // Convert broadcast into Location for your existing logic
-                val loc = Location("tracking").apply {
-                    latitude = lat
-                    longitude = lng
-                    accuracy = 5f
+                        // Convert broadcast into Location for your existing logic
+                        val loc = Location("tracking").apply {
+                            latitude = lat
+                            longitude = lng
+                            accuracy = 5f
+                        }
+                        onLocation(loc)
+                    }
+                    TrackingService.ACTION_TRACKING_IDLE -> {
+                        val idle = intent.getBooleanExtra(TrackingService.EXTRA_IDLE, false)
+                        if (idle) {
+                            stopRecording.value.invoke()
+                        }
+                    }
                 }
-                onLocation(loc)
             }
         }
 
         receiver = r
-        context.registerReceiver(
-            r,
-            IntentFilter("TRACKING_LOCATION"),
-            Context.RECEIVER_NOT_EXPORTED
-        )
+        val filter = IntentFilter().apply {
+            addAction(TrackingService.ACTION_TRACKING_LOCATION)
+            addAction(TrackingService.ACTION_TRACKING_IDLE)
+        }
+        context.registerReceiver(r, filter, Context.RECEIVER_NOT_EXPORTED)
 
 
         onDispose {
@@ -500,8 +503,6 @@ fun MapScreen(
                                     calories = 0.0
                                     trail.clear()
                                     firstFix = true
-                                    lastMovementAt = System.currentTimeMillis()
-
                                     // Start Foreground GPS Tracking Service
                                     startTracking(context, trackingMode)
 
@@ -526,20 +527,6 @@ fun MapScreen(
                                             )
                                         }
                                     }
-                                    inactivityJob?.cancel()
-                                    inactivityJob = scope.launch {
-                                        while (isActive) {
-                                            delay(5000L)
-                                            val lastMove = lastMovementAt
-                                            if (lastMove != null &&
-                                                System.currentTimeMillis() - lastMove > noMovementTimeoutMs
-                                            ) {
-                                                stopRecording.value.invoke()
-                                                break
-                                            }
-                                        }
-                                    }
-
                                     recording = true
 
                                 } else {
@@ -547,8 +534,6 @@ fun MapScreen(
                                     stopTracking(context) // Stop foreground tracking
                                     timerJob?.cancel()
                                     timerJob = null
-                                    inactivityJob?.cancel()
-                                    inactivityJob = null
                                     recording = false
 
                                     // Avoid saving empty or invalid sessions
