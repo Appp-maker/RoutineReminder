@@ -11,7 +11,6 @@ import androidx.navigation.NavController
 import com.example.routinereminder.data.entities.FoodBundleWithItems
 import com.example.routinereminder.ui.CalorieTrackerViewModel
 import androidx.compose.ui.Alignment
-import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.ui.Screen
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -19,6 +18,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.OpenInNew
 import com.example.routinereminder.data.entities.RecipeIngredient
+import com.example.routinereminder.data.entities.PORTION_TYPE_CUSTOM
+import com.example.routinereminder.data.entities.PORTION_TYPE_GRAMS
 import kotlinx.coroutines.launch
 
 
@@ -50,7 +51,14 @@ fun BundleDetailScreen(
     var description by remember(data.bundle.id) {
         mutableStateOf(data.bundle.description)
     }
+    var portionType by remember(data.bundle.id) {
+        mutableStateOf(data.bundle.portionType)
+    }
+    var customPortionGrams by remember(data.bundle.id) {
+        mutableStateOf(data.bundle.customPortionGrams?.toString().orEmpty())
+    }
     val scope = rememberCoroutineScope()
+    var showUpdateDialog by remember { mutableStateOf(false) }
 
     val calorieEntry = remember(navController) {
         navController.getBackStackEntry(Screen.CalorieTracker.route)
@@ -67,24 +75,64 @@ fun BundleDetailScreen(
     val totalSaturatedFat = data.items.sumOf { it.saturatedFatG }
     val totalAddedSugars = data.items.sumOf { it.addedSugarsG }
     val totalSodium = data.items.sumOf { it.sodiumMg }
-
-    val combinedProduct = FoodProduct(
-        name = data.bundle.name,
-        caloriesPer100g = totalCalories / totalGrams * 100.0,
-        proteinPer100g = totalProtein / totalGrams * 100.0,
-        carbsPer100g = totalCarbs / totalGrams * 100.0,
-        fatPer100g = totalFat / totalGrams * 100.0,
-        fiberPer100g = totalFiber / totalGrams * 100.0,
-        saturatedFatPer100g = totalSaturatedFat / totalGrams * 100.0,
-        addedSugarsPer100g = totalAddedSugars / totalGrams * 100.0,
-        sodiumPer100g = (totalSodium / totalGrams * 100.0) / 1000.0
-    )
+    val isPortionValid = portionType == PORTION_TYPE_GRAMS ||
+        (customPortionGrams.toDoubleOrNull()?.let { it > 0 } == true)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        if (showUpdateDialog) {
+            AlertDialog(
+                onDismissRequest = { showUpdateDialog = false },
+                title = { Text("Update tracked recipes?") },
+                text = {
+                    Text(
+                        "Apply these recipe changes to all logged entries, " +
+                            "or only those that are not in the past?"
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val customPortionValue = customPortionGrams.toDoubleOrNull()
+                            viewModel.updateBundle(
+                                bundleId = data.bundle.id,
+                                name = name,
+                                description = description,
+                                portionType = portionType,
+                                customPortionGrams = customPortionValue,
+                                updateScope = BundleUpdateScope.ALL
+                            )
+                            isEditing = false
+                            showUpdateDialog = false
+                        }
+                    ) {
+                        Text("Update all")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            val customPortionValue = customPortionGrams.toDoubleOrNull()
+                            viewModel.updateBundle(
+                                bundleId = data.bundle.id,
+                                name = name,
+                                description = description,
+                                portionType = portionType,
+                                customPortionGrams = customPortionValue,
+                                updateScope = BundleUpdateScope.FUTURE
+                            )
+                            isEditing = false
+                            showUpdateDialog = false
+                        }
+                    ) {
+                        Text("Update future only")
+                    }
+                }
+            )
+        }
         if (showDeleteConfirm) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
@@ -138,13 +186,12 @@ fun BundleDetailScreen(
                 IconButton(onClick = {
                     if (isEditing) {
                         // SAVE when leaving edit mode
-                        viewModel.updateBundle(
-                            bundleId = data.bundle.id,
-                            name = name,
-                            description = description
-                        )
+                        if (isPortionValid) {
+                            showUpdateDialog = true
+                        }
+                    } else {
+                        isEditing = true
                     }
-                    isEditing = !isEditing
                 }) {
                     Icon(
                         imageVector = if (isEditing) Icons.Filled.Check else Icons.Filled.Edit,
@@ -167,6 +214,61 @@ fun BundleDetailScreen(
                     text = data.bundle.description,
                     color = Color.Gray
                 )
+            }
+
+            if (!isEditing) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = if (data.bundle.portionType == PORTION_TYPE_CUSTOM) {
+                        val customAmount = data.bundle.customPortionGrams ?: 0.0
+                        "Portion: 1 portion = ${customAmount.toInt()} g"
+                    } else {
+                        "Portion: grams"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+
+        if (isEditing) {
+            Spacer(Modifier.height(12.dp))
+            Text("Portion definition", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(4.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = portionType == PORTION_TYPE_GRAMS,
+                        onClick = { portionType = PORTION_TYPE_GRAMS }
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text("Grams")
+                }
+                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = portionType == PORTION_TYPE_CUSTOM,
+                        onClick = { portionType = PORTION_TYPE_CUSTOM }
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text("Custom portion")
+                }
+            }
+
+            if (portionType == PORTION_TYPE_CUSTOM) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = customPortionGrams,
+                    onValueChange = { customPortionGrams = it },
+                    label = { Text("Grams per portion") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (!isPortionValid) {
+                    Text(
+                        text = "Enter a gram value greater than zero.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
 
@@ -250,7 +352,7 @@ fun BundleDetailScreen(
             Button(
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 onClick = {
-                    calorieVm.onFoodSelected(combinedProduct)
+                    calorieVm.selectBundle(bundleId)
                     navController.popBackStack(Screen.CalorieTracker.route, false)
                 }
             ) {
@@ -280,13 +382,9 @@ fun BundleDetailScreen(
 
                 Button(
                     modifier = Modifier.weight(1f),
+                    enabled = isPortionValid,
                     onClick = {
-                        viewModel.updateBundle(
-                            bundleId = data.bundle.id,
-                            name = name,
-                            description = description
-                        )
-                        isEditing = false
+                        showUpdateDialog = true
                     }
                 ) {
                     Text("Save changes")

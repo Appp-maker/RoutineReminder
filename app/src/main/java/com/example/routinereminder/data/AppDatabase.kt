@@ -63,7 +63,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         RecipeIngredient::class
 
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class, DayOfWeekSetConverter::class, LocalDateConverter::class)
