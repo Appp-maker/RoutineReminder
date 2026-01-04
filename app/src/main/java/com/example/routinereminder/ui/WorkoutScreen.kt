@@ -444,6 +444,24 @@ fun WorkoutScreen(
                             }
                         }
                     }
+                    if (uiState.isGifDownloading && uiState.gifTotalCount > 0) {
+                        Text(
+                            text = stringResource(R.string.workout_gif_download_title),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        LinearProgressIndicator(
+                            progress = uiState.gifDownloadedCount.toFloat() / uiState.gifTotalCount.toFloat(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.workout_gif_download_progress,
+                                uiState.gifDownloadedCount,
+                                uiState.gifTotalCount
+                            ),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
 

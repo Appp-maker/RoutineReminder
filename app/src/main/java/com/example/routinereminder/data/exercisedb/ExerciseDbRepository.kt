@@ -42,6 +42,12 @@ data class ExerciseDbDownloadProgress(
     val isComplete: Boolean
 )
 
+data class ExerciseDbGifDownloadProgress(
+    val downloadedCount: Int,
+    val totalCount: Int,
+    val isComplete: Boolean
+)
+
 data class ExerciseDbResponse(
     val exercises: List<ExerciseDbExercise>,
     val totalCount: Int?
@@ -58,6 +64,7 @@ class ExerciseDbRepository @Inject constructor(
     private val cacheMutex = Mutex()
     private val refreshMutex = Mutex()
     private val downloadMutex = Mutex()
+    private val gifDownloadMutex = Mutex()
     private val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
     private val gifDirectory = File(context.filesDir, GIF_DIRECTORY_NAME)
 
@@ -105,7 +112,8 @@ class ExerciseDbRepository @Inject constructor(
     }
 
     suspend fun downloadExerciseDatabase(
-        onProgress: (ExerciseDbDownloadProgress) -> Unit = {}
+        onProgress: (ExerciseDbDownloadProgress) -> Unit = {},
+        onGifProgress: (ExerciseDbGifDownloadProgress) -> Unit = {}
     ): Result<List<ExerciseDbExercise>> = downloadMutex.withLock {
         runCatching {
             val cached = readCache().orEmpty().toMutableList()
@@ -113,6 +121,7 @@ class ExerciseDbRepository @Inject constructor(
             if (cached.isNotEmpty() && cachedComplete) {
                 cachedExercises = cached
                 onProgress(ExerciseDbDownloadProgress(cached.size, cached.size, true))
+                onGifProgress(getGifDownloadProgress(cached))
                 return@runCatching cached
             }
 
@@ -122,7 +131,7 @@ class ExerciseDbRepository @Inject constructor(
             val response = downloadAllExercises(onProgress)
             val exercises = response.exercises
             saveCache(exercises)
-            downloadExerciseGifs(exercises)
+            downloadExerciseGifs(exercises, onGifProgress)
             settingsRepository.saveExerciseDbCacheComplete(true)
             settingsRepository.saveExerciseDbCacheTotal(response.totalCount ?: exercises.size)
             settingsRepository.saveExerciseDbLastRefresh(System.currentTimeMillis())
@@ -130,6 +139,17 @@ class ExerciseDbRepository @Inject constructor(
             onProgress(ExerciseDbDownloadProgress(exercises.size, exercises.size, true))
             exercises
         }
+    }
+
+    suspend fun getGifDownloadProgress(): ExerciseDbGifDownloadProgress = gifDownloadMutex.withLock {
+        getGifDownloadProgress(readCache().orEmpty())
+    }
+
+    suspend fun downloadExerciseGifsForCachedExercises(
+        onProgress: (ExerciseDbGifDownloadProgress) -> Unit = {}
+    ) = gifDownloadMutex.withLock {
+        val exercises = loadCachedExercises()
+        downloadExerciseGifs(exercises, onProgress)
     }
 
     suspend fun shouldPromptForRefresh(nowEpochMs: Long = System.currentTimeMillis()): Boolean {
@@ -198,8 +218,15 @@ class ExerciseDbRepository @Inject constructor(
         val equipment = obj.readString("equipment") ?: "Unknown equipment"
         val id = obj.readString("id", "_id", "uuid", "exerciseId")
             ?: "${name}-${bodyPart}-${target}-${equipment}-${index}"
-        val gifUrl = obj.readString("gifUrl", "gif_url")
-        val videoUrl = obj.readString("videoUrl", "video_url", "video", "youtube", "youtubeUrl")
+        val gifUrl = normalizeGifUrl(
+            obj.readString("gifUrl", "gif_url")
+                ?: obj.readNestedString("gif", "url", "gifUrl", "gif_url", "image")
+        )
+        val videoUrl = normalizeUrl(
+            obj.readString("videoUrl", "video_url", "youtube", "youtubeUrl")
+                ?: obj.readNestedString("video", "url", "link", "youtube", "youtubeUrl")
+                ?: obj.readNestedStringFromArray("videos", "url", "link", "youtube", "youtubeUrl")
+        )
         return ExerciseDbExercise(
             id = id,
             name = name,
@@ -219,6 +246,42 @@ class ExerciseDbRepository @Inject constructor(
             }
         }
         return null
+    }
+
+    private fun JsonObject.readNestedString(key: String, vararg nestedKeys: String): String? {
+        val value = this.get(key) ?: return null
+        if (value.isJsonPrimitive && value.asJsonPrimitive.isString) {
+            return value.asString
+        }
+        if (value.isJsonObject) {
+            return value.asJsonObject.readString(*nestedKeys)
+        }
+        if (value.isJsonArray) {
+            return value.asJsonArray.firstNotNullOfOrNull { element ->
+                if (element.isJsonPrimitive && element.asJsonPrimitive.isString) {
+                    element.asString
+                } else if (element.isJsonObject) {
+                    element.asJsonObject.readString(*nestedKeys)
+                } else {
+                    null
+                }
+            }
+        }
+        return null
+    }
+
+    private fun JsonObject.readNestedStringFromArray(key: String, vararg nestedKeys: String): String? {
+        val value = this.get(key) ?: return null
+        if (!value.isJsonArray) return null
+        return value.asJsonArray.firstNotNullOfOrNull { element ->
+            if (element.isJsonPrimitive && element.asJsonPrimitive.isString) {
+                element.asString
+            } else if (element.isJsonObject) {
+                element.asJsonObject.readString(*nestedKeys)
+            } else {
+                null
+            }
+        }
     }
 
     private fun JsonObject.readInt(vararg keys: String): Int? {
@@ -320,11 +383,25 @@ class ExerciseDbRepository @Inject constructor(
         return input.lowercase().replace(Regex("[^a-z0-9._-]"), "_")
     }
 
-    private suspend fun downloadExerciseGifs(exercises: List<ExerciseDbExercise>) = withContext(Dispatchers.IO) {
+    private suspend fun downloadExerciseGifs(
+        exercises: List<ExerciseDbExercise>,
+        onProgress: (ExerciseDbGifDownloadProgress) -> Unit = {}
+    ) = withContext(Dispatchers.IO) {
+        val exercisesWithGifs = exercises.filter { !it.gifUrl.isNullOrBlank() }
+        val total = exercisesWithGifs.size
+        if (total == 0) {
+            onProgress(ExerciseDbGifDownloadProgress(0, 0, true))
+            return@withContext
+        }
         if (!gifDirectory.exists()) {
             gifDirectory.mkdirs()
         }
-        exercises.forEach { exercise ->
+        var downloadedCount = exercisesWithGifs.count { exercise ->
+            val targetFile = gifFileForExerciseId(exercise.id)
+            targetFile.exists() && targetFile.length() > 0L
+        }
+        onProgress(ExerciseDbGifDownloadProgress(downloadedCount, total, downloadedCount >= total))
+        exercisesWithGifs.forEach { exercise ->
             val gifUrl = exercise.gifUrl?.trim()
             if (gifUrl.isNullOrBlank()) return@forEach
             val targetFile = gifFileForExerciseId(exercise.id)
@@ -349,7 +426,43 @@ class ExerciseDbRepository @Inject constructor(
             }.onFailure {
                 tempFile.delete()
             }
+            downloadedCount += 1
+            onProgress(ExerciseDbGifDownloadProgress(downloadedCount, total, downloadedCount >= total))
         }
+    }
+
+    private fun getGifDownloadProgress(
+        exercises: List<ExerciseDbExercise>
+    ): ExerciseDbGifDownloadProgress {
+        val exercisesWithGifs = exercises.filter { !it.gifUrl.isNullOrBlank() }
+        val total = exercisesWithGifs.size
+        if (total == 0) {
+            return ExerciseDbGifDownloadProgress(0, 0, true)
+        }
+        val downloadedCount = exercisesWithGifs.count { exercise ->
+            val targetFile = gifFileForExerciseId(exercise.id)
+            targetFile.exists() && targetFile.length() > 0L
+        }
+        return ExerciseDbGifDownloadProgress(downloadedCount, total, downloadedCount >= total)
+    }
+
+    private fun normalizeGifUrl(url: String?): String? {
+        val trimmed = url?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed
+        }
+        return baseUrl.toHttpUrl().newBuilder()
+            .addPathSegments(trimmed.trimStart('/'))
+            .build()
+            .toString()
+    }
+
+    private fun normalizeUrl(url: String?): String? {
+        val trimmed = url?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed
+        }
+        return "https://$trimmed"
     }
 
     private fun parseExerciseResponse(json: String): ExerciseDbResponse {
