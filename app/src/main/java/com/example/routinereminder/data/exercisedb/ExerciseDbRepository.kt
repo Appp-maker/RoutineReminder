@@ -33,7 +33,8 @@ data class ExerciseDbExercise(
     val target: String,
     val equipment: String,
     val gifUrl: String? = null,
-    val videoUrl: String? = null
+    val videoUrl: String? = null,
+    val instructions: List<String> = emptyList()
 )
 
 data class ExerciseDbDownloadProgress(
@@ -222,6 +223,7 @@ class ExerciseDbRepository @Inject constructor(
             obj.readString("gifUrl", "gif_url")
                 ?: obj.readNestedString("gif", "url", "gifUrl", "gif_url", "image")
         )
+        val instructions = obj.readInstructionList("instructions", "instruction", "steps")
         val videoUrl = normalizeUrl(
             obj.readString("videoUrl", "video_url", "youtube", "youtubeUrl")
                 ?: obj.readNestedString("video", "url", "link", "youtube", "youtubeUrl")
@@ -234,7 +236,8 @@ class ExerciseDbRepository @Inject constructor(
             target = target,
             equipment = equipment,
             gifUrl = gifUrl,
-            videoUrl = videoUrl
+            videoUrl = videoUrl,
+            instructions = instructions
         )
     }
 
@@ -311,6 +314,29 @@ class ExerciseDbRepository @Inject constructor(
                         null
                     }
                 }
+            }
+        }
+        return emptyList()
+    }
+
+    private fun JsonObject.readInstructionList(vararg keys: String): List<String> {
+        for (key in keys) {
+            val value = this.get(key)
+            if (value == null || value.isJsonNull) continue
+            if (value.isJsonPrimitive && value.asJsonPrimitive.isString) {
+                return value.asString
+                    .split("\n")
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+            }
+            if (value.isJsonArray) {
+                return value.asJsonArray.mapNotNull { element ->
+                    if (element.isJsonPrimitive && element.asJsonPrimitive.isString) {
+                        element.asString.trim()
+                    } else {
+                        null
+                    }
+                }.filter { it.isNotBlank() }
             }
         }
         return emptyList()

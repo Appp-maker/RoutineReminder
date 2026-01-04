@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -315,7 +317,8 @@ fun WorkoutScreen(
                                                 subtitle = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                                                 gifFile = viewModel.getExerciseGifFile(exercise.id, exercise.gifUrl),
                                                 gifUrl = exercise.gifUrl,
-                                                videoUrl = exercise.videoUrl
+                                                videoUrl = exercise.videoUrl,
+                                                instructions = exercise.instructions
                                             )
                                         },
                                         onRemove = { viewModel.removeExerciseFromPlan(selectedPlan.id, exercise.id) },
@@ -490,7 +493,8 @@ fun WorkoutScreen(
                                     subtitle = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                                     gifFile = viewModel.getExerciseGifFile(exercise.id, exercise.gifUrl),
                                     gifUrl = exercise.gifUrl,
-                                    videoUrl = exercise.videoUrl
+                                    videoUrl = exercise.videoUrl,
+                                    instructions = exercise.instructions
                                 )
                             },
                             onAdd = {
@@ -717,7 +721,8 @@ private data class ExercisePreview(
     val subtitle: String,
     val gifFile: File?,
     val gifUrl: String?,
-    val videoUrl: String?
+    val videoUrl: String?,
+    val instructions: List<String>
 )
 
 @Composable
@@ -731,7 +736,10 @@ private fun ExercisePreviewDialog(
         onDismissRequest = onDismiss,
         title = { Text(preview.title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
                 Text(text = preview.subtitle, style = MaterialTheme.typography.bodySmall)
                 if (model != null) {
                     AsyncImage(
@@ -750,6 +758,16 @@ private fun ExercisePreviewDialog(
                         text = stringResource(R.string.workout_exercise_gif_unavailable),
                         style = MaterialTheme.typography.bodySmall
                     )
+                }
+                if (preview.instructions.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.workout_exercise_instructions_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    preview.instructions.forEach { instruction ->
+                        Text(text = instruction, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
                 preview.videoUrl?.let { videoUrl ->
                     TextButton(onClick = {
