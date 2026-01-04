@@ -571,7 +571,7 @@ private fun exerciseSettingsSummary(exercise: WorkoutPlanExercise): String? {
     val segments = buildList {
         exercise.repetitions?.let { add("$it Reps") }
         exercise.sets?.let { add("$it Sets") }
-        exercise.weight?.let { add("${formatWeight(it)} kg") }
+        exercise.weight?.takeIf { it > 0 }?.let { add("${formatWeight(it)} kg") }
         exercise.durationMinutes?.let { add("Duration $it seconds") }
         exercise.restSeconds?.let { add("Rest between sets $it seconds") }
     }
