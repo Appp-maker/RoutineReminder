@@ -45,12 +45,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.routinereminder.R
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
 import com.example.routinereminder.data.workout.WorkoutPlan
+import com.example.routinereminder.data.workout.WorkoutPlanExercise
 import com.example.routinereminder.ui.components.EditItemDialog
 import kotlinx.coroutines.launch
 
@@ -155,10 +158,13 @@ fun WorkoutScreen(
 
     planToSchedule?.let { plan ->
         val defaultDurationMinutes = (defaultEventSettings.durationHours * 60) + defaultEventSettings.durationMinutes
-        val notes = if (plan.exercises.isEmpty()) {
-            null
-        } else {
-            plan.exercises.joinToString("\n") { "• ${it.name}" }
+        val notes = plan.exercises.takeIf { it.isNotEmpty() }?.joinToString("\n") { exercise ->
+            val details = exerciseSettingsSummary(exercise)
+            if (details.isNullOrBlank()) {
+                "• ${exercise.name}"
+            } else {
+                "• ${exercise.name} ($details)"
+            }
         }
         val draftItem = ScheduleItem(
             name = plan.name,
@@ -283,7 +289,18 @@ fun WorkoutScreen(
                                 selectedPlan.exercises.forEach { exercise ->
                                     WorkoutPlanExerciseRow(
                                         exercise = exercise,
-                                        onRemove = { viewModel.removeExerciseFromPlan(selectedPlan.id, exercise.id) }
+                                        onRemove = { viewModel.removeExerciseFromPlan(selectedPlan.id, exercise.id) },
+                                        onUpdate = { sets, repetitions, duration, rest, weight ->
+                                            viewModel.updateExerciseSettings(
+                                                planId = selectedPlan.id,
+                                                exerciseId = exercise.id,
+                                                sets = sets,
+                                                repetitionsPerSet = repetitions,
+                                                durationSecondsPerSet = duration,
+                                                restSecondsBetweenSets = rest,
+                                                weightKgPerSet = weight
+                                            )
+                                        }
                                     )
                                 }
                             }
@@ -446,24 +463,134 @@ fun WorkoutScreen(
 
 @Composable
 private fun WorkoutPlanExerciseRow(
-    exercise: ExerciseDbExercise,
-    onRemove: () -> Unit
+    exercise: WorkoutPlanExercise,
+    onRemove: () -> Unit,
+    onUpdate: (Int, Int?, Int?, Int, Float?) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = exercise.name, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
-                style = MaterialTheme.typography.bodySmall
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                val settingsSummary = exerciseSettingsSummary(exercise)
+                Text(text = exercise.name, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                if (!settingsSummary.isNullOrBlank()) {
+                    Text(
+                        text = settingsSummary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+            IconButton(onClick = onRemove) {
+                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.workout_plan_remove_exercise))
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextField(
+                value = exercise.sets.toString(),
+                onValueChange = { value ->
+                    val cleaned = value.filter { it.isDigit() }
+                    val parsed = (cleaned.toIntOrNull() ?: 0).coerceAtLeast(1)
+                    onUpdate(parsed, exercise.repetitionsPerSet, exercise.durationSecondsPerSet, exercise.restSecondsBetweenSets, exercise.weightKgPerSet)
+                },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.workout_exercise_sets_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            TextField(
+                value = exercise.repetitionsPerSet?.toString().orEmpty(),
+                onValueChange = { value ->
+                    val cleaned = value.filter { it.isDigit() }
+                    val parsed = cleaned.toIntOrNull()
+                    onUpdate(
+                        exercise.sets,
+                        parsed,
+                        if (parsed != null) null else exercise.durationSecondsPerSet,
+                        exercise.restSecondsBetweenSets,
+                        exercise.weightKgPerSet
+                    )
+                },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.workout_exercise_repetitions_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
         }
-        IconButton(onClick = onRemove) {
-            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.workout_plan_remove_exercise))
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextField(
+                value = exercise.durationSecondsPerSet?.toString().orEmpty(),
+                onValueChange = { value ->
+                    val cleaned = value.filter { it.isDigit() }
+                    val parsed = cleaned.toIntOrNull()
+                    onUpdate(
+                        exercise.sets,
+                        if (parsed != null) null else exercise.repetitionsPerSet,
+                        parsed,
+                        exercise.restSecondsBetweenSets,
+                        exercise.weightKgPerSet
+                    )
+                },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.workout_exercise_duration_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            TextField(
+                value = exercise.restSecondsBetweenSets.toString(),
+                onValueChange = { value ->
+                    val cleaned = value.filter { it.isDigit() }
+                    val parsed = cleaned.toIntOrNull() ?: 0
+                    onUpdate(exercise.sets, exercise.repetitionsPerSet, exercise.durationSecondsPerSet, parsed, exercise.weightKgPerSet)
+                },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextField(
+                value = exercise.weightKgPerSet?.toString().orEmpty(),
+                onValueChange = { value ->
+                    val cleaned = value.filterIndexed { index, char ->
+                        char.isDigit() || (char == '.' && !value.take(index).contains('.'))
+                    }
+                    val parsed = cleaned.toFloatOrNull()
+                    onUpdate(exercise.sets, exercise.repetitionsPerSet, exercise.durationSecondsPerSet, exercise.restSecondsBetweenSets, parsed)
+                },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.workout_exercise_weight_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
         }
     }
+}
+
+private fun exerciseSettingsSummary(exercise: WorkoutPlanExercise): String? {
+    if (
+        exercise.repetitionsPerSet == null &&
+        exercise.durationSecondsPerSet == null &&
+        exercise.weightKgPerSet == null &&
+        exercise.sets == 1 &&
+        exercise.restSecondsBetweenSets == 0
+    ) {
+        return null
+    }
+    val segments = buildList {
+        add("${exercise.sets} sets")
+        exercise.repetitionsPerSet?.let { add("$it reps/set") }
+        exercise.durationSecondsPerSet?.let { add("$it sec/set") }
+        add("${exercise.restSecondsBetweenSets} sec rest")
+        exercise.weightKgPerSet?.let { add("$it kg") }
+    }
+    return segments.takeIf { it.isNotEmpty() }?.joinToString(" • ")
 }
 
 @Composable

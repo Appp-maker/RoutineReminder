@@ -9,6 +9,8 @@ import androidx.work.WorkManager
 import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
 import com.example.routinereminder.data.exercisedb.ExerciseDbRepository
 import com.example.routinereminder.data.workout.WorkoutPlan
+import com.example.routinereminder.data.workout.WorkoutPlanExercise
+import com.example.routinereminder.data.workout.toPlanExercise
 import com.example.routinereminder.data.workout.WorkoutPlanRepository
 import com.example.routinereminder.workers.ExerciseDbDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -336,7 +338,7 @@ class WorkoutViewModel @Inject constructor(
                 if (plan.exercises.any { it.id == exercise.id }) {
                     plan
                 } else {
-                    plan.copy(exercises = plan.exercises + exercise)
+                    plan.copy(exercises = plan.exercises + exercise.toPlanExercise())
                 }
             } else {
                 plan
@@ -350,6 +352,39 @@ class WorkoutViewModel @Inject constructor(
         val updatedPlans = _uiState.value.plans.map { plan ->
             if (plan.id == planId) {
                 plan.copy(exercises = plan.exercises.filterNot { it.id == exerciseId })
+            } else {
+                plan
+            }
+        }
+        _uiState.update { state -> state.copy(plans = updatedPlans) }
+        persistPlans(updatedPlans, _uiState.value.selectedPlanId)
+    }
+
+    fun updateExerciseSettings(
+        planId: String,
+        exerciseId: String,
+        sets: Int,
+        repetitionsPerSet: Int?,
+        durationSecondsPerSet: Int?,
+        restSecondsBetweenSets: Int,
+        weightKgPerSet: Float?
+    ) {
+        val updatedPlans = _uiState.value.plans.map { plan ->
+            if (plan.id == planId) {
+                val updatedExercises = plan.exercises.map { exercise ->
+                    if (exercise.id == exerciseId) {
+                        exercise.copy(
+                            sets = sets,
+                            repetitionsPerSet = repetitionsPerSet,
+                            durationSecondsPerSet = durationSecondsPerSet,
+                            restSecondsBetweenSets = restSecondsBetweenSets,
+                            weightKgPerSet = weightKgPerSet
+                        )
+                    } else {
+                        exercise
+                    }
+                }
+                plan.copy(exercises = updatedExercises)
             } else {
                 plan
             }
