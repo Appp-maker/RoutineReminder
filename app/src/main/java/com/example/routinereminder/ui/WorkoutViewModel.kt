@@ -40,7 +40,10 @@ data class WorkoutUiState(
     val isExerciseDbReady: Boolean = false,
     val isExerciseDbDownloading: Boolean = false,
     val exerciseDbDownloadedCount: Int = 0,
-    val exerciseDbTotalCount: Int? = null
+    val exerciseDbTotalCount: Int? = null,
+    val gifDownloadedCount: Int = 0,
+    val gifTotalCount: Int = 0,
+    val isGifDownloading: Boolean = false
 )
 
 @HiltViewModel
@@ -151,12 +154,16 @@ class WorkoutViewModel @Inject constructor(
         progressJob = viewModelScope.launch {
             while (true) {
                 val progress = repository.getDownloadProgress()
+                val gifProgress = if (progress.isComplete) repository.getGifDownloadProgress() else null
                 _uiState.update {
                     it.copy(
                         isExerciseDbReady = progress.isComplete,
                         isExerciseDbDownloading = !progress.isComplete,
                         exerciseDbDownloadedCount = progress.downloadedCount,
-                        exerciseDbTotalCount = progress.totalCount
+                        exerciseDbTotalCount = progress.totalCount,
+                        gifDownloadedCount = gifProgress?.downloadedCount ?: it.gifDownloadedCount,
+                        gifTotalCount = gifProgress?.totalCount ?: it.gifTotalCount,
+                        isGifDownloading = gifProgress?.isComplete == false
                     )
                 }
                 if (progress.isComplete) {
@@ -217,6 +224,17 @@ class WorkoutViewModel @Inject constructor(
                         exerciseDbTotalCount = progress.totalCount ?: progress.downloadedCount
                     )
                 }
+                val gifProgress = repository.getGifDownloadProgress()
+                _uiState.update {
+                    it.copy(
+                        gifDownloadedCount = gifProgress.downloadedCount,
+                        gifTotalCount = gifProgress.totalCount,
+                        isGifDownloading = !gifProgress.isComplete
+                    )
+                }
+                if (!gifProgress.isComplete) {
+                    downloadExerciseGifs()
+                }
                 refreshBodyParts()
                 refreshExercises()
             } else {
@@ -235,17 +253,29 @@ class WorkoutViewModel @Inject constructor(
 
     private fun downloadExerciseDatabase() {
         viewModelScope.launch {
-            repository.downloadExerciseDatabase { progress ->
-                _uiState.update {
-                    it.copy(
-                        isExerciseDbReady = progress.isComplete,
-                        isExerciseDbDownloading = !progress.isComplete,
-                        exerciseDbDownloadedCount = progress.downloadedCount,
-                        exerciseDbTotalCount = progress.totalCount
-                    )
+            repository.downloadExerciseDatabase(
+                onProgress = { progress ->
+                    _uiState.update {
+                        it.copy(
+                            isExerciseDbReady = progress.isComplete,
+                            isExerciseDbDownloading = !progress.isComplete,
+                            exerciseDbDownloadedCount = progress.downloadedCount,
+                            exerciseDbTotalCount = progress.totalCount
+                        )
+                    }
+                },
+                onGifProgress = { progress ->
+                    _uiState.update {
+                        it.copy(
+                            gifDownloadedCount = progress.downloadedCount,
+                            gifTotalCount = progress.totalCount,
+                            isGifDownloading = !progress.isComplete
+                        )
+                    }
                 }
-            }.onSuccess { exercises ->
+            ).onSuccess { exercises ->
                 val progress = repository.getDownloadProgress()
+                val gifProgress = repository.getGifDownloadProgress()
                 if (progress.isComplete && exercises.isNotEmpty()) {
                     val bodyParts = (exercises.map { it.bodyPart } + requiredBodyParts)
                         .filter { it.isNotBlank() }
@@ -260,7 +290,10 @@ class WorkoutViewModel @Inject constructor(
                             isExerciseDbReady = true,
                             isExerciseDbDownloading = false,
                             exerciseDbDownloadedCount = exercises.size,
-                            exerciseDbTotalCount = exercises.size
+                            exerciseDbTotalCount = exercises.size,
+                            gifDownloadedCount = gifProgress.downloadedCount,
+                            gifTotalCount = gifProgress.totalCount,
+                            isGifDownloading = !gifProgress.isComplete
                         )
                     }
                 } else {
@@ -270,7 +303,10 @@ class WorkoutViewModel @Inject constructor(
                             isExerciseDbReady = false,
                             isExerciseDbDownloading = true,
                             exerciseDbDownloadedCount = progress.downloadedCount,
-                            exerciseDbTotalCount = progress.totalCount
+                            exerciseDbTotalCount = progress.totalCount,
+                            isGifDownloading = !gifProgress.isComplete,
+                            gifDownloadedCount = gifProgress.downloadedCount,
+                            gifTotalCount = gifProgress.totalCount
                         )
                     }
                 }
@@ -280,7 +316,22 @@ class WorkoutViewModel @Inject constructor(
                         isLoading = false,
                         isExerciseDbReady = false,
                         isExerciseDbDownloading = false,
-                        errorMessage = error.message ?: "Unable to download ExerciseDB data."
+                        errorMessage = error.message ?: "Unable to download ExerciseDB data.",
+                        isGifDownloading = false
+                    )
+                }
+            }
+        }
+    }
+
+    private fun downloadExerciseGifs() {
+        viewModelScope.launch {
+            repository.downloadExerciseGifsForCachedExercises { progress ->
+                _uiState.update {
+                    it.copy(
+                        gifDownloadedCount = progress.downloadedCount,
+                        gifTotalCount = progress.totalCount,
+                        isGifDownloading = !progress.isComplete
                     )
                 }
             }
