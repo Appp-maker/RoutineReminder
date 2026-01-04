@@ -9,6 +9,7 @@ data class WorkoutPlanExercise(
     val target: String,
     val equipment: String,
     val gifUrl: String? = null,
+    val videoUrl: String? = null,
     val sets: Int? = null,
     val repetitions: Int? = null,
     val durationMinutes: Int? = null,
@@ -28,5 +29,6 @@ fun ExerciseDbExercise.toPlanExercise(): WorkoutPlanExercise = WorkoutPlanExerci
     bodyPart = bodyPart,
     target = target,
     equipment = equipment,
-    gifUrl = gifUrl
+    gifUrl = gifUrl,
+    videoUrl = videoUrl
 )

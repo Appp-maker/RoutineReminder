@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 
@@ -98,6 +99,10 @@ class WorkoutViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, errorMessage = error.message ?: "Unable to load exercises.") }
                 }
         }
+    }
+
+    fun getExerciseGifFile(exerciseId: String, gifUrl: String?): File? {
+        return repository.getExerciseGifFile(exerciseId, gifUrl)
     }
 
     fun refreshExerciseDatabase() {

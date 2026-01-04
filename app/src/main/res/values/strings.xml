@@ -5,6 +5,7 @@
     <string name="alert_action_discard">Discard</string>
     <string name="alert_action_cancel">Cancel</string>
     <string name="alert_action_close">Close</string>
+    <string name="alert_action_ok">OK</string>
     <string name="alert_unsaved_changes_title">Unsaved Changes</string>
     <string name="alert_unsaved_changes_message">You have unsaved changes. Are you sure you want to discard them?</string>
     <string name="settings_toast_work_in_progress">This feature is a work in progress.</string>
@@ -130,6 +131,9 @@
     <string name="workout_exercise_rest_label">Rest (sec)</string>
     <string name="workout_exercise_weight_label">Weight</string>
     <string name="workout_plan_edit_exercise">Edit exercise</string>
+    <string name="workout_exercise_gif_preview">Exercise gif preview</string>
+    <string name="workout_exercise_gif_unavailable">This exercise does not have a gif yet.</string>
+    <string name="workout_exercise_video_link">View video</string>
     <string name="workout_snackbar_select_plan">Select or create a workout plan first.</string>
     <string name="workout_refresh_title">Refresh ExerciseDB data?</string>
     <string name="workout_refresh_body">It has been a few weeks since the exercise database was updated. Refresh now to get the latest exercises for offline use.</string>
