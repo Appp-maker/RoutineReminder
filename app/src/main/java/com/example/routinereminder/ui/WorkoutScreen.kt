@@ -448,7 +448,7 @@ fun WorkoutScreen(
                             }
                         }
                     }
-                    if (uiState.isGifDownloading && uiState.gifTotalCount > 0) {
+                    if (uiState.gifTotalCount > 0) {
                         Text(
                             text = stringResource(R.string.workout_gif_download_title),
                             style = MaterialTheme.typography.bodyMedium
