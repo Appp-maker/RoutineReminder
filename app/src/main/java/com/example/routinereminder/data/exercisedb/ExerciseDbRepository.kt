@@ -32,7 +32,8 @@ data class ExerciseDbExercise(
     val bodyPart: String,
     val target: String,
     val equipment: String,
-    val gifUrl: String? = null
+    val gifUrl: String? = null,
+    val videoUrl: String? = null
 )
 
 data class ExerciseDbDownloadProgress(
@@ -58,6 +59,7 @@ class ExerciseDbRepository @Inject constructor(
     private val refreshMutex = Mutex()
     private val downloadMutex = Mutex()
     private val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
+    private val gifDirectory = File(context.filesDir, GIF_DIRECTORY_NAME)
 
     private var cachedExercises: List<ExerciseDbExercise>? = null
 
@@ -120,6 +122,7 @@ class ExerciseDbRepository @Inject constructor(
             val response = downloadAllExercises(onProgress)
             val exercises = response.exercises
             saveCache(exercises)
+            downloadExerciseGifs(exercises)
             settingsRepository.saveExerciseDbCacheComplete(true)
             settingsRepository.saveExerciseDbCacheTotal(response.totalCount ?: exercises.size)
             settingsRepository.saveExerciseDbLastRefresh(System.currentTimeMillis())
@@ -196,13 +199,15 @@ class ExerciseDbRepository @Inject constructor(
         val id = obj.readString("id", "_id", "uuid", "exerciseId")
             ?: "${name}-${bodyPart}-${target}-${equipment}-${index}"
         val gifUrl = obj.readString("gifUrl", "gif_url")
+        val videoUrl = obj.readString("videoUrl", "video_url", "video", "youtube", "youtubeUrl")
         return ExerciseDbExercise(
             id = id,
             name = name,
             bodyPart = bodyPart,
             target = target,
             equipment = equipment,
-            gifUrl = gifUrl
+            gifUrl = gifUrl,
+            videoUrl = videoUrl
         )
     }
 
@@ -301,6 +306,52 @@ class ExerciseDbRepository @Inject constructor(
         cacheFile.writeText(json)
     }
 
+    fun getExerciseGifFile(exerciseId: String, gifUrl: String?): File? {
+        if (gifUrl.isNullOrBlank()) return null
+        val file = gifFileForExerciseId(exerciseId)
+        return file.takeIf { it.exists() }
+    }
+
+    private fun gifFileForExerciseId(exerciseId: String): File {
+        return File(gifDirectory, "${sanitizeFileName(exerciseId)}.gif")
+    }
+
+    private fun sanitizeFileName(input: String): String {
+        return input.lowercase().replace(Regex("[^a-z0-9._-]"), "_")
+    }
+
+    private suspend fun downloadExerciseGifs(exercises: List<ExerciseDbExercise>) = withContext(Dispatchers.IO) {
+        if (!gifDirectory.exists()) {
+            gifDirectory.mkdirs()
+        }
+        exercises.forEach { exercise ->
+            val gifUrl = exercise.gifUrl?.trim()
+            if (gifUrl.isNullOrBlank()) return@forEach
+            val targetFile = gifFileForExerciseId(exercise.id)
+            if (targetFile.exists() && targetFile.length() > 0L) return@forEach
+            val tempFile = File(targetFile.parentFile, "${targetFile.name}.download")
+            runCatching {
+                val request = Request.Builder().url(gifUrl).build()
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@runCatching
+                    val body = response.body ?: return@runCatching
+                    body.byteStream().use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    if (tempFile.length() > 0L) {
+                        tempFile.renameTo(targetFile)
+                    } else {
+                        tempFile.delete()
+                    }
+                }
+            }.onFailure {
+                tempFile.delete()
+            }
+        }
+    }
+
     private fun parseExerciseResponse(json: String): ExerciseDbResponse {
         val element = JsonParser.parseString(json)
         var totalCount: Int? = null
@@ -393,6 +444,7 @@ class ExerciseDbRepository @Inject constructor(
         private const val FALLBACK_EXERCISES_PATH =
             "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
         private const val CACHE_FILE_NAME = "exercisedb_cache.json"
+        private const val GIF_DIRECTORY_NAME = "exercise_gifs"
         private const val DOWNLOAD_BATCH_SIZE = 250
         private val REFRESH_PROMPT_INTERVAL_MS = TimeUnit.DAYS.toMillis(28)
     }

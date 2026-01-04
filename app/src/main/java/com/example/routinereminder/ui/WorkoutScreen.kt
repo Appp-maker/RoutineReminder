@@ -1,5 +1,8 @@
 package com.example.routinereminder.ui
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,12 +49,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.routinereminder.R
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
@@ -59,6 +66,7 @@ import com.example.routinereminder.data.workout.WorkoutPlan
 import com.example.routinereminder.data.workout.WorkoutPlanExercise
 import com.example.routinereminder.ui.components.EditItemDialog
 import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +87,7 @@ fun WorkoutScreen(
     var showNewPlanDialog by remember { mutableStateOf(false) }
     var planToSchedule by remember { mutableStateOf<WorkoutPlan?>(null) }
     var planToDelete by remember { mutableStateOf<WorkoutPlan?>(null) }
+    var previewExercise by remember { mutableStateOf<ExercisePreview?>(null) }
 
     val selectedPlan = uiState.plans.firstOrNull { it.id == uiState.selectedPlanId }
 
@@ -157,6 +166,13 @@ fun WorkoutScreen(
                     Text(stringResource(R.string.alert_action_cancel))
                 }
             }
+        )
+    }
+
+    previewExercise?.let { preview ->
+        ExercisePreviewDialog(
+            preview = preview,
+            onDismiss = { previewExercise = null }
         )
     }
 
@@ -293,6 +309,15 @@ fun WorkoutScreen(
                                 selectedPlan.exercises.forEach { exercise ->
                                     WorkoutPlanExerciseRow(
                                         exercise = exercise,
+                                        onPreview = {
+                                            previewExercise = ExercisePreview(
+                                                title = exercise.name,
+                                                subtitle = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
+                                                gifFile = viewModel.getExerciseGifFile(exercise.id, exercise.gifUrl),
+                                                gifUrl = exercise.gifUrl,
+                                                videoUrl = exercise.videoUrl
+                                            )
+                                        },
                                         onRemove = { viewModel.removeExerciseFromPlan(selectedPlan.id, exercise.id) },
                                         onUpdate = { sets, repetitions, duration, rest, weight ->
                                             viewModel.updateExerciseSettings(
@@ -441,6 +466,15 @@ fun WorkoutScreen(
                     items(uiState.exercises, key = { it.id }) { exercise ->
                         ExerciseSearchRow(
                             exercise = exercise,
+                            onPreview = {
+                                previewExercise = ExercisePreview(
+                                    title = exercise.name,
+                                    subtitle = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
+                                    gifFile = viewModel.getExerciseGifFile(exercise.id, exercise.gifUrl),
+                                    gifUrl = exercise.gifUrl,
+                                    videoUrl = exercise.videoUrl
+                                )
+                            },
                             onAdd = {
                                 val planId = selectedPlan?.id
                                 if (planId == null) {
@@ -470,6 +504,7 @@ fun WorkoutScreen(
 @Composable
 private fun WorkoutPlanExerciseRow(
     exercise: WorkoutPlanExercise,
+    onPreview: () -> Unit,
     onRemove: () -> Unit,
     onUpdate: (Int?, Int?, Int?, Int?, Double?) -> Unit
 ) {
@@ -478,7 +513,11 @@ private fun WorkoutPlanExerciseRow(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onPreview() }
+            ) {
                 Text(text = exercise.name, style = MaterialTheme.typography.bodyLarge)
                 Text(
                     text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
@@ -631,11 +670,16 @@ private fun formatWeight(weight: Double): String {
 @Composable
 private fun ExerciseSearchRow(
     exercise: ExerciseDbExercise,
+    onPreview: () -> Unit,
     onAdd: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onPreview() }
+            ) {
                 Text(text = exercise.name, style = MaterialTheme.typography.bodyLarge)
                 Text(
                     text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
@@ -648,4 +692,61 @@ private fun ExerciseSearchRow(
         }
         Divider(modifier = Modifier.padding(top = 8.dp))
     }
+}
+
+private data class ExercisePreview(
+    val title: String,
+    val subtitle: String,
+    val gifFile: File?,
+    val gifUrl: String?,
+    val videoUrl: String?
+)
+
+@Composable
+private fun ExercisePreviewDialog(
+    preview: ExercisePreview,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val model = preview.gifFile ?: preview.gifUrl
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(preview.title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(text = preview.subtitle, style = MaterialTheme.typography.bodySmall)
+                if (model != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(model)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = stringResource(R.string.workout_exercise_gif_preview),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.workout_exercise_gif_unavailable),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                preview.videoUrl?.let { videoUrl ->
+                    TextButton(onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl))
+                        context.startActivity(intent)
+                    }) {
+                        Text(stringResource(R.string.workout_exercise_video_link))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.alert_action_ok))
+            }
+        }
+    )
 }
