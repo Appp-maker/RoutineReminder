@@ -495,6 +495,8 @@ private fun WorkoutPlanExerciseRow(
             }
         }
         if (isEditing) {
+            val hasReps = (exercise.repetitions ?: 0) > 0
+            val hasDuration = (exercise.durationMinutes ?: 0) > 0
             Spacer(modifier = Modifier.height(6.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextField(
@@ -523,6 +525,7 @@ private fun WorkoutPlanExerciseRow(
                         onUpdate(exercise.sets, parsed, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
                     },
                     modifier = Modifier.weight(1f),
+                    enabled = !hasDuration,
                     label = {
                         Text(
                             text = stringResource(R.string.workout_exercise_repetitions_label),
@@ -541,6 +544,7 @@ private fun WorkoutPlanExerciseRow(
                         onUpdate(exercise.sets, exercise.repetitions, parsed, exercise.restSeconds, exercise.weight)
                     },
                     modifier = Modifier.weight(1f),
+                    enabled = !hasReps,
                     label = {
                         Text(
                             text = stringResource(R.string.workout_exercise_duration_label),
