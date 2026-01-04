@@ -222,6 +222,9 @@ class ExerciseDbRepository @Inject constructor(
         val gifUrl = normalizeGifUrl(
             obj.readString("gifUrl", "gif_url")
                 ?: obj.readNestedString("gif", "url", "gifUrl", "gif_url", "image")
+        ) ?: normalizeFallbackImageUrl(
+            obj.readStringList("images", "image", "imageUrl", "image_url")
+                .firstOrNull()
         )
         val instructions = obj.readInstructionList("instructions", "instruction", "steps")
         val videoUrl = normalizeUrl(
@@ -483,6 +486,17 @@ class ExerciseDbRepository @Inject constructor(
             .toString()
     }
 
+    private fun normalizeFallbackImageUrl(path: String?): String? {
+        val trimmed = path?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed
+        }
+        return FALLBACK_IMAGE_BASE_URL.toHttpUrl().newBuilder()
+            .addPathSegments(trimmed.trimStart('/'))
+            .build()
+            .toString()
+    }
+
     private fun normalizeUrl(url: String?): String? {
         val trimmed = url?.trim()?.takeIf { it.isNotBlank() } ?: return null
         if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
@@ -582,6 +596,8 @@ class ExerciseDbRepository @Inject constructor(
         private const val EXERCISES_PATH = "https://exercisedb.dev/api/exercises"
         private const val FALLBACK_EXERCISES_PATH =
             "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json"
+        private const val FALLBACK_IMAGE_BASE_URL =
+            "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"
         private const val CACHE_FILE_NAME = "exercisedb_cache.json"
         private const val GIF_DIRECTORY_NAME = "exercise_gifs"
         private const val DOWNLOAD_BATCH_SIZE = 250
