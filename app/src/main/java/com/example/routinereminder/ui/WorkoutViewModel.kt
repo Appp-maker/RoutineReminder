@@ -363,6 +363,7 @@ class WorkoutViewModel @Inject constructor(
     fun updateExerciseSettings(
         planId: String,
         exerciseId: String,
+        sets: Int?,
         repetitions: Int?,
         durationMinutes: Int?,
         restSeconds: Int?,
@@ -373,6 +374,7 @@ class WorkoutViewModel @Inject constructor(
                 val updatedExercises = plan.exercises.map { exercise ->
                     if (exercise.id == exerciseId) {
                         exercise.copy(
+                            sets = sets,
                             repetitions = repetitions,
                             durationMinutes = durationMinutes,
                             restSeconds = restSeconds,

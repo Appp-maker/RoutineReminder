@@ -124,6 +124,7 @@
     <string name="workout_empty_results">No exercises matched your search.</string>
     <string name="workout_exercise_add">Add exercise</string>
     <string name="workout_exercisedb_attribution">Exercise data sourced from ExerciseDB (exercisedb.dev).</string>
+    <string name="workout_exercise_sets_label">Sets</string>
     <string name="workout_exercise_repetitions_label">Reps</string>
     <string name="workout_exercise_duration_label">Duration (min)</string>
     <string name="workout_exercise_rest_label">Rest (sec)</string>
