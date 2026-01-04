@@ -136,6 +136,7 @@
     <string name="workout_exercise_gif_preview">Exercise gif preview</string>
     <string name="workout_exercise_gif_unavailable">This exercise does not have a gif yet.</string>
     <string name="workout_exercise_video_link">View video</string>
+    <string name="workout_exercise_instructions_title">Instructions</string>
     <string name="workout_snackbar_select_plan">Select or create a workout plan first.</string>
     <string name="workout_refresh_title">Refresh ExerciseDB data?</string>
     <string name="workout_refresh_body">It has been a few weeks since the exercise database was updated. Refresh now to get the latest exercises for offline use.</string>
