@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -45,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -159,7 +159,7 @@ fun WorkoutScreen(
     planToSchedule?.let { plan ->
         val defaultDurationMinutes = (defaultEventSettings.durationHours * 60) + defaultEventSettings.durationMinutes
         val notes = plan.exercises.takeIf { it.isNotEmpty() }?.joinToString("\n") { exercise ->
-            val details = planExerciseSettingsSummary(exercise)
+            val details = exerciseSettingsSummary(exercise)
             if (details.isNullOrBlank()) {
                 "• ${exercise.name}"
             } else {
@@ -290,15 +290,14 @@ fun WorkoutScreen(
                                     WorkoutPlanExerciseRow(
                                         exercise = exercise,
                                         onRemove = { viewModel.removeExerciseFromPlan(selectedPlan.id, exercise.id) },
-                                        onUpdate = { sets, repetitions, duration, rest, weight ->
+                                        onUpdate = { repetitions, duration, rest, weight ->
                                             viewModel.updateExerciseSettings(
                                                 planId = selectedPlan.id,
                                                 exerciseId = exercise.id,
-                                                sets = sets,
-                                                repetitionsPerSet = repetitions,
-                                                durationSecondsPerSet = duration,
-                                                restSecondsBetweenSets = rest,
-                                                weightKgPerSet = weight
+                                                repetitions = repetitions,
+                                                durationMinutes = duration,
+                                                restSeconds = rest,
+                                                weight = weight
                                             )
                                         }
                                     )
@@ -465,23 +464,16 @@ fun WorkoutScreen(
 private fun WorkoutPlanExerciseRow(
     exercise: WorkoutPlanExercise,
     onRemove: () -> Unit,
-    onUpdate: (Int, Int?, Int?, Int, Float?) -> Unit
+    onUpdate: (Int?, Int?, Int?, Double?) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                val settingsSummary = planExerciseSettingsSummary(exercise)
                 Text(text = exercise.name, style = MaterialTheme.typography.bodyLarge)
                 Text(
                     text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                     style = MaterialTheme.typography.bodySmall
                 )
-                if (!settingsSummary.isNullOrBlank()) {
-                    Text(
-                        text = settingsSummary,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
             }
             IconButton(onClick = onRemove) {
                 Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.workout_plan_remove_exercise))
@@ -490,32 +482,26 @@ private fun WorkoutPlanExerciseRow(
         Spacer(modifier = Modifier.height(6.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextField(
-                value = exercise.sets.toString(),
+                value = exercise.repetitions?.toString().orEmpty(),
                 onValueChange = { value ->
                     val cleaned = value.filter { it.isDigit() }
-                    val parsed = (cleaned.toIntOrNull() ?: 0).coerceAtLeast(1)
-                    onUpdate(parsed, exercise.repetitionsPerSet, exercise.durationSecondsPerSet, exercise.restSecondsBetweenSets, exercise.weightKgPerSet)
+                    val parsed = cleaned.toIntOrNull()
+                    onUpdate(parsed, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
                 },
                 modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_sets_label)) },
+                label = { Text(stringResource(R.string.workout_exercise_repetitions_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
             TextField(
-                value = exercise.repetitionsPerSet?.toString().orEmpty(),
+                value = exercise.durationMinutes?.toString().orEmpty(),
                 onValueChange = { value ->
                     val cleaned = value.filter { it.isDigit() }
                     val parsed = cleaned.toIntOrNull()
-                    onUpdate(
-                        exercise.sets,
-                        parsed,
-                        if (parsed != null) null else exercise.durationSecondsPerSet,
-                        exercise.restSecondsBetweenSets,
-                        exercise.weightKgPerSet
-                    )
+                    onUpdate(exercise.repetitions, parsed, exercise.restSeconds, exercise.weight)
                 },
                 modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_repetitions_label)) },
+                label = { Text(stringResource(R.string.workout_exercise_duration_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
@@ -523,32 +509,45 @@ private fun WorkoutPlanExerciseRow(
         Spacer(modifier = Modifier.height(6.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextField(
-                value = exercise.durationSecondsPerSet?.toString().orEmpty(),
+                value = exercise.restSeconds?.toString().orEmpty(),
                 onValueChange = { value ->
                     val cleaned = value.filter { it.isDigit() }
                     val parsed = cleaned.toIntOrNull()
-                    onUpdate(
-                        exercise.sets,
-                        if (parsed != null) null else exercise.repetitionsPerSet,
-                        parsed,
-                        exercise.restSecondsBetweenSets,
-                        exercise.weightKgPerSet
-                    )
+                    onUpdate(exercise.repetitions, exercise.durationMinutes, parsed, exercise.weight)
                 },
                 modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_duration_label)) },
+                label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
             TextField(
-                value = exercise.restSecondsBetweenSets.toString(),
+                value = exercise.weight?.toString().orEmpty(),
                 onValueChange = { value ->
-                    val cleaned = value.filter { it.isDigit() }
-                    val parsed = cleaned.toIntOrNull() ?: 0
-                    onUpdate(exercise.sets, exercise.repetitionsPerSet, exercise.durationSecondsPerSet, parsed, exercise.weightKgPerSet)
+                    val cleaned = value.filterIndexed { index, char ->
+                        char.isDigit() || (char == '.' && !value.take(index).contains('.'))
+                    }
+                    val parsed = cleaned.toDoubleOrNull()
+                    onUpdate(exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, parsed)
                 },
                 modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
+                label = { Text(stringResource(R.string.workout_exercise_weight_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextField(
+                value = exercise.weightKgPerSet?.toString().orEmpty(),
+                onValueChange = { value ->
+                    val cleaned = value.filterIndexed { index, char ->
+                        char.isDigit() || (char == '.' && !value.take(index).contains('.'))
+                    }
+                    val parsed = cleaned.toFloatOrNull()
+                    onUpdate(exercise.sets, exercise.repetitionsPerSet, exercise.durationSecondsPerSet, exercise.restSecondsBetweenSets, parsed)
+                },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.workout_exercise_weight_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
@@ -589,6 +588,36 @@ private fun planExerciseSettingsSummary(exercise: WorkoutPlanExercise): String? 
         exercise.durationSecondsPerSet?.let { add("$it sec/set") }
         add("${exercise.restSecondsBetweenSets} sec rest")
         exercise.weightKgPerSet?.let { add("$it kg") }
+    }
+    return segments.takeIf { it.isNotEmpty() }?.joinToString(" • ")
+}
+
+private fun exerciseSettingsSummary(exercise: WorkoutPlanExercise): String? {
+    if (
+        exercise.repetitionsPerSet == null &&
+        exercise.durationSecondsPerSet == null &&
+        exercise.weightKgPerSet == null &&
+        exercise.sets == 1 &&
+        exercise.restSecondsBetweenSets == 0
+    ) {
+        return null
+    }
+    val segments = buildList {
+        add("${exercise.sets} sets")
+        exercise.repetitionsPerSet?.let { add("$it reps/set") }
+        exercise.durationSecondsPerSet?.let { add("$it sec/set") }
+        add("${exercise.restSecondsBetweenSets} sec rest")
+        exercise.weightKgPerSet?.let { add("$it kg") }
+    }
+    return segments.takeIf { it.isNotEmpty() }?.joinToString(" • ")
+}
+
+private fun exerciseSettingsSummary(exercise: WorkoutPlanExercise): String? {
+    val segments = buildList {
+        exercise.repetitions?.let { add("$it reps") }
+        exercise.durationMinutes?.let { add("$it min") }
+        exercise.restSeconds?.let { add("$it sec rest") }
+        exercise.weight?.let { add("$it weight") }
     }
     return segments.takeIf { it.isNotEmpty() }?.joinToString(" • ")
 }

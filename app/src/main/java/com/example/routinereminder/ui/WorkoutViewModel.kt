@@ -363,22 +363,20 @@ class WorkoutViewModel @Inject constructor(
     fun updateExerciseSettings(
         planId: String,
         exerciseId: String,
-        sets: Int,
-        repetitionsPerSet: Int?,
-        durationSecondsPerSet: Int?,
-        restSecondsBetweenSets: Int,
-        weightKgPerSet: Float?
+        repetitions: Int?,
+        durationMinutes: Int?,
+        restSeconds: Int?,
+        weight: Double?
     ) {
         val updatedPlans = _uiState.value.plans.map { plan ->
             if (plan.id == planId) {
                 val updatedExercises = plan.exercises.map { exercise ->
                     if (exercise.id == exerciseId) {
                         exercise.copy(
-                            sets = sets,
-                            repetitionsPerSet = repetitionsPerSet,
-                            durationSecondsPerSet = durationSecondsPerSet,
-                            restSecondsBetweenSets = restSecondsBetweenSets,
-                            weightKgPerSet = weightKgPerSet
+                            repetitions = repetitions,
+                            durationMinutes = durationMinutes,
+                            restSeconds = restSeconds,
+                            weight = weight
                         )
                     } else {
                         exercise
