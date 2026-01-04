@@ -569,11 +569,11 @@ private fun WorkoutPlanExerciseRow(
 
 private fun exerciseSettingsSummary(exercise: WorkoutPlanExercise): String? {
     val segments = buildList {
-        exercise.repetitions?.takeIf { it > 0 }?.let { add("$it Reps") }
-        exercise.sets?.takeIf { it > 0 }?.let { add("$it Sets") }
+        exercise.repetitions?.let { add("$it Reps") }
+        exercise.sets?.let { add("$it Sets") }
         exercise.weight?.takeIf { it > 0 }?.let { add("${formatWeight(it)} kg") }
-        exercise.durationMinutes?.takeIf { it > 0 }?.let { add("Duration $it seconds") }
-        exercise.restSeconds?.takeIf { it > 0 }?.let { add("Rest between sets $it seconds") }
+        exercise.durationMinutes?.let { add("Duration $it seconds") }
+        exercise.restSeconds?.let { add("Rest between sets $it seconds") }
     }
     return segments.takeIf { it.isNotEmpty() }?.joinToString(" - ")
 }
