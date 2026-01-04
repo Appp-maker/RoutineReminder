@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -467,6 +468,9 @@ private fun WorkoutPlanExerciseRow(
     onRemove: () -> Unit,
     onUpdate: (Int?, Int?, Int?, Int?, Double?) -> Unit
 ) {
+    var isEditing by remember(exercise.id) { mutableStateOf(false) }
+    val summary = exerciseSettingsSummary(exercise)
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
@@ -475,92 +479,111 @@ private fun WorkoutPlanExerciseRow(
                     text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                     style = MaterialTheme.typography.bodySmall
                 )
+                summary?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
             IconButton(onClick = onRemove) {
                 Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.workout_plan_remove_exercise))
             }
+            IconButton(onClick = { isEditing = !isEditing }) {
+                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.workout_plan_edit_exercise))
+            }
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (isEditing) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextField(
+                    value = exercise.sets?.toString().orEmpty(),
+                    onValueChange = { value ->
+                        val cleaned = value.filter { it.isDigit() }
+                        val parsed = cleaned.toIntOrNull()
+                        onUpdate(parsed, exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.workout_exercise_sets_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                TextField(
+                    value = exercise.repetitions?.toString().orEmpty(),
+                    onValueChange = { value ->
+                        val cleaned = value.filter { it.isDigit() }
+                        val parsed = cleaned.toIntOrNull()
+                        onUpdate(exercise.sets, parsed, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.workout_exercise_repetitions_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                TextField(
+                    value = exercise.durationMinutes?.toString().orEmpty(),
+                    onValueChange = { value ->
+                        val cleaned = value.filter { it.isDigit() }
+                        val parsed = cleaned.toIntOrNull()
+                        onUpdate(exercise.sets, exercise.repetitions, parsed, exercise.restSeconds, exercise.weight)
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.workout_exercise_duration_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextField(
+                    value = exercise.restSeconds?.toString().orEmpty(),
+                    onValueChange = { value ->
+                        val cleaned = value.filter { it.isDigit() }
+                        val parsed = cleaned.toIntOrNull()
+                        onUpdate(exercise.sets, exercise.repetitions, exercise.durationMinutes, parsed, exercise.weight)
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
             TextField(
-                value = exercise.sets?.toString().orEmpty(),
+                value = exercise.weight?.toString().orEmpty(),
                 onValueChange = { value ->
-                    val cleaned = value.filter { it.isDigit() }
-                    val parsed = cleaned.toIntOrNull()
-                    onUpdate(parsed, exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
+                    val cleaned = value.filterIndexed { index, char ->
+                        char.isDigit() || (char == '.' && !value.take(index).contains('.'))
+                    }
+                    val parsed = cleaned.toDoubleOrNull()
+                    onUpdate(exercise.sets, exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, parsed)
                 },
-                modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_sets_label)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            TextField(
-                value = exercise.repetitions?.toString().orEmpty(),
-                onValueChange = { value ->
-                    val cleaned = value.filter { it.isDigit() }
-                    val parsed = cleaned.toIntOrNull()
-                    onUpdate(exercise.sets, parsed, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
-                },
-                modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_repetitions_label)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            TextField(
-                value = exercise.durationMinutes?.toString().orEmpty(),
-                onValueChange = { value ->
-                    val cleaned = value.filter { it.isDigit() }
-                    val parsed = cleaned.toIntOrNull()
-                    onUpdate(exercise.sets, exercise.repetitions, parsed, exercise.restSeconds, exercise.weight)
-                },
-                modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_duration_label)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.workout_exercise_weight_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextField(
-                value = exercise.restSeconds?.toString().orEmpty(),
-                onValueChange = { value ->
-                    val cleaned = value.filter { it.isDigit() }
-                    val parsed = cleaned.toIntOrNull()
-                    onUpdate(exercise.sets, exercise.repetitions, exercise.durationMinutes, parsed, exercise.weight)
-                },
-                modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        TextField(
-            value = exercise.weight?.toString().orEmpty(),
-            onValueChange = { value ->
-                val cleaned = value.filterIndexed { index, char ->
-                    char.isDigit() || (char == '.' && !value.take(index).contains('.'))
-                }
-                val parsed = cleaned.toDoubleOrNull()
-                onUpdate(exercise.sets, exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, parsed)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.workout_exercise_weight_label)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
     }
 }
 
 private fun exerciseSettingsSummary(exercise: WorkoutPlanExercise): String? {
     val segments = buildList {
-        exercise.sets?.let { add("$it sets") }
-        exercise.repetitions?.let { add("$it reps") }
-        exercise.durationMinutes?.let { add("$it min") }
-        exercise.restSeconds?.let { add("$it sec rest") }
-        exercise.weight?.let { add("$it weight") }
+        exercise.repetitions?.let { add("$it Reps") }
+        exercise.sets?.let { add("$it Sets") }
+        exercise.weight?.let { add("${formatWeight(it)} kg") }
+        exercise.durationMinutes?.let { add("Duration $it seconds") }
+        exercise.restSeconds?.let { add("Rest between sets $it seconds") }
     }
-    return segments.takeIf { it.isNotEmpty() }?.joinToString(" • ")
+    return segments.takeIf { it.isNotEmpty() }?.joinToString(" - ")
+}
+
+private fun formatWeight(weight: Double): String {
+    return if (weight % 1.0 == 0.0) {
+        weight.toInt().toString()
+    } else {
+        weight.toString()
+    }
 }
 
 @Composable

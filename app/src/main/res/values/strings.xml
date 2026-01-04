@@ -129,6 +129,7 @@
     <string name="workout_exercise_duration_label">Duration (min)</string>
     <string name="workout_exercise_rest_label">Rest (sec)</string>
     <string name="workout_exercise_weight_label">Weight</string>
+    <string name="workout_plan_edit_exercise">Edit exercise</string>
     <string name="workout_snackbar_select_plan">Select or create a workout plan first.</string>
     <string name="workout_refresh_title">Refresh ExerciseDB data?</string>
     <string name="workout_refresh_body">It has been a few weeks since the exercise database was updated. Refresh now to get the latest exercises for offline use.</string>
