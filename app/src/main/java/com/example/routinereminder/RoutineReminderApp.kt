@@ -10,8 +10,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import coil.Coil
 import coil.ImageLoader
+import coil.decode.AnimatedImageDecoder
 import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.workers.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -77,7 +77,7 @@ class RoutineReminderApp : Application(), Configuration.Provider {
         val imageLoader = ImageLoader.Builder(this)
             .components {
                 if (Build.VERSION.SDK_INT >= 28) {
-                    add(ImageDecoderDecoder.Factory())
+                    add(AnimatedImageDecoder.Factory())
                 } else {
                     add(GifDecoder.Factory())
                 }
