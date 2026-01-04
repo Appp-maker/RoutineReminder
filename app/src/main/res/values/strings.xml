@@ -123,6 +123,17 @@
     <string name="workout_search_label">Search exercise name</string>
     <string name="workout_body_part_all">All body parts</string>
     <string name="workout_search_action">Search</string>
+    <string name="workout_custom_exercise_action">Custom exercise</string>
+    <string name="workout_custom_exercise_title">Custom exercise</string>
+    <string name="workout_custom_exercise_name_label">Exercise name</string>
+    <string name="workout_custom_exercise_body_part_label">Body part</string>
+    <string name="workout_custom_exercise_target_label">Target muscle</string>
+    <string name="workout_custom_exercise_equipment_label">Equipment</string>
+    <string name="workout_custom_exercise_gif_label">Gif URL (optional)</string>
+    <string name="workout_custom_exercise_video_label">Video URL (optional)</string>
+    <string name="workout_custom_exercise_instructions_label">Instructions (one per line)</string>
+    <string name="workout_custom_exercise_save_action">Save to database</string>
+    <string name="workout_custom_exercise_save_add_action">Save &amp; add to plan</string>
     <string name="workout_loading_message">Loading ExerciseDB results\u2026</string>
     <string name="workout_empty_results">No exercises matched your search.</string>
     <string name="workout_exercise_add">Add exercise</string>

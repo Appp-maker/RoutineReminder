@@ -99,6 +99,21 @@ class ExerciseDbRepository @Inject constructor(
         }
     }
 
+    suspend fun addCustomExercise(exercise: ExerciseDbExercise): Result<List<ExerciseDbExercise>> = cacheMutex.withLock {
+        runCatching {
+            val exercises = loadCachedExercises().toMutableList()
+            if (exercises.any { it.id == exercise.id }) {
+                return@runCatching exercises
+            }
+            exercises.add(exercise)
+            saveCache(exercises)
+            cachedExercises = exercises
+            settingsRepository.saveExerciseDbCacheTotal(exercises.size)
+            settingsRepository.saveExerciseDbCacheComplete(true)
+            exercises
+        }
+    }
+
     suspend fun getDownloadProgress(): ExerciseDbDownloadProgress {
         val cached = readCache().orEmpty()
         val total = settingsRepository.getExerciseDbCacheTotal().first()

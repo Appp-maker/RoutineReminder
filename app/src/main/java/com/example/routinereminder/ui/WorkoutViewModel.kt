@@ -349,6 +349,65 @@ class WorkoutViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    fun addCustomExercise(
+        name: String,
+        bodyPart: String,
+        target: String,
+        equipment: String,
+        gifUrl: String?,
+        videoUrl: String?,
+        instructions: List<String>,
+        addToPlanId: String?
+    ) {
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Custom exercise name cannot be empty.") }
+            return
+        }
+        val trimmedBodyPart = bodyPart.trim()
+        val trimmedTarget = target.trim()
+        val trimmedEquipment = equipment.trim()
+        val exercise = ExerciseDbExercise(
+            id = "custom-${UUID.randomUUID()}",
+            name = trimmedName,
+            bodyPart = trimmedBodyPart,
+            target = trimmedTarget,
+            equipment = trimmedEquipment,
+            gifUrl = gifUrl?.trim().orEmpty().ifBlank { null },
+            videoUrl = videoUrl?.trim().orEmpty().ifBlank { null },
+            instructions = instructions
+        )
+        viewModelScope.launch {
+            repository.addCustomExercise(exercise)
+                .onSuccess { exercises ->
+                    val bodyParts = (exercises.map { it.bodyPart } + requiredBodyParts)
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                        .sorted()
+                    val filtered = filterExercises(
+                        exercises,
+                        _uiState.value.searchQuery,
+                        _uiState.value.selectedBodyPart
+                    )
+                    _uiState.update {
+                        it.copy(
+                            exercises = filtered,
+                            bodyParts = bodyParts,
+                            errorMessage = null
+                        )
+                    }
+                    addToPlanId?.let { planId ->
+                        addExerciseToPlan(planId, exercise)
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(errorMessage = error.message ?: "Unable to save custom exercise.")
+                    }
+                }
+        }
+    }
+
     fun createPlan(name: String): Boolean {
         val trimmed = name.trim()
         if (trimmed.isBlank()) {

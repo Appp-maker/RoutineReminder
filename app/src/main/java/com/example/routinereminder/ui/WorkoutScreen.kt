@@ -88,9 +88,17 @@ fun WorkoutScreen(
     var planMenuExpanded by remember { mutableStateOf(false) }
     var bodyPartMenuExpanded by remember { mutableStateOf(false) }
     var showNewPlanDialog by remember { mutableStateOf(false) }
+    var showCustomExerciseDialog by remember { mutableStateOf(false) }
     var planToSchedule by remember { mutableStateOf<WorkoutPlan?>(null) }
     var planToDelete by remember { mutableStateOf<WorkoutPlan?>(null) }
     var previewExercise by remember { mutableStateOf<ExercisePreview?>(null) }
+    var customExerciseName by remember { mutableStateOf("") }
+    var customExerciseBodyPart by remember { mutableStateOf("") }
+    var customExerciseTarget by remember { mutableStateOf("") }
+    var customExerciseEquipment by remember { mutableStateOf("") }
+    var customExerciseGifUrl by remember { mutableStateOf("") }
+    var customExerciseVideoUrl by remember { mutableStateOf("") }
+    var customExerciseInstructions by remember { mutableStateOf("") }
 
     val selectedPlan = uiState.plans.firstOrNull { it.id == uiState.selectedPlanId }
 
@@ -166,6 +174,114 @@ fun WorkoutScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showNewPlanDialog = false }) {
+                    Text(stringResource(R.string.alert_action_cancel))
+                }
+            }
+        )
+    }
+
+    if (showCustomExerciseDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomExerciseDialog = false },
+            title = { Text(stringResource(R.string.workout_custom_exercise_title)) },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                ) {
+                    TextField(
+                        value = customExerciseName,
+                        onValueChange = { customExerciseName = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.workout_custom_exercise_name_label)) },
+                        singleLine = true
+                    )
+                    TextField(
+                        value = customExerciseBodyPart,
+                        onValueChange = { customExerciseBodyPart = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.workout_custom_exercise_body_part_label)) },
+                        singleLine = true
+                    )
+                    TextField(
+                        value = customExerciseTarget,
+                        onValueChange = { customExerciseTarget = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.workout_custom_exercise_target_label)) },
+                        singleLine = true
+                    )
+                    TextField(
+                        value = customExerciseEquipment,
+                        onValueChange = { customExerciseEquipment = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.workout_custom_exercise_equipment_label)) },
+                        singleLine = true
+                    )
+                    TextField(
+                        value = customExerciseGifUrl,
+                        onValueChange = { customExerciseGifUrl = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.workout_custom_exercise_gif_label)) },
+                        singleLine = true
+                    )
+                    TextField(
+                        value = customExerciseVideoUrl,
+                        onValueChange = { customExerciseVideoUrl = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.workout_custom_exercise_video_label)) },
+                        singleLine = true
+                    )
+                    TextField(
+                        value = customExerciseInstructions,
+                        onValueChange = { customExerciseInstructions = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.workout_custom_exercise_instructions_label)) }
+                    )
+                }
+            },
+            confirmButton = {
+                val instructions = customExerciseInstructions
+                    .lines()
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                val selectedPlanId = selectedPlan?.id
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = {
+                        viewModel.addCustomExercise(
+                            name = customExerciseName,
+                            bodyPart = customExerciseBodyPart,
+                            target = customExerciseTarget,
+                            equipment = customExerciseEquipment,
+                            gifUrl = customExerciseGifUrl,
+                            videoUrl = customExerciseVideoUrl,
+                            instructions = instructions,
+                            addToPlanId = null
+                        )
+                        showCustomExerciseDialog = false
+                    }) {
+                        Text(stringResource(R.string.workout_custom_exercise_save_action))
+                    }
+                    if (selectedPlanId != null) {
+                        TextButton(onClick = {
+                            viewModel.addCustomExercise(
+                                name = customExerciseName,
+                                bodyPart = customExerciseBodyPart,
+                                target = customExerciseTarget,
+                                equipment = customExerciseEquipment,
+                                gifUrl = customExerciseGifUrl,
+                                videoUrl = customExerciseVideoUrl,
+                                instructions = instructions,
+                                addToPlanId = selectedPlanId
+                            )
+                            showCustomExerciseDialog = false
+                        }) {
+                            Text(stringResource(R.string.workout_custom_exercise_save_add_action))
+                        }
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomExerciseDialog = false }) {
                     Text(stringResource(R.string.alert_action_cancel))
                 }
             }
@@ -443,8 +559,17 @@ fun WorkoutScreen(
                                 }
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            Button(onClick = { viewModel.refreshExercises() }) {
-                                Text(stringResource(R.string.workout_search_action))
+                            Button(onClick = {
+                                customExerciseName = ""
+                                customExerciseBodyPart = uiState.selectedBodyPart.orEmpty()
+                                customExerciseTarget = ""
+                                customExerciseEquipment = ""
+                                customExerciseGifUrl = ""
+                                customExerciseVideoUrl = ""
+                                customExerciseInstructions = ""
+                                showCustomExerciseDialog = true
+                            }) {
+                                Text(stringResource(R.string.workout_custom_exercise_action))
                             }
                         }
                     }
