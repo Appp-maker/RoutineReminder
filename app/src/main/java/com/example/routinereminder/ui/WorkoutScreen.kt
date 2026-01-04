@@ -35,6 +35,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -135,6 +136,7 @@ fun WorkoutScreen(
                 TextField(
                     value = newPlanName,
                     onValueChange = { newPlanName = it },
+                    modifier = Modifier.heightIn(min = TextFieldDefaults.MinHeight),
                     label = { Text(stringResource(R.string.workout_plan_name_label)) },
                     singleLine = true
                 )
@@ -375,7 +377,9 @@ fun WorkoutScreen(
                         TextField(
                             value = uiState.searchQuery,
                             onValueChange = viewModel::updateSearchQuery,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = TextFieldDefaults.MinHeight),
                             label = { Text(stringResource(R.string.workout_search_label)) }
                         )
 
@@ -506,7 +510,9 @@ private fun WorkoutPlanExerciseRow(
                         val parsed = cleaned.toIntOrNull()
                         onUpdate(parsed, exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = TextFieldDefaults.MinHeight),
                     label = {
                         Text(
                             text = stringResource(R.string.workout_exercise_sets_label),
@@ -524,7 +530,9 @@ private fun WorkoutPlanExerciseRow(
                         val parsed = cleaned.toIntOrNull()
                         onUpdate(exercise.sets, parsed, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = TextFieldDefaults.MinHeight),
                     enabled = !hasDuration,
                     label = {
                         Text(
@@ -543,7 +551,9 @@ private fun WorkoutPlanExerciseRow(
                         val parsed = cleaned.toIntOrNull()
                         onUpdate(exercise.sets, exercise.repetitions, parsed, exercise.restSeconds, exercise.weight)
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = TextFieldDefaults.MinHeight),
                     enabled = !hasReps,
                     label = {
                         Text(
@@ -565,7 +575,9 @@ private fun WorkoutPlanExerciseRow(
                         val parsed = cleaned.toIntOrNull()
                         onUpdate(exercise.sets, exercise.repetitions, exercise.durationMinutes, parsed, exercise.weight)
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = TextFieldDefaults.MinHeight),
                     label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -581,7 +593,9 @@ private fun WorkoutPlanExerciseRow(
                     val parsed = cleaned.toDoubleOrNull()
                     onUpdate(exercise.sets, exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, parsed)
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = TextFieldDefaults.MinHeight),
                 label = { Text(stringResource(R.string.workout_exercise_weight_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
