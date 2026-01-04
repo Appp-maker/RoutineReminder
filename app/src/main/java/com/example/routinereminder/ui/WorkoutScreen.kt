@@ -290,10 +290,11 @@ fun WorkoutScreen(
                                     WorkoutPlanExerciseRow(
                                         exercise = exercise,
                                         onRemove = { viewModel.removeExerciseFromPlan(selectedPlan.id, exercise.id) },
-                                        onUpdate = { repetitions, duration, rest, weight ->
+                                        onUpdate = { sets, repetitions, duration, rest, weight ->
                                             viewModel.updateExerciseSettings(
                                                 planId = selectedPlan.id,
                                                 exerciseId = exercise.id,
+                                                sets = sets,
                                                 repetitions = repetitions,
                                                 durationMinutes = duration,
                                                 restSeconds = rest,
@@ -464,7 +465,7 @@ fun WorkoutScreen(
 private fun WorkoutPlanExerciseRow(
     exercise: WorkoutPlanExercise,
     onRemove: () -> Unit,
-    onUpdate: (Int?, Int?, Int?, Double?) -> Unit
+    onUpdate: (Int?, Int?, Int?, Int?, Double?) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -482,11 +483,23 @@ private fun WorkoutPlanExerciseRow(
         Spacer(modifier = Modifier.height(6.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextField(
+                value = exercise.sets?.toString().orEmpty(),
+                onValueChange = { value ->
+                    val cleaned = value.filter { it.isDigit() }
+                    val parsed = cleaned.toIntOrNull()
+                    onUpdate(parsed, exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
+                },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.workout_exercise_sets_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            TextField(
                 value = exercise.repetitions?.toString().orEmpty(),
                 onValueChange = { value ->
                     val cleaned = value.filter { it.isDigit() }
                     val parsed = cleaned.toIntOrNull()
-                    onUpdate(parsed, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
+                    onUpdate(exercise.sets, parsed, exercise.durationMinutes, exercise.restSeconds, exercise.weight)
                 },
                 modifier = Modifier.weight(1f),
                 label = { Text(stringResource(R.string.workout_exercise_repetitions_label)) },
@@ -498,7 +511,7 @@ private fun WorkoutPlanExerciseRow(
                 onValueChange = { value ->
                     val cleaned = value.filter { it.isDigit() }
                     val parsed = cleaned.toIntOrNull()
-                    onUpdate(exercise.repetitions, parsed, exercise.restSeconds, exercise.weight)
+                    onUpdate(exercise.sets, exercise.repetitions, parsed, exercise.restSeconds, exercise.weight)
                 },
                 modifier = Modifier.weight(1f),
                 label = { Text(stringResource(R.string.workout_exercise_duration_label)) },
@@ -513,33 +526,35 @@ private fun WorkoutPlanExerciseRow(
                 onValueChange = { value ->
                     val cleaned = value.filter { it.isDigit() }
                     val parsed = cleaned.toIntOrNull()
-                    onUpdate(exercise.repetitions, exercise.durationMinutes, parsed, exercise.weight)
+                    onUpdate(exercise.sets, exercise.repetitions, exercise.durationMinutes, parsed, exercise.weight)
                 },
                 modifier = Modifier.weight(1f),
                 label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
-            TextField(
-                value = exercise.weight?.toString().orEmpty(),
-                onValueChange = { value ->
-                    val cleaned = value.filterIndexed { index, char ->
-                        char.isDigit() || (char == '.' && !value.take(index).contains('.'))
-                    }
-                    val parsed = cleaned.toDoubleOrNull()
-                    onUpdate(exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, parsed)
-                },
-                modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.workout_exercise_weight_label)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
         }
+        Spacer(modifier = Modifier.height(6.dp))
+        TextField(
+            value = exercise.weight?.toString().orEmpty(),
+            onValueChange = { value ->
+                val cleaned = value.filterIndexed { index, char ->
+                    char.isDigit() || (char == '.' && !value.take(index).contains('.'))
+                }
+                val parsed = cleaned.toDoubleOrNull()
+                onUpdate(exercise.sets, exercise.repetitions, exercise.durationMinutes, exercise.restSeconds, parsed)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.workout_exercise_weight_label)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
     }
 }
 
 private fun exerciseSettingsSummary(exercise: WorkoutPlanExercise): String? {
     val segments = buildList {
+        exercise.sets?.let { add("$it sets") }
         exercise.repetitions?.let { add("$it reps") }
         exercise.durationMinutes?.let { add("$it min") }
         exercise.restSeconds?.let { add("$it sec rest") }

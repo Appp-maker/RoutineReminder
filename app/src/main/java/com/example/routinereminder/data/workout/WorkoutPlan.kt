@@ -9,6 +9,7 @@ data class WorkoutPlanExercise(
     val target: String,
     val equipment: String,
     val gifUrl: String? = null,
+    val sets: Int? = null,
     val repetitions: Int? = null,
     val durationMinutes: Int? = null,
     val restSeconds: Int? = null,
