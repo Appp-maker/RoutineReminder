@@ -1,12 +1,17 @@
 package com.example.routinereminder
 
 import android.app.Application
+import android.os.Build
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import coil.Coil
+import coil.ImageLoader
+import coil.decode.AnimatedImageDecoder
+import coil.decode.GifDecoder
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.workers.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -46,6 +51,7 @@ class RoutineReminderApp : Application(), Configuration.Provider {
             // Ignore if already initialized
         }
         createNotificationChannel()
+        configureImageLoader()
 
         // Keep existing WorkManager setup
         applicationScope.launch {
@@ -65,6 +71,19 @@ class RoutineReminderApp : Application(), Configuration.Provider {
             val manager = getSystemService(android.app.NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
+    }
+
+    private fun configureImageLoader() {
+        val imageLoader = ImageLoader.Builder(this)
+            .components {
+                if (Build.VERSION.SDK_INT >= 28) {
+                    add(AnimatedImageDecoder.Factory())
+                } else {
+                    add(GifDecoder.Factory())
+                }
+            }
+            .build()
+        Coil.setImageLoader(imageLoader)
     }
 
     private suspend fun setupRecurringWork() {
