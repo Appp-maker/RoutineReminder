@@ -578,13 +578,7 @@ private fun WorkoutPlanExerciseRow(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = TextFieldDefaults.MinHeight),
-                    label = {
-                        Text(
-                            text = stringResource(R.string.workout_exercise_rest_label),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
+                    label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
