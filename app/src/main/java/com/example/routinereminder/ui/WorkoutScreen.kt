@@ -545,6 +545,7 @@ private fun WorkoutPlanExerciseRow(
                     text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                     style = MaterialTheme.typography.bodySmall
                 )
+                ExerciseGifUrlText(gifUrl = exercise.gifUrl)
                 summary?.let {
                     Text(
                         text = it,
@@ -707,6 +708,7 @@ private fun ExerciseSearchRow(
                     text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                     style = MaterialTheme.typography.bodySmall
                 )
+                ExerciseGifUrlText(gifUrl = exercise.gifUrl)
             }
             IconButton(onClick = onAdd) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.workout_exercise_add))
@@ -784,5 +786,20 @@ private fun ExercisePreviewDialog(
                 Text(stringResource(R.string.alert_action_ok))
             }
         }
+    )
+}
+
+@Composable
+private fun ExerciseGifUrlText(gifUrl: String?) {
+    val text = if (!gifUrl.isNullOrBlank()) {
+        stringResource(R.string.workout_exercise_gif_url, gifUrl)
+    } else {
+        stringResource(R.string.workout_exercise_gif_url_unavailable)
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
     )
 }
