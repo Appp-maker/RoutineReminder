@@ -8,7 +8,7 @@ import java.time.DayOfWeek
 
 @Entity(
     tableName = "schedule",
-    indices = [Index(value = ["name", "hour", "minute", "dateEpochDay"], unique = true)]
+    indices = [Index(value = ["name", "hour", "minute", "dateEpochDay"])]
 )
 @TypeConverters // Keep if you already use converters for DayOfWeek sets
 data class Schedule(
