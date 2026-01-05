@@ -87,6 +87,7 @@ fun CalorieTrackerScreen(
     var foodToDelete by remember { mutableStateOf<LoggedFood?>(null) }
     val swipeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
     var showBundlePicker by remember { mutableStateOf(false) }
+    var showAllFoods by rememberSaveable { mutableStateOf(false) }
     val bundles by viewModel.foodBundles.collectAsState()
     val pendingBundleId by viewModel.pendingBundlePreview.collectAsState()
     val bundleForPortion by produceState<com.example.routinereminder.data.entities.FoodBundle?>(
@@ -600,13 +601,51 @@ fun CalorieTrackerScreen(
                 // --- spacing before meal section ---
                 Spacer(Modifier.height(4.dp))
 
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    SegmentedButton(
+                        selected = !showAllFoods,
+                        onClick = {
+                            showAllFoods = false
+                            activeMealSlot = null
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                    ) {
+                        Text("By meal")
+                    }
+                    SegmentedButton(
+                        selected = showAllFoods,
+                        onClick = {
+                            showAllFoods = true
+                            activeMealSlot = null
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                    ) {
+                        Text("All foods")
+                    }
+                }
+
 // --- content area (grid OR detail) fills all remaining height ---
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)          // ⭐ this whole area stretches from here down to the bottom
                 ) {
-                    if (activeMealSlot == null) {
+                    if (showAllFoods) {
+                        AllFoodsList(
+                            foods = loggedFoods,
+                            viewModel = viewModel,
+                            onFoodClick = { editingFood = it },
+                            onDelete = {
+                                foodToDelete = it
+                                showDeleteDialog = true
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (activeMealSlot == null) {
 
                         val mealSlots = listOf(
                             "Breakfast",
@@ -773,6 +812,82 @@ fun MealSlotDetail(
 
         }
 
+    }
+}
+
+@Composable
+fun AllFoodsList(
+    foods: List<LoggedFood>,
+    viewModel: CalorieTrackerViewModel,
+    onFoodClick: (LoggedFood) -> Unit,
+    onDelete: (LoggedFood) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF2A2A2A))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "All foods",
+            color = Color.White,
+            fontSize = 20.sp,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        if (foods.isEmpty()) {
+            Text(
+                text = "No foods logged for this day.",
+                color = Color.LightGray,
+                fontSize = 13.sp
+            )
+            return@Column
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(foods) { food ->
+                val mealLabel = food.mealSlot ?: "Unassigned"
+                Column {
+                    Text(
+                        text = mealLabel,
+                        color = Color.LightGray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    if (food.bundleId == null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onFoodClick(food) }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(food.foodProduct.name, color = Color.White)
+                                Text(
+                                    "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            IconButton(onClick = { onDelete(food) }) {
+                                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                            }
+                        }
+                    } else {
+                        ExpandableRecipeRow(
+                            food = food,
+                            viewModel = viewModel,
+                            onDeleteRecipe = { onDelete(food) }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 @Composable
