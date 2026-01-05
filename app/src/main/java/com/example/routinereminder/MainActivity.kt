@@ -63,7 +63,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.RestaurantMenu
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -101,6 +100,7 @@ import com.example.routinereminder.ui.bundle.BundleDetailScreen
 import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 
 import com.example.routinereminder.ui.components.EditItemDialog
+import com.example.routinereminder.ui.components.SettingsIconButton
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
 
 
@@ -774,9 +774,7 @@ fun DateDisplayHeader(
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Day")
         }
 
-        IconButton(onClick = onSettingsClick) {
-            Icon(Icons.Filled.Settings, contentDescription = "Settings")
-        }
+        SettingsIconButton(onClick = onSettingsClick)
 
     }
 }
@@ -866,9 +864,7 @@ fun UnifiedDateHeader(
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Day")
         }
 
-        IconButton(onClick = onSettingsClick, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Filled.Settings, contentDescription = "Settings")
-        }
+        SettingsIconButton(onClick = onSettingsClick)
     }
 }
 

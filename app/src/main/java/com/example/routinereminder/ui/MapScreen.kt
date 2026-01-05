@@ -13,7 +13,6 @@ import com.example.routinereminder.data.model.SessionStats
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -57,6 +56,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.FileProvider
 import com.example.routinereminder.ui.SessionStore
+import com.example.routinereminder.ui.components.SettingsIconButton
 import com.google.android.gms.location.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -501,12 +501,7 @@ fun MapScreen(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = { navController.navigate("settings/map") },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(imageVector = Icons.Filled.Settings, contentDescription = "Settings")
-                }
+                SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
 
             // ----------- STATS HEADER -----------
