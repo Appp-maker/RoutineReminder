@@ -38,6 +38,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val ENABLED_TABS = stringSetPreferencesKey("enabled_tabs")
     val EXERCISE_DB_LAST_REFRESH = longPreferencesKey("exercise_db_last_refresh_epoch_ms")
     val EXERCISE_DB_LAST_PROMPT = longPreferencesKey("exercise_db_last_prompt_epoch_ms")
+    val EXERCISE_DB_DOWNLOAD_ACCEPTED = booleanPreferencesKey("exercise_db_download_accepted")
     val EXERCISE_DB_CACHE_COMPLETE = booleanPreferencesKey("exercise_db_cache_complete")
     val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
     val MAP_TRACKING_MODE = stringPreferencesKey("map_tracking_mode")
