@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
@@ -70,6 +69,7 @@ import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
 import com.example.routinereminder.data.workout.WorkoutPlan
 import com.example.routinereminder.data.workout.WorkoutPlanExercise
 import com.example.routinereminder.ui.components.EditItemDialog
+import com.example.routinereminder.ui.components.SettingsIconButton
 import kotlinx.coroutines.launch
 import java.io.File
 import androidx.navigation.NavController
@@ -355,12 +355,7 @@ fun WorkoutScreen(
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(
-                        onClick = { navController.navigate("settings/workout") },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
-                    }
+                    SettingsIconButton(onClick = { navController.navigate("settings/workout") })
                 }
             }
 
