@@ -25,6 +25,13 @@ class ExerciseDbDownloadWorker @AssistedInject constructor(
         if (!workoutEnabled) {
             return Result.success()
         }
+        val downloadAccepted = settingsRepository.getExerciseDbDownloadAccepted().first()
+        if (!downloadAccepted) {
+            val progress = repository.getDownloadProgress()
+            if (progress.downloadedCount == 0) {
+                return Result.success()
+            }
+        }
         return repository
             .downloadExerciseDatabase()
             .fold(

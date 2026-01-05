@@ -155,6 +155,33 @@ fun WorkoutScreen(
         )
     }
 
+    if (uiState.showDownloadPrompt) {
+        AlertDialog(
+            onDismissRequest = viewModel::deferExerciseDbDownload,
+            title = { Text(stringResource(R.string.workout_download_prompt_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.workout_download_prompt_body,
+                        uiState.exerciseDbTotalDownloadSizeMb,
+                        uiState.exerciseDbDownloadSizeMb,
+                        uiState.exerciseDbGifDownloadSizeMb
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::acceptExerciseDbDownload) {
+                    Text(stringResource(R.string.workout_download_prompt_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::deferExerciseDbDownload) {
+                    Text(stringResource(R.string.workout_download_prompt_dismiss))
+                }
+            }
+        )
+    }
+
     if (showNewPlanDialog) {
         AlertDialog(
             onDismissRequest = { showNewPlanDialog = false },
@@ -490,38 +517,55 @@ fun WorkoutScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                     if (!uiState.isExerciseDbReady) {
-                        Text(
-                            text = stringResource(R.string.workout_download_title),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = stringResource(R.string.workout_download_body),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        val totalCount = uiState.exerciseDbTotalCount
-                        val downloadedCount = uiState.exerciseDbDownloadedCount
-                        if (totalCount != null && totalCount > 0) {
-                            LinearProgressIndicator(
-                                progress = downloadedCount.toFloat() / totalCount.toFloat(),
-                                modifier = Modifier.fillMaxWidth()
+                        if (uiState.isExerciseDbDownloading) {
+                            Text(
+                                text = stringResource(R.string.workout_download_title),
+                                style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = stringResource(
-                                    R.string.workout_download_progress_known,
-                                    downloadedCount,
-                                    totalCount
-                                ),
+                                text = stringResource(R.string.workout_download_body),
                                 style = MaterialTheme.typography.bodySmall
                             )
+                            val totalCount = uiState.exerciseDbTotalCount
+                            val downloadedCount = uiState.exerciseDbDownloadedCount
+                            if (totalCount != null && totalCount > 0) {
+                                LinearProgressIndicator(
+                                    progress = downloadedCount.toFloat() / totalCount.toFloat(),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Text(
+                                    text = stringResource(
+                                        R.string.workout_download_progress_known,
+                                        downloadedCount,
+                                        totalCount
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            } else {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                Text(
+                                    text = stringResource(
+                                        R.string.workout_download_progress_unknown,
+                                        downloadedCount
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         } else {
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                             Text(
-                                text = stringResource(
-                                    R.string.workout_download_progress_unknown,
-                                    downloadedCount
-                                ),
+                                text = stringResource(R.string.workout_download_pending_title),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.workout_download_prompt_body_short),
                                 style = MaterialTheme.typography.bodySmall
                             )
+                            Button(
+                                onClick = viewModel::requestExerciseDbDownloadPrompt,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.workout_download_prompt_confirm))
+                            }
                         }
                     } else {
                         Text(
@@ -583,7 +627,7 @@ fun WorkoutScreen(
                             }
                         }
                     }
-                    if (uiState.gifTotalCount > 0) {
+                    if (uiState.isGifDownloading && uiState.gifTotalCount > 0) {
                         Text(
                             text = stringResource(R.string.workout_gif_download_title),
                             style = MaterialTheme.typography.bodyMedium

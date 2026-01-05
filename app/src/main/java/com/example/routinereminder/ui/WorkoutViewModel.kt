@@ -26,6 +26,10 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 
+private const val EXERCISE_DB_DOWNLOAD_MB = 6
+private const val EXERCISE_DB_GIF_DOWNLOAD_MB = 85
+private const val EXERCISE_DB_TOTAL_DOWNLOAD_MB = EXERCISE_DB_DOWNLOAD_MB + EXERCISE_DB_GIF_DOWNLOAD_MB
+
 
 data class WorkoutUiState(
     val plans: List<WorkoutPlan> = emptyList(),
@@ -37,13 +41,17 @@ data class WorkoutUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val showRefreshPrompt: Boolean = false,
+    val showDownloadPrompt: Boolean = false,
     val isExerciseDbReady: Boolean = false,
     val isExerciseDbDownloading: Boolean = false,
     val exerciseDbDownloadedCount: Int = 0,
     val exerciseDbTotalCount: Int? = null,
     val gifDownloadedCount: Int = 0,
     val gifTotalCount: Int = 0,
-    val isGifDownloading: Boolean = false
+    val isGifDownloading: Boolean = false,
+    val exerciseDbDownloadSizeMb: Int = EXERCISE_DB_DOWNLOAD_MB,
+    val exerciseDbGifDownloadSizeMb: Int = EXERCISE_DB_GIF_DOWNLOAD_MB,
+    val exerciseDbTotalDownloadSizeMb: Int = EXERCISE_DB_TOTAL_DOWNLOAD_MB
 )
 
 @HiltViewModel
@@ -238,6 +246,20 @@ class WorkoutViewModel @Inject constructor(
                 refreshBodyParts()
                 refreshExercises()
             } else {
+                val downloadAccepted = repository.isExerciseDbDownloadAccepted()
+                val hasPartialDownload = progress.downloadedCount > 0
+                if (!downloadAccepted && !hasPartialDownload) {
+                    _uiState.update {
+                        it.copy(
+                            showDownloadPrompt = true,
+                            isExerciseDbReady = false,
+                            isExerciseDbDownloading = false,
+                            exerciseDbDownloadedCount = progress.downloadedCount,
+                            exerciseDbTotalCount = progress.totalCount
+                        )
+                    }
+                    return@launch
+                }
                 _uiState.update {
                     it.copy(
                         isExerciseDbReady = false,
@@ -293,7 +315,8 @@ class WorkoutViewModel @Inject constructor(
                             exerciseDbTotalCount = exercises.size,
                             gifDownloadedCount = gifProgress.downloadedCount,
                             gifTotalCount = gifProgress.totalCount,
-                            isGifDownloading = !gifProgress.isComplete
+                            isGifDownloading = !gifProgress.isComplete,
+                            showDownloadPrompt = false
                         )
                     }
                 } else {
@@ -306,7 +329,8 @@ class WorkoutViewModel @Inject constructor(
                             exerciseDbTotalCount = progress.totalCount,
                             isGifDownloading = !gifProgress.isComplete,
                             gifDownloadedCount = gifProgress.downloadedCount,
-                            gifTotalCount = gifProgress.totalCount
+                            gifTotalCount = gifProgress.totalCount,
+                            showDownloadPrompt = false
                         )
                     }
                 }
@@ -317,7 +341,8 @@ class WorkoutViewModel @Inject constructor(
                         isExerciseDbReady = false,
                         isExerciseDbDownloading = false,
                         errorMessage = error.message ?: "Unable to download ExerciseDB data.",
-                        isGifDownloading = false
+                        isGifDownloading = false,
+                        showDownloadPrompt = false
                     )
                 }
             }
@@ -342,6 +367,22 @@ class WorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             repository.recordRefreshPromptDismissed()
             _uiState.update { it.copy(showRefreshPrompt = false) }
+        }
+    }
+
+    fun requestExerciseDbDownloadPrompt() {
+        _uiState.update { it.copy(showDownloadPrompt = true) }
+    }
+
+    fun deferExerciseDbDownload() {
+        _uiState.update { it.copy(showDownloadPrompt = false) }
+    }
+
+    fun acceptExerciseDbDownload() {
+        viewModelScope.launch {
+            repository.recordExerciseDbDownloadAccepted()
+            _uiState.update { it.copy(showDownloadPrompt = false, isExerciseDbDownloading = true) }
+            downloadExerciseDatabase()
         }
     }
 

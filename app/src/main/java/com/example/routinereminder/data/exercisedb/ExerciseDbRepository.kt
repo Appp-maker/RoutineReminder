@@ -127,6 +127,14 @@ class ExerciseDbRepository @Inject constructor(
         return ExerciseDbDownloadProgress(cached.size, total, complete)
     }
 
+    suspend fun isExerciseDbDownloadAccepted(): Boolean {
+        return settingsRepository.getExerciseDbDownloadAccepted().first()
+    }
+
+    suspend fun recordExerciseDbDownloadAccepted() {
+        settingsRepository.saveExerciseDbDownloadAccepted(true)
+    }
+
     suspend fun downloadExerciseDatabase(
         onProgress: (ExerciseDbDownloadProgress) -> Unit = {},
         onGifProgress: (ExerciseDbGifDownloadProgress) -> Unit = {}
