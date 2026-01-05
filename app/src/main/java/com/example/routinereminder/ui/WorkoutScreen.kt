@@ -340,14 +340,15 @@ fun WorkoutScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp)
+                .padding(top = 0.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
