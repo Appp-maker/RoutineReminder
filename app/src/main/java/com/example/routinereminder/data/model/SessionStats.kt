@@ -10,6 +10,7 @@ data class SessionStats(
     val durationSec: Long,           // total seconds
     val distanceMeters: Double,      // total meters
     val avgPaceSecPerKm: Long,       // average pace in seconds per km
+    val splitPaceSecPerKm: List<Long>? = emptyList(),
     val polyline: List<Point> = emptyList(), // map trail
     var snapshotPath: String? = null
 )

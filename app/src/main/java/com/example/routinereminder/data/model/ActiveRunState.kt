@@ -8,7 +8,8 @@ data class ActiveRunState(
     val startEpochMs: Long,
     val distanceMeters: Double,
     val durationSec: Long,
-    val calories: Double
+    val calories: Double,
+    val splitDurationsSec: List<Long> = emptyList()
 )
 
 

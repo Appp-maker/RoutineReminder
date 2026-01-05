@@ -119,6 +119,13 @@ fun HistoryItem(
                     text = "Pace: ${(session.avgPaceSecPerKm / 60)}:${(session.avgPaceSecPerKm % 60).toString().padStart(2, '0')} min/km",
                     style = MaterialTheme.typography.bodySmall
                 )
+                val splits = session.splitPaceSecPerKm.orEmpty()
+                if (splits.isNotEmpty()) {
+                    Text(
+                        text = "Splits: ${formatSplits(splits)}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
 
             Row(
@@ -150,3 +157,16 @@ fun HistoryItem(
 
 // Helper to format doubles nicely
 private fun Double.format(digits: Int) = "%.${digits}f".format(this)
+
+private fun formatSplits(splits: List<Long>): String {
+    return splits.mapIndexed { index, paceSec ->
+        "${index + 1}km ${formatSplitPace(paceSec)}"
+    }.joinToString(", ")
+}
+
+private fun formatSplitPace(paceSec: Long): String {
+    if (paceSec <= 0L) return "--:--"
+    val min = paceSec / 60
+    val sec = paceSec % 60
+    return "%d:%02d".format(min, sec)
+}
