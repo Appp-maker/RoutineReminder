@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import com.example.routinereminder.location.TrackingService
 
 class SettingsRepository @Inject constructor(private val dataStore: DataStore<Preferences>) {
 
@@ -39,7 +40,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EXERCISE_DB_LAST_PROMPT = longPreferencesKey("exercise_db_last_prompt_epoch_ms")
     val EXERCISE_DB_CACHE_COMPLETE = booleanPreferencesKey("exercise_db_cache_complete")
     val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
-    val EXERCISE_DB_DOWNLOAD_ACCEPTED = booleanPreferencesKey("exercise_db_download_accepted")
+    val MAP_TRACKING_MODE = stringPreferencesKey("map_tracking_mode")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -108,6 +109,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getCloudSyncEnabled(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[CLOUD_SYNC_ENABLED] ?: false
+        }
+    }
+
+    suspend fun saveMapTrackingMode(mode: String) {
+        dataStore.edit { preferences ->
+            preferences[MAP_TRACKING_MODE] = mode
+        }
+    }
+
+    fun getMapTrackingMode(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[MAP_TRACKING_MODE] ?: TrackingService.MODE_BALANCED
         }
     }
 

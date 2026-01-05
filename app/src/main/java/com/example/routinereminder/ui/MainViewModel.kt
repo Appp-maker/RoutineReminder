@@ -16,6 +16,7 @@ import com.example.routinereminder.data.model.ActiveRunState
 import com.example.routinereminder.data.model.TrailPoint
 import com.example.routinereminder.data.mappers.toEntity
 import com.example.routinereminder.data.mappers.toItem
+import com.example.routinereminder.location.TrackingService
 import com.example.routinereminder.util.NotificationScheduler
 import com.example.routinereminder.workers.ExerciseDbDownloadWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -100,6 +101,9 @@ class MainViewModel @Inject constructor(
 
     private val _enabledTabs = MutableStateFlow<Set<AppTab>?>(null)
     val enabledTabs: StateFlow<Set<AppTab>?> = _enabledTabs.asStateFlow()
+
+    private val _mapTrackingMode = MutableStateFlow(TrackingService.MODE_BALANCED)
+    val mapTrackingMode: StateFlow<String> = _mapTrackingMode.asStateFlow()
 
     val showGoogleCalendarChooser = Channel<Unit>()
 
@@ -200,6 +204,12 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getShowAllEvents().collectLatest { showAll ->
                 _showAllEvents.value = showAll
+            }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.getMapTrackingMode().collectLatest { mode ->
+                _mapTrackingMode.value = mode
             }
         }
 
@@ -339,6 +349,12 @@ class MainViewModel @Inject constructor(
     fun saveUserSettings(userSettings: UserSettings) {
         viewModelScope.launch {
             settingsRepository.saveUserSettings(userSettings)
+        }
+    }
+
+    fun saveMapTrackingMode(mode: String) {
+        viewModelScope.launch {
+            settingsRepository.saveMapTrackingMode(mode)
         }
     }
 
