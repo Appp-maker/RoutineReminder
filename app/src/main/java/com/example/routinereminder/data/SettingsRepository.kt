@@ -236,6 +236,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }
     }
 
+    suspend fun saveExerciseDbDownloadAccepted(accepted: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[EXERCISE_DB_DOWNLOAD_ACCEPTED] = accepted
+        }
+    }
+
+    fun getExerciseDbDownloadAccepted(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[EXERCISE_DB_DOWNLOAD_ACCEPTED] ?: false
+        }
+    }
+
     fun getShowAllEvents(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[SHOW_ALL_EVENTS] ?: false
