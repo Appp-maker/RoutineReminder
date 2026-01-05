@@ -202,7 +202,11 @@ fun CalorieTrackerScreen(
                     viewModel.addBundleToTracker(
                         bundleId = pendingBundleId!!,
                         mealSlot = mealSlot,
-                        portionSizeG = portion
+                        portionSizeG = portion,
+                        isOneTime = isOneTime,
+                        repeatDays = repeatDays,
+                        repeatEveryWeeks = repeatEveryWeeks,
+                        startDate = anchorDate
                     )
                 } else {
                     viewModel.addFood(
@@ -222,7 +226,7 @@ fun CalorieTrackerScreen(
             portionUnitLabel = portionUnitLabel,
             portionToGramsMultiplier = portionMultiplier,
             portionDefinitionText = portionDefinitionText,
-            showSchedulingOptions = !isBundlePreview,
+            showSchedulingOptions = true,
             currentTotals = viewModel.dailyTotals.value ?: CalorieTrackerViewModel.DailyTotals(
                 calories = 0.0,
                 proteinG = 0.0,
