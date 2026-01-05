@@ -92,7 +92,7 @@ fun SettingsScreen(
      val initialCategory = when (from) {
          "routine" -> if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else SettingsCategory.SYNC
          "calories" -> if (caloriesEnabled) SettingsCategory.PROFILE else SettingsCategory.SYNC
-         "map" -> SettingsCategory.SYNC
+         "map" -> SettingsCategory.APP
          else -> SettingsCategory.SYNC
      }
 
@@ -115,6 +115,7 @@ fun SettingsScreen(
     val currentOnAppDeleteImportedAction by viewModel.onAppDeleteImportedAction.collectAsState()
     val currentUseGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
     val currentImportTargetCalendarIdForBothMode by viewModel.importTargetCalendarIdForBothMode.collectAsState()
+    val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
     val selectedGoogleAccountName by viewModel.selectedGoogleAccountName.collectAsState()
@@ -585,7 +586,12 @@ fun SettingsScreen(
                             accountNameToManage = account
                             showDataManagementDialog = source
                         },
-                        calendarEventCounts = calendarEventCounts
+                        calendarEventCounts = calendarEventCounts,
+                        trackingMode = TrackingMode.fromValue(mapTrackingMode),
+                        onTrackingModeChange = { mode ->
+                            viewModel.saveMapTrackingMode(mode.value)
+                            justSavedSuccessfully = false
+                        }
                     )
                 }
             }
@@ -1082,7 +1088,9 @@ private fun AppSettingsSection(
     showAllEvents: Boolean,
     onShowAllEventsChange: (Boolean) -> Unit,
     onDataManagementClick: (String, String?) -> Unit,
-    calendarEventCounts: CalendarEventCounts
+    calendarEventCounts: CalendarEventCounts,
+    trackingMode: TrackingMode,
+    onTrackingModeChange: (TrackingMode) -> Unit
 ) {
     var backupSyncHoursInputText by remember { mutableStateOf("1") }
     var backupSyncMinutesInputText by remember { mutableStateOf("0") }
@@ -1090,6 +1098,7 @@ private fun AppSettingsSection(
     var showAboutDialog by remember { mutableStateOf(false) }
     var showCreditsDialog by remember { mutableStateOf(false) }
     var showLegalDialog by remember { mutableStateOf(false) }
+    var trackingMenuExpanded by remember { mutableStateOf(false) }
 
     if (showAboutDialog) {
         AlertDialog(
@@ -1131,6 +1140,41 @@ private fun AppSettingsSection(
     }
 
     Text(stringResource(R.string.settings_app_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
+    Text("General", style = MaterialTheme.typography.titleMedium)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Tracking mode", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = trackingMode.label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        TextButton(onClick = { trackingMenuExpanded = true }) {
+            Text("Change")
+        }
+        DropdownMenu(
+            expanded = trackingMenuExpanded,
+            onDismissRequest = { trackingMenuExpanded = false }
+        ) {
+            TrackingMode.values().forEach { mode ->
+                DropdownMenuItem(
+                    text = { Text(mode.label) },
+                    onClick = {
+                        onTrackingModeChange(mode)
+                        trackingMenuExpanded = false
+                    }
+                )
+            }
+        }
+    }
+    Spacer(modifier = Modifier.height(16.dp))
     Text(stringResource(R.string.settings_tabs_title), style = MaterialTheme.typography.titleMedium)
     Text(
         text = stringResource(R.string.settings_tabs_description),
