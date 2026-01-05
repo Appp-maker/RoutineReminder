@@ -21,8 +21,10 @@ class RunSessionRepository @Inject constructor(
     private val activeStateKey = stringPreferencesKey("active_run_state")
     private val gson = Gson()
     private val trailListType = object : TypeToken<List<TrailPoint>>() {}.type
+    private val splitListType = object : TypeToken<List<Long>>() {}.type
 
     private fun trailKey(sessionId: String) = stringPreferencesKey("run_trail_$sessionId")
+    private fun splitKey(sessionId: String) = stringPreferencesKey("run_splits_$sessionId")
 
     val activeRunState: Flow<ActiveRunState?> = dataStore.data.map { preferences ->
         preferences[activeStateKey]?.let { stored ->
@@ -54,6 +56,23 @@ class RunSessionRepository @Inject constructor(
     suspend fun clearTrailPoints(sessionId: String) {
         dataStore.edit { preferences ->
             preferences.remove(trailKey(sessionId))
+        }
+    }
+
+    fun splitDurations(sessionId: String): Flow<List<Long>> = dataStore.data.map { preferences ->
+        val stored = preferences[splitKey(sessionId)] ?: return@map emptyList()
+        gson.fromJson<List<Long>>(stored, splitListType) ?: emptyList()
+    }
+
+    suspend fun saveSplitDurations(sessionId: String, splits: List<Long>) {
+        dataStore.edit { preferences ->
+            preferences[splitKey(sessionId)] = gson.toJson(splits, splitListType)
+        }
+    }
+
+    suspend fun clearSplitDurations(sessionId: String) {
+        dataStore.edit { preferences ->
+            preferences.remove(splitKey(sessionId))
         }
     }
 }

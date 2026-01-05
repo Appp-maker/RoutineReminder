@@ -34,8 +34,10 @@ import com.example.routinereminder.data.SnapshotStorage
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -76,6 +78,7 @@ import org.maplibre.geojson.LineString
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import com.example.routinereminder.location.TrackingService
@@ -180,6 +183,7 @@ fun MapScreen(
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
     val trailPoints by viewModel.trailPoints.collectAsState()
+    val splitDurations by viewModel.splitDurations.collectAsState()
     val isRecording = runState?.isRecording == true
     val activity = runState?.activity?.let { ActivityType.fromLabel(it) } ?: selectedActivity
     val trackingMode = TrackingMode.fromValue(runState?.trackingMode ?: selectedTrackingMode.value)
@@ -193,6 +197,8 @@ fun MapScreen(
     var inactivityJob by remember { mutableStateOf<Job?>(null) }
     var lastMovementAt by rememberSaveable { mutableStateOf<Long?>(null) }
     var showResumePrompt by rememberSaveable { mutableStateOf(false) }
+    var splitStartDistance by rememberSaveable { mutableStateOf(0.0) }
+    var splitStartDuration by rememberSaveable { mutableStateOf(0L) }
     val stopRecording = rememberUpdatedState {
         if (isRecording) {
             stopTracking(context)
@@ -270,6 +276,11 @@ fun MapScreen(
 
     LaunchedEffect(runState?.sessionId, runState?.isRecording) {
         showResumePrompt = runState != null && !isTrackingServiceRunning(context)
+    }
+
+    LaunchedEffect(runState?.sessionId, splitDurations.size) {
+        splitStartDistance = splitDurations.size * 1000.0
+        splitStartDuration = splitDurations.sum()
     }
 
     LaunchedEffect(runState?.sessionId, runState?.isRecording) {
@@ -357,6 +368,18 @@ fun MapScreen(
             }
 
             val updatedTrail = trailPoints + newPoint
+            val splitUpdate = computeSplitUpdate(
+                existingSplits = splitDurations,
+                splitStartDistance = splitStartDistance,
+                splitStartDuration = splitStartDuration,
+                newDistance = newDistance,
+                durationSec = durationSec
+            )
+            if (splitUpdate != null) {
+                splitStartDistance = splitUpdate.splitStartDistance
+                splitStartDuration = splitUpdate.splitStartDuration
+                viewModel.setSplitDurations(splitUpdate.splits)
+            }
             viewModel.updateRunStats(newDistance, durationSec, calories)
             viewModel.setTrailPoints(updatedTrail)
             lastMovementAt = System.currentTimeMillis()
@@ -484,6 +507,39 @@ fun MapScreen(
                     StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
                     StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
                     StatBlock(title = "Calories", value = calories.roundToInt().toString())
+                }
+            }
+
+            if (splitDurations.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = ComposeColor(0xFF1B1B1B))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Text(
+                            text = "Splits (per km)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ComposeColor.Gray
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            splitDurations.forEachIndexed { index, split ->
+                                Text(
+                                    text = "${index + 1}km ${formatSplitPace(split)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = ComposeColor.White
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -748,6 +804,7 @@ fun MapScreen(
                                         durationSec = durationSec,
                                         distanceMeters = distanceMeters,
                                         avgPaceSecPerKm = pace,
+                                        splitPaceSecPerKm = splitDurations,
                                         polyline = trailPoints
                                     )
 
@@ -936,6 +993,55 @@ private fun formatPace(distanceMeters: Double, durationSec: Long): String {
     return "%02d:%02d".format(min, sec)
 }
 
+private fun formatSplitPace(paceSecPerKm: Long): String {
+    if (paceSecPerKm <= 0L) return "--:--"
+    val min = paceSecPerKm / 60
+    val sec = paceSecPerKm % 60
+    return "%d:%02d".format(min, sec)
+}
+
+private data class SplitUpdate(
+    val splits: List<Long>,
+    val splitStartDistance: Double,
+    val splitStartDuration: Long
+)
+
+private fun computeSplitUpdate(
+    existingSplits: List<Long>,
+    splitStartDistance: Double,
+    splitStartDuration: Long,
+    newDistance: Double,
+    durationSec: Long
+): SplitUpdate? {
+    val distanceDelta = newDistance - splitStartDistance
+    if (distanceDelta < 1000.0) return null
+
+    val durationDelta = (durationSec - splitStartDuration).coerceAtLeast(0)
+    if (durationDelta <= 0L) return null
+
+    val splits = existingSplits.toMutableList()
+    var remainingDistance = distanceDelta
+    var remainingDuration = durationDelta.toDouble()
+    val secondsPerMeter = if (remainingDistance > 0.0) remainingDuration / remainingDistance else 0.0
+    var nextSplitStartDistance = splitStartDistance
+    var nextSplitStartDuration = splitStartDuration
+
+    while (remainingDistance >= 1000.0) {
+        val splitDuration = (1000.0 * secondsPerMeter).roundToLong().coerceAtLeast(1L)
+        splits.add(splitDuration)
+        remainingDistance -= 1000.0
+        remainingDuration -= splitDuration
+        nextSplitStartDistance += 1000.0
+        nextSplitStartDuration += splitDuration
+    }
+
+    return SplitUpdate(
+        splits = splits,
+        splitStartDistance = nextSplitStartDistance,
+        splitStartDuration = nextSplitStartDuration
+    )
+}
+
 fun calcCalories(
     met: Double,
     weightKg: Double,
@@ -1010,6 +1116,15 @@ fun decodeList(json: String): List<SessionStats> {
                 }
         }
 
+        val splitsRaw = Regex(""""splits":\s*\[(.*?)]""", RegexOption.DOT_MATCHES_ALL)
+            .find(obj)?.groups?.get(1)?.value ?: ""
+        val splits = if (splitsRaw.isBlank()) {
+            emptyList()
+        } else {
+            splitsRaw.split(",")
+                .mapNotNull { it.trim().toLongOrNull() }
+        }
+
         out.add(
             SessionStats(
                 id = grab("id"),
@@ -1019,6 +1134,7 @@ fun decodeList(json: String): List<SessionStats> {
                 durationSec = grab("dur").toLongOrNull() ?: 0L,
                 distanceMeters = grab("dist").toDoubleOrNull() ?: 0.0,
                 avgPaceSecPerKm = grab("pace").toLongOrNull() ?: 0L,
+                splitPaceSecPerKm = splits,
                 polyline = pts
             )
         )

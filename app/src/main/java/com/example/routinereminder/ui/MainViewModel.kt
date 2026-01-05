@@ -130,7 +130,11 @@ class MainViewModel @Inject constructor(
     private val _trailPoints = MutableStateFlow<List<Point>>(emptyList())
     val trailPoints: StateFlow<List<Point>> = _trailPoints.asStateFlow()
 
+    private val _splitDurations = MutableStateFlow<List<Long>>(emptyList())
+    val splitDurations: StateFlow<List<Long>> = _splitDurations.asStateFlow()
+
     private var trailJob: Job? = null
+    private var splitJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -203,6 +207,7 @@ class MainViewModel @Inject constructor(
             runSessionRepository.activeRunState.collectLatest { state ->
                 _activeRunState.value = state
                 trackTrailForSession(state?.sessionId)
+                trackSplitsForSession(state?.sessionId)
             }
         }
 
@@ -224,6 +229,21 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    private fun trackSplitsForSession(sessionId: String?) {
+        splitJob?.cancel()
+        if (sessionId == null) {
+            _splitDurations.value = emptyList()
+            return
+        }
+        splitJob = viewModelScope.launch {
+            runSessionRepository.splitDurations(sessionId)
+                .distinctUntilChanged()
+                .collectLatest { splits ->
+                    _splitDurations.value = splits
+                }
+        }
+    }
+
     fun startRun(activity: String, trackingMode: String) {
         val sessionId = UUID.randomUUID().toString()
         val startEpochMs = System.currentTimeMillis()
@@ -235,13 +255,16 @@ class MainViewModel @Inject constructor(
             startEpochMs = startEpochMs,
             distanceMeters = 0.0,
             durationSec = 0L,
-            calories = 0.0
+            calories = 0.0,
+            splitDurationsSec = emptyList()
         )
         _activeRunState.value = state
         _trailPoints.value = emptyList()
+        _splitDurations.value = emptyList()
         viewModelScope.launch {
             runSessionRepository.saveActiveRunState(state)
             runSessionRepository.saveTrailPoints(sessionId, emptyList())
+            runSessionRepository.saveSplitDurations(sessionId, emptyList())
         }
     }
 
@@ -283,13 +306,24 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun setSplitDurations(splits: List<Long>) {
+        val state = _activeRunState.value ?: return
+        _splitDurations.value = splits
+        updateActiveRunState { it.copy(splitDurationsSec = splits) }
+        viewModelScope.launch {
+            runSessionRepository.saveSplitDurations(state.sessionId, splits)
+        }
+    }
+
     fun discardRun() {
         val state = _activeRunState.value ?: return
         _activeRunState.value = null
         _trailPoints.value = emptyList()
+        _splitDurations.value = emptyList()
         viewModelScope.launch {
             runSessionRepository.saveActiveRunState(null)
             runSessionRepository.clearTrailPoints(state.sessionId)
+            runSessionRepository.clearSplitDurations(state.sessionId)
         }
     }
 
