@@ -12,10 +12,6 @@ import androidx.compose.material.icons.filled.DirectionsRun
 import com.example.routinereminder.data.model.SessionStats
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.DirectionsBike
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import android.app.ActivityManager
@@ -101,7 +97,7 @@ private enum class ActivityType(val label: String, val met: Double) {
     }
 }
 
-private enum class TrackingMode(val label: String, val value: String) {
+enum class TrackingMode(val label: String, val value: String) {
     BALANCED("Balanced", TrackingService.MODE_BALANCED),
     HIGH_ACCURACY("High accuracy", TrackingService.MODE_HIGH_ACCURACY)
     ;
@@ -177,17 +173,16 @@ fun MapScreen(
     var userZoom by remember { mutableStateOf(15.5) }
     var includeMapInShare by remember { mutableStateOf(true) }
     var selectedActivity by remember { mutableStateOf(ActivityType.RUNNING) }
-    var selectedTrackingMode by remember { mutableStateOf(TrackingMode.BALANCED) }
-    var trackingMenuExpanded by remember { mutableStateOf(false) }
     var permissionRequired by remember { mutableStateOf(false) }
 
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
     val trailPoints by viewModel.trailPoints.collectAsState()
     val splitDurations by viewModel.splitDurations.collectAsState()
+    val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     val isRecording = runState?.isRecording == true
     val activity = runState?.activity?.let { ActivityType.fromLabel(it) } ?: selectedActivity
-    val trackingMode = TrackingMode.fromValue(runState?.trackingMode ?: selectedTrackingMode.value)
+    val trackingMode = TrackingMode.fromValue(runState?.trackingMode ?: mapTrackingMode)
     val distanceMeters = runState?.distanceMeters ?: 0.0
     val durationSec = runState?.durationSec ?: 0L
     val calories = runState?.calories ?: 0.0
@@ -445,6 +440,17 @@ fun MapScreen(
         }
     }
 
+    LaunchedEffect(mapTrackingMode, isRecording, runState?.trackingMode) {
+        val state = runState ?: return@LaunchedEffect
+        if (!isRecording) return@LaunchedEffect
+        if (state.trackingMode != mapTrackingMode) {
+            viewModel.updateTrackingMode(mapTrackingMode)
+            if (!startTrackingIfPermitted()) {
+                stopRecording.value.invoke()
+            }
+        }
+    }
+
     LaunchedEffect(map, trailPoints) {
         val m = map ?: return@LaunchedEffect
         val s = m.style ?: return@LaunchedEffect
@@ -498,30 +504,26 @@ fun MapScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SettingsIconButton(onClick = { navController.navigate("settings/map") })
-            }
-
-            // ----------- STATS HEADER -----------
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = ComposeColor(0xFF121212))
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = ComposeColor(0xFF121212))
                 ) {
-                    StatBlock(title = "Duration", value = formatHMS(durationSec))
-                    StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
-                    StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
-                    StatBlock(title = "Calories", value = calories.roundToInt().toString())
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        StatBlock(title = "Duration", value = formatHMS(durationSec))
+                        StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
+                        StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
+                        StatBlock(title = "Calories", value = calories.roundToInt().toString())
+                    }
                 }
+                SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
 
             if (splitDurations.isNotEmpty()) {
@@ -583,42 +585,6 @@ fun MapScreen(
                         ) {
                             Text("Grant")
                         }
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Tracking: ${trackingMode.label}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = ComposeColor.Gray
-                )
-                IconButton(onClick = { trackingMenuExpanded = true }) {
-                    Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Tracking mode")
-                }
-                DropdownMenu(
-                    expanded = trackingMenuExpanded,
-                    onDismissRequest = { trackingMenuExpanded = false }
-                ) {
-                    TrackingMode.values().forEach { mode ->
-                        DropdownMenuItem(
-                            text = { Text(mode.label) },
-                            onClick = {
-                                selectedTrackingMode = mode
-                                trackingMenuExpanded = false
-                                if (isRecording) {
-                                    if (!startTrackingIfPermitted()) {
-                                        stopRecording.value.invoke()
-                                    }
-                                }
-                            }
-                        )
                     }
                 }
             }
@@ -781,7 +747,7 @@ fun MapScreen(
                                 if (!isRecording) {
                                     // --- Start logic ---
                                     lastMovementAt = System.currentTimeMillis()
-                                    viewModel.startRun(selectedActivity.label, selectedTrackingMode.value)
+                                    viewModel.startRun(selectedActivity.label, trackingMode.value)
 
                                     // Start Foreground GPS Tracking Service
                                     if (!startTrackingIfPermitted()) {
