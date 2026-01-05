@@ -411,14 +411,25 @@ class MainViewModel @Inject constructor(
 
     fun upsertScheduleItem(item: ScheduleItem) {
         viewModelScope.launch(Dispatchers.IO) {
-            // Delete any duplicates with same name + time (same origin)
+            // Delete exact duplicates with same name/time and matching recurrence details.
             val existing = scheduleDao.getAllOnce().filter {
                 it.name == item.name &&
-                        it.hour == item.hour &&
-                        it.minute == item.minute &&
-                        it.origin == "APP_CREATED"
+                    it.hour == item.hour &&
+                    it.minute == item.minute &&
+                    it.origin == "APP_CREATED" &&
+                    it.id != item.id
             }
-            for (dup in existing) {
+            val duplicates = existing.filter { candidate ->
+                if (item.isOneTime) {
+                    candidate.isOneTime && candidate.dateEpochDay == item.dateEpochDay
+                } else {
+                    !candidate.isOneTime &&
+                        candidate.startEpochDay == item.startEpochDay &&
+                        candidate.repeatEveryWeeks == item.repeatEveryWeeks &&
+                        candidate.repeatOnDays == item.repeatOnDays
+                }
+            }
+            for (dup in duplicates) {
                 scheduleDao.delete(dup.id)
             }
 
