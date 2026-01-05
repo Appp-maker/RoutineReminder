@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -336,10 +337,17 @@ fun WorkoutScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
+        val layoutDirection = LocalLayoutDirection.current
+        val contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = padding.calculateStartPadding(layoutDirection),
+            top = 0.dp,
+            end = padding.calculateEndPadding(layoutDirection),
+            bottom = padding.calculateBottomPadding()
+        )
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(contentPadding)
                 .padding(horizontal = 16.dp)
                 .padding(top = 0.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
