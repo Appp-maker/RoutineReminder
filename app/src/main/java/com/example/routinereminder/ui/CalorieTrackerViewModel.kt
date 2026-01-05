@@ -386,50 +386,90 @@ class CalorieTrackerViewModel @Inject constructor(
     fun addBundleToTracker(
         bundleId: Long,
         mealSlot: String,
-        portionSizeG: Double
+        portionSizeG: Double,
+        isOneTime: Boolean,
+        repeatDays: Set<DayOfWeek>,
+        repeatEveryWeeks: Int,
+        startDate: LocalDate
     ) {
         viewModelScope.launch {
             val bundleDao = appDatabase.foodBundleDao()
             val loggedFoodDao = appDatabase.loggedFoodDao()
-            val today = selectedDate.value
-
             val bundleWithItems = bundleDao.getBundleWithItems(bundleId)
             if (portionSizeG <= 0.0) return@launch
 
             val foodProduct = buildBundleAsFoodProduct(bundleId)
-            val totalCalories = (foodProduct.caloriesPer100g / 100.0) * portionSizeG
-            val totalProtein = (foodProduct.proteinPer100g / 100.0) * portionSizeG
-            val totalCarbs = (foodProduct.carbsPer100g / 100.0) * portionSizeG
-            val totalFat = (foodProduct.fatPer100g / 100.0) * portionSizeG
-            val totalFiber = (foodProduct.fiberPer100g / 100.0) * portionSizeG
-            val totalSatFat = (foodProduct.saturatedFatPer100g / 100.0) * portionSizeG
-            val totalSugar = (foodProduct.addedSugarsPer100g / 100.0) * portionSizeG
-            val totalSodiumMg = (foodProduct.sodiumPer100g * 1000.0 / 100.0) * portionSizeG
-            val loggedFood = LoggedFood(
-                date = today.toString(),
-                foodProduct = foodProduct,
-                portionSizeG = portionSizeG,
-                calories = totalCalories,
-                proteinG = totalProtein,
-                carbsG = totalCarbs,
-                fatG = totalFat,
-                fiberG = totalFiber,
-                saturatedFatG = totalSatFat,
-                addedSugarsG = totalSugar,
-                sodiumMg = totalSodiumMg,
-                mealSlot = mealSlot,
-                bundleName = bundleWithItems.bundle.name,
-                bundleId = bundleWithItems.bundle.id
-            )
+            val caloriesPerGram = foodProduct.caloriesPer100g / 100.0
+            val proteinPerGram = foodProduct.proteinPer100g / 100.0
+            val carbsPerGram = foodProduct.carbsPer100g / 100.0
+            val fatPerGram = foodProduct.fatPer100g / 100.0
+            val fiberPerGram = foodProduct.fiberPer100g / 100.0
+            val saturatedFatPerGram = foodProduct.saturatedFatPer100g / 100.0
+            val addedSugarsPerGram = foodProduct.addedSugarsPer100g / 100.0
+            val sodiumPerGram = foodProduct.sodiumPer100g / 100.0
 
-            loggedFoodDao.upsert(loggedFood)
+            if (isOneTime || repeatDays.isEmpty()) {
+                val loggedFood = LoggedFood(
+                    date = startDate.toString(),
+                    foodProduct = foodProduct,
+                    portionSizeG = portionSizeG,
+                    calories = caloriesPerGram * portionSizeG,
+                    proteinG = proteinPerGram * portionSizeG,
+                    carbsG = carbsPerGram * portionSizeG,
+                    fatG = fatPerGram * portionSizeG,
+                    fiberG = fiberPerGram * portionSizeG,
+                    saturatedFatG = saturatedFatPerGram * portionSizeG,
+                    addedSugarsG = addedSugarsPerGram * portionSizeG,
+                    sodiumMg = sodiumPerGram * portionSizeG,
+                    mealSlot = mealSlot,
+                    bundleName = bundleWithItems.bundle.name,
+                    bundleId = bundleWithItems.bundle.id,
+                    isOneTime = true,
+                    dateEpochDay = startDate.toEpochDay()
+                )
 
+                loggedFoodDao.upsert(loggedFood)
+            } else {
+                val maxWeeksToGenerate = 12
+                for (weekOffset in 0 until maxWeeksToGenerate step repeatEveryWeeks) {
+                    val weekStart = startDate.plusWeeks(weekOffset.toLong())
 
-            _loggedFoods.value =
-                appDatabase.loggedFoodDao()
-                    .getFoodsForDate(today.toString())
+                    for (day in repeatDays) {
+                        val dayOffset = (day.value - weekStart.dayOfWeek.value).let {
+                            if (it < 0) it + 7 else it
+                        }
+                        val targetDate = weekStart.plusDays(dayOffset.toLong())
 
-            calculateDailyTotals()
+                        if (!targetDate.isBefore(startDate)) {
+                            val recurringFood = LoggedFood(
+                                date = targetDate.toString(),
+                                dateEpochDay = targetDate.toEpochDay(),
+                                foodProduct = foodProduct,
+                                portionSizeG = portionSizeG,
+                                calories = caloriesPerGram * portionSizeG,
+                                proteinG = proteinPerGram * portionSizeG,
+                                carbsG = carbsPerGram * portionSizeG,
+                                fatG = fatPerGram * portionSizeG,
+                                fiberG = fiberPerGram * portionSizeG,
+                                saturatedFatG = saturatedFatPerGram * portionSizeG,
+                                addedSugarsG = addedSugarsPerGram * portionSizeG,
+                                sodiumMg = sodiumPerGram * portionSizeG,
+                                mealSlot = mealSlot,
+                                bundleName = bundleWithItems.bundle.name,
+                                bundleId = bundleWithItems.bundle.id,
+                                isOneTime = false,
+                                startEpochDay = startDate.toEpochDay(),
+                                repeatOnDays = repeatDays,
+                                repeatEveryWeeks = repeatEveryWeeks
+                            )
+
+                            loggedFoodDao.upsert(recurringFood)
+                        }
+                    }
+                }
+            }
+
+            refreshForSelectedDate()
         }
     }
 
