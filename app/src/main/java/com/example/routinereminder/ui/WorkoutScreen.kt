@@ -345,30 +345,11 @@ fun WorkoutScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.workout_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsIconButton(onClick = { navController.navigate("settings/workout") })
-                }
-            }
-
-            item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = stringResource(R.string.workout_plans_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
                         OutlinedButton(
                             onClick = { planMenuExpanded = true },
                             modifier = Modifier.weight(1f)
@@ -390,6 +371,17 @@ fun WorkoutScreen(
                                 uiState.plans.forEach { plan ->
                                     DropdownMenuItem(
                                         text = { Text(plan.name) },
+                                        trailingIcon = {
+                                            IconButton(onClick = {
+                                                planMenuExpanded = false
+                                                planToDelete = plan
+                                            }) {
+                                                Icon(
+                                                    Icons.Filled.Delete,
+                                                    contentDescription = stringResource(R.string.workout_plan_delete_action)
+                                                )
+                                            }
+                                        },
                                         onClick = {
                                             viewModel.selectPlan(plan.id)
                                             planMenuExpanded = false
@@ -407,13 +399,7 @@ fun WorkoutScreen(
                                 }
                             )
                         }
-
-                        IconButton(
-                            onClick = { selectedPlan?.let { planToDelete = it } },
-                            enabled = selectedPlan != null
-                        ) {
-                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.workout_plan_delete_action))
-                        }
+                        SettingsIconButton(onClick = { navController.navigate("settings/workout") })
                     }
 
                 }
