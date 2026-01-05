@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
@@ -70,10 +72,12 @@ import com.example.routinereminder.data.workout.WorkoutPlanExercise
 import com.example.routinereminder.ui.components.EditItemDialog
 import kotlinx.coroutines.launch
 import java.io.File
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutScreen(
+    navController: NavController,
     mainViewModel: MainViewModel,
     viewModel: WorkoutViewModel = hiltViewModel()
 ) {
@@ -340,10 +344,22 @@ fun WorkoutScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
-                Text(
-                    text = stringResource(R.string.workout_title),
-                    style = MaterialTheme.typography.headlineSmall
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.workout_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { navController.navigate("settings/workout") },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
+                    }
+                }
             }
 
             item {
