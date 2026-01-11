@@ -300,16 +300,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun resumeRun() {
-        val state = _activeRunState.value ?: return
-        if (state.isRecording) return
-        val updated = state.copy(isRecording = true)
-        _activeRunState.value = updated
-        viewModelScope.launch {
-            runSessionRepository.saveActiveRunState(updated)
-        }
-    }
-
     fun stopRun() {
         val state = _activeRunState.value ?: return
         val updated = state.copy(isRecording = false)

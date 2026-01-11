@@ -200,7 +200,6 @@ fun MapScreen(
     var timerJob by remember { mutableStateOf<Job?>(null) }
     var inactivityJob by remember { mutableStateOf<Job?>(null) }
     var lastMovementAt by rememberSaveable { mutableStateOf<Long?>(null) }
-    var showResumePrompt by rememberSaveable { mutableStateOf(false) }
     var splitStartDistance by rememberSaveable { mutableStateOf(0.0) }
     var splitStartDuration by rememberSaveable { mutableStateOf(0L) }
     val stopRecording = rememberUpdatedState {
@@ -210,7 +209,6 @@ fun MapScreen(
             timerJob = null
             inactivityJob?.cancel()
             inactivityJob = null
-            showResumePrompt = false
             viewModel.stopRun()
         }
     }
@@ -278,10 +276,6 @@ fun MapScreen(
         }
     }
 
-    LaunchedEffect(runState?.sessionId, runState?.isRecording) {
-        showResumePrompt = runState?.isRecording == true && !isTrackingServiceRunning(context)
-    }
-
     LaunchedEffect(runState?.sessionId, splitDurations.size) {
         splitStartDistance = splitDurations.size * 1000.0
         splitStartDuration = splitDurations.sum()
@@ -289,8 +283,11 @@ fun MapScreen(
 
     LaunchedEffect(runState?.sessionId, runState?.isRecording) {
         val state = runState ?: return@LaunchedEffect
-        if (state.isRecording && isTrackingServiceRunning(context)) {
-            startTracking(context, TrackingMode.fromValue(state.trackingMode))
+        if (state.isRecording) {
+            if (!startTrackingIfPermitted()) {
+                stopRecording.value.invoke()
+                return@LaunchedEffect
+            }
             if (timerJob == null) {
                 startRunTimers()
             }
@@ -477,41 +474,6 @@ fun MapScreen(
         source.setGeoJson(Feature.fromGeometry(line))
     }
 
-    val resumeState = runState
-    if (showResumePrompt && resumeState != null) {
-        AlertDialog(
-            onDismissRequest = { showResumePrompt = false },
-            title = { Text(text = "Resume run?") },
-            text = {
-                Text(
-                    text = "We found an in-progress run. Would you like to resume or discard it?"
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.resumeRun()
-                        startTracking(context, TrackingMode.fromValue(resumeState.trackingMode))
-                        lastMovementAt = System.currentTimeMillis()
-                        startRunTimers()
-                        showResumePrompt = false
-                    }
-                ) {
-                    Text("Resume")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.discardRun()
-                        showResumePrompt = false
-                    }
-                ) {
-                    Text("Discard")
-                }
-            }
-        )
-    }
     if (showManualEntry) {
         val distanceKm = manualDistanceKm.toDoubleOrNull()
         val durationMin = manualDurationMin.toDoubleOrNull()
@@ -861,7 +823,6 @@ fun MapScreen(
                                     timerJob = null
                                     inactivityJob?.cancel()
                                     inactivityJob = null
-                                    showResumePrompt = false
                                     viewModel.stopRun()
 
                                     // Avoid saving empty or invalid sessions
