@@ -106,6 +106,8 @@
     <string name="event_color_label">Event color</string>
     <string name="event_set_color_predefined_helper">Predefined in set (change in settings)</string>
     <string name="event_set_none">No set</string>
+    <string name="custom_color_label">Custom color</string>
+    <string name="custom_color_helper">Use #RRGGBB or #AARRGGBB</string>
     <string name="event_sets_max_selected">You can enable up to %1$d sets per day.</string>
     <string name="event_sets_compact_label">Sets %1$s</string>
     <string name="event_sets_compact_placeholder">Sets</string>
