@@ -8,6 +8,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.data.ActivityLevel
 import com.example.routinereminder.data.AppDatabase
+import com.example.routinereminder.data.CalorieGoal
+import com.example.routinereminder.data.Gender
 import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.data.entities.LoggedFood
 import com.example.routinereminder.data.entities.FoodBundleWithItems
@@ -683,7 +685,7 @@ class CalorieTrackerViewModel @Inject constructor(
     }
     private fun calculateDailyTargets() {
         val userSettings = _userSettings.value
-        if (userSettings == null || userSettings.weightKg <= 0) {
+        if (userSettings == null || userSettings.weightKg <= 0 || userSettings.heightCm <= 0 || userSettings.age <= 0) {
             _dailyTargets.value = DailyTargets(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) // Default/empty state
             return
         }
@@ -692,12 +694,22 @@ class CalorieTrackerViewModel @Inject constructor(
         val calories = if (userSettings.customCaloriesTarget > 0) {
             userSettings.customCaloriesTarget
         } else {
-            when (userSettings.activityLevel) {
-                ActivityLevel.SEDENTARY -> 25 * userSettings.weightKg
-                ActivityLevel.LIGHT -> 30 * userSettings.weightKg
-                ActivityLevel.MODERATE -> 35 * userSettings.weightKg
-                ActivityLevel.ACTIVE -> 40 * userSettings.weightKg
+            val genderConstant = if (userSettings.gender == Gender.MALE) 5 else -161
+            val bmr = (10 * userSettings.weightKg) + (6.25 * userSettings.heightCm) -
+                (5 * userSettings.age) + genderConstant
+            val activityFactor = when (userSettings.activityLevel) {
+                ActivityLevel.SEDENTARY -> 1.2
+                ActivityLevel.LIGHT -> 1.375
+                ActivityLevel.MODERATE -> 1.55
+                ActivityLevel.ACTIVE -> 1.725
             }
+            val tdee = bmr * activityFactor
+            val goalAdjustment = when (userSettings.calorieGoal) {
+                CalorieGoal.MAINTAIN -> 0.0
+                CalorieGoal.LOSE_WEIGHT -> -500.0
+                CalorieGoal.GAIN_WEIGHT -> 300.0
+            }
+            (tdee + goalAdjustment).coerceAtLeast(0.0)
         }
         val protein = 1.6 * userSettings.weightKg
         val carbs = (calories * 0.5) / 4
