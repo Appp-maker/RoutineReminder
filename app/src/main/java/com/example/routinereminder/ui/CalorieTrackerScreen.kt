@@ -52,6 +52,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.platform.LocalConfiguration
 import com.example.routinereminder.ui.components.ProductResultCard
 import com.example.routinereminder.ui.components.NutritionPreview
+import com.example.routinereminder.ui.components.formatChecklistText
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.FlowRow
@@ -917,7 +918,7 @@ fun ExpandableRecipeRow(
         value = viewModel.getBundleWithItems(bundleId)
     }
     val recipeName = bundleWithItems?.bundle?.name ?: food.foodProduct.name
-    val recipeDescription = bundleWithItems?.bundle?.description?.trim().orEmpty()
+    val recipeDescription = bundleWithItems?.bundle?.description.orEmpty()
     val recipeItems = bundleWithItems?.items.orEmpty()
 
     Column(
@@ -949,7 +950,7 @@ fun ExpandableRecipeRow(
             Spacer(Modifier.height(8.dp))
             if (recipeDescription.isNotBlank()) {
                 Text(
-                    recipeDescription,
+                    formatChecklistText(recipeDescription),
                     color = Color.LightGray,
                     fontSize = 13.sp
                 )

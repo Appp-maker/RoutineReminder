@@ -37,7 +37,7 @@ fun FoodBundlePickerDialog(
                             Text(bundle.name, style = MaterialTheme.typography.titleMedium)
                             if (bundle.description.isNotBlank()) {
                                 Text(
-                                    bundle.description,
+                                    formatChecklistText(bundle.description),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }

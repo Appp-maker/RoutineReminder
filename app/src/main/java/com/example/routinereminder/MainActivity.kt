@@ -78,6 +78,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import com.example.routinereminder.ui.components.formatChecklistText
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -1223,7 +1224,7 @@ fun ScheduleItemView(
 
     if (!item.notes.isNullOrBlank()) {
             Text(
-                text = item.notes,
+                text = formatChecklistText(item.notes.orEmpty()),
                 style = MaterialTheme.typography.bodySmall,
                 color = baseTextColor,
                 maxLines = if (isExpanded) Int.MAX_VALUE else 3,
