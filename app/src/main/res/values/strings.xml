@@ -107,6 +107,11 @@
     <string name="calorie_tracker_add_consumed_cancel">Cancel</string>
     <string name="calorie_tracker_quick_log_map">Map session calories</string>
     <string name="calorie_tracker_quick_log_workout">Workout session calories</string>
+    <string name="workout_calorie_adjustment_action">Add workout calories</string>
+    <string name="workout_calorie_adjustment_title">Log workout calories</string>
+    <string name="workout_calorie_adjustment_hint">These calories increase today\u2019s target.</string>
+    <string name="workout_calorie_adjustment_label">Calories</string>
+    <string name="workout_calorie_adjustment_confirm">Add to target</string>
     <string name="workout_tab_placeholder_title">Workout tracking</string>
     <string name="workout_tab_placeholder_body">This tab will be available in a future update.</string>
     <string name="workout_title">Workout programs</string>

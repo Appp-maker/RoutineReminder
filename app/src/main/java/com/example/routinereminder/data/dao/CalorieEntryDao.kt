@@ -12,6 +12,9 @@ interface CalorieEntryDao {
     @Query("SELECT * FROM calorie_entry")
     fun getAll(): Flow<List<CalorieEntry>>
 
+    @Query("SELECT COALESCE(SUM(calories), 0) FROM calorie_entry WHERE dateEpochDay = :dateEpochDay")
+    suspend fun totalCaloriesForDate(dateEpochDay: Long): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(calorieEntry: CalorieEntry)
 }
