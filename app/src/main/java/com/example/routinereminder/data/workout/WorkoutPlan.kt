@@ -21,7 +21,8 @@ data class WorkoutPlanExercise(
 data class WorkoutPlan(
     val id: String,
     val name: String,
-    val exercises: List<WorkoutPlanExercise> = emptyList()
+    val exercises: List<WorkoutPlanExercise> = emptyList(),
+    val caloriesPerWorkout: Int? = null
 )
 
 fun ExerciseDbExercise.toPlanExercise(): WorkoutPlanExercise = WorkoutPlanExercise(

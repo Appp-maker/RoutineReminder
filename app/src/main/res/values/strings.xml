@@ -123,6 +123,8 @@
     <string name="workout_plan_delete_body">Delete “%1$s”? This cannot be undone.</string>
     <string name="workout_plan_delete_confirm">Delete</string>
     <string name="workout_plan_remove_exercise">Remove exercise</string>
+    <string name="workout_plan_calories_label">Calories per workout</string>
+    <string name="workout_plan_calories_hint">Use this to prefill quick calorie logging for the selected plan.</string>
     <string name="workout_exercises_title">Find exercises</string>
     <string name="workout_exercises_subtitle">Search or browse ExerciseDB and add items to your plan.</string>
     <string name="workout_download_title">Downloading ExerciseDB for offline use</string>
