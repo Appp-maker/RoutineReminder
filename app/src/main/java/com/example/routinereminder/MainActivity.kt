@@ -602,10 +602,13 @@ fun MainAppUI(
                             )
                         ) { backStackEntry ->
                         val from = backStackEntry.arguments?.getString("from") ?: "default"
-                        val initialCategory = backStackEntry.arguments?.getString("category")
-                            ?.takeIf { it.isNotBlank() }
-                            ?.let { categoryName ->
-                                runCatching { SettingsCategory.valueOf(categoryName.uppercase()) }.getOrNull()
+                        val initialCategory = backStackEntry.arguments
+                            ?.getString("category")
+                            ?.takeIf { value: String -> value.isNotBlank() }
+                            ?.let { categoryName: String ->
+                                runCatching {
+                                    SettingsCategory.valueOf(categoryName.uppercase())
+                                }.getOrNull()
                             }
 
                             SettingsScreen(
