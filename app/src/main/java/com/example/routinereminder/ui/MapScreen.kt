@@ -88,9 +88,9 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.example.routinereminder.R
 
 
-enum class ActivityType(val label: String, val met: Double) {
-    RUN_WALK("Run/Walk", 9.8),
-    CYCLING("Cycling", 8.0)
+enum class ActivityType(val label: String) {
+    RUN_WALK("Run/Walk"),
+    CYCLING("Cycling")
     ;
 
     companion object {
@@ -105,8 +105,6 @@ enum class ActivityType(val label: String, val met: Double) {
     }
 }
 
-private const val RESTING_MET = 1.2
-private const val WALKING_MET = 3.8
 private const val INACTIVITY_TIMEOUT_MS = 60_000L
 
 enum class TrackingMode(val label: String, val value: String) {
@@ -1153,20 +1151,6 @@ private fun computeSplitUpdate(
     )
 }
 
-fun calcCalories(
-    met: Double,
-    weightKg: Double,
-    heightCm: Double,
-    age: Int,
-    gender: String,
-    durationSec: Long
-): Double {
-    val minutes = durationSec / 60.0
-    val metCaloriesPerMinute = (met * 3.5 * weightKg) / 200.0
-
-    return metCaloriesPerMinute * minutes
-}
-
 private fun calcRunWalkCalories(
     weightKg: Double,
     heightCm: Double,
@@ -1175,22 +1159,38 @@ private fun calcRunWalkCalories(
     distanceMeters: Double,
     durationSec: Long
 ): Double {
+    if (distanceMeters <= 0.0 || durationSec <= 0L) return 0.0
+    val distanceKm = distanceMeters / 1000.0
+    val hours = durationSec / 3600.0
+    val speedKmh = if (hours > 0.0) distanceKm / hours else 0.0
+    val paceMinPerKm = if (distanceKm > 0.0) (durationSec / 60.0) / distanceKm else Double.POSITIVE_INFINITY
+
+    val caloriesPerKm = when {
+        paceMinPerKm > 10.0 || speedKmh < 6.0 -> 0.5
+        paceMinPerKm >= 7.5 || speedKmh <= 8.0 -> 0.7
+        else -> 1.0
+    }
+
+    return caloriesPerKm * weightKg * distanceKm
+}
+
+private fun calcCyclingCalories(
+    weightKg: Double,
+    distanceMeters: Double,
+    durationSec: Long
+): Double {
+    if (distanceMeters <= 0.0 || durationSec <= 0L) return 0.0
     val distanceKm = distanceMeters / 1000.0
     val hours = durationSec / 3600.0
     val speedKmh = if (hours > 0.0) distanceKm / hours else 0.0
 
-    return when {
-        speedKmh < 6.0 -> calcCalories(
-            met = WALKING_MET,
-            weightKg = weightKg,
-            heightCm = heightCm,
-            age = age,
-            gender = gender,
-            durationSec = durationSec
-        )
-        speedKmh <= 8.0 -> 0.7 * weightKg * distanceKm
-        else -> 1.0 * weightKg * distanceKm
+    val caloriesPerKm = when {
+        speedKmh < 15.0 -> 0.25
+        speedKmh <= 20.0 -> 0.35
+        else -> 0.5
     }
+
+    return caloriesPerKm * weightKg * distanceKm
 }
 
 fun calcActivityCalories(
@@ -1204,16 +1204,7 @@ fun calcActivityCalories(
     isInactive: Boolean = false
 ): Double {
     if (durationSec <= 0L) return 0.0
-    if (isInactive || distanceMeters <= 0.0) {
-        return calcCalories(
-            met = RESTING_MET,
-            weightKg = weightKg,
-            heightCm = heightCm,
-            age = age,
-            gender = gender,
-            durationSec = durationSec
-        )
-    }
+    if (isInactive || distanceMeters <= 0.0) return 0.0
 
     return when (activity) {
         ActivityType.RUN_WALK -> calcRunWalkCalories(
@@ -1224,12 +1215,9 @@ fun calcActivityCalories(
             distanceMeters = distanceMeters,
             durationSec = durationSec
         )
-        ActivityType.CYCLING -> calcCalories(
-            met = activity.met,
+        ActivityType.CYCLING -> calcCyclingCalories(
             weightKg = weightKg,
-            heightCm = heightCm,
-            age = age,
-            gender = gender,
+            distanceMeters = distanceMeters,
             durationSec = durationSec
         )
     }
