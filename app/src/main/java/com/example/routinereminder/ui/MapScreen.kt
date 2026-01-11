@@ -102,6 +102,9 @@ private enum class ActivityType(val label: String, val met: Double) {
     }
 }
 
+private const val RESTING_MET = 1.2
+private const val INACTIVITY_TIMEOUT_MS = 60_000L
+
 enum class TrackingMode(val label: String, val value: String) {
     BALANCED("Balanced", TrackingService.MODE_BALANCED),
     HIGH_ACCURACY("High accuracy", TrackingService.MODE_HIGH_ACCURACY)
@@ -230,8 +233,15 @@ fun MapScreen(
                 val state = runState ?: continue
                 if (!state.isRecording) continue
                 val nextDuration = state.durationSec + 1
+                val now = System.currentTimeMillis()
+                val inactiveMs = lastMovementAt?.let { now - it } ?: 0L
+                val effectiveMet = if (state.distanceMeters <= 0.0 || inactiveMs >= INACTIVITY_TIMEOUT_MS) {
+                    RESTING_MET
+                } else {
+                    activity.met
+                }
                 val nextCalories = calcCalories(
-                    met = activity.met,
+                    met = effectiveMet,
                     weightKg = calorieProfile.weightKg,
                     heightCm = calorieProfile.heightCm,
                     age = calorieProfile.ageYears,
@@ -1333,12 +1343,13 @@ fun shareSessionImage(
         val durationText = formatHMS(session.durationSec)
 
         // Calories using calcCalories with default values
-        val met = when (session.activity.lowercase()) {
+        val activityMet = when (session.activity.lowercase()) {
             "walking" -> ActivityType.WALKING.met
             "running" -> ActivityType.RUNNING.met
             "cycling" -> ActivityType.CYCLING.met
             else -> ActivityType.RUNNING.met
         }
+        val met = if (session.distanceMeters <= 0.0) RESTING_MET else activityMet
         val caloriesVal = calcCalories(
             met = met,
             weightKg = calorieProfile.weightKg,
