@@ -38,6 +38,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -47,6 +48,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
@@ -74,6 +77,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.LineString
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import android.content.BroadcastReceiver
@@ -174,6 +178,9 @@ fun MapScreen(
     var includeMapInShare by remember { mutableStateOf(true) }
     var selectedActivity by remember { mutableStateOf(ActivityType.RUNNING) }
     var permissionRequired by remember { mutableStateOf(false) }
+    var showManualEntry by rememberSaveable { mutableStateOf(false) }
+    var manualDistanceKm by rememberSaveable { mutableStateOf("") }
+    var manualDurationMin by rememberSaveable { mutableStateOf("") }
 
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
@@ -494,6 +501,75 @@ fun MapScreen(
             }
         )
     }
+    if (showManualEntry) {
+        val distanceKm = manualDistanceKm.toDoubleOrNull()
+        val durationMin = manualDurationMin.toDoubleOrNull()
+        val canSave = distanceKm != null && distanceKm > 0.0 && durationMin != null && durationMin > 0.0
+
+        AlertDialog(
+            onDismissRequest = { showManualEntry = false },
+            title = { Text(text = "Add manual run") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Enter your estimated distance and duration.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ComposeColor.Gray
+                    )
+                    OutlinedTextField(
+                        value = manualDistanceKm,
+                        onValueChange = { manualDistanceKm = it },
+                        label = { Text("Distance (km)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+                    OutlinedTextField(
+                        value = manualDurationMin,
+                        onValueChange = { manualDurationMin = it },
+                        label = { Text("Duration (minutes)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = canSave,
+                    onClick = {
+                        val distanceMeters = (distanceKm ?: 0.0) * 1000.0
+                        val durationSecManual = ((durationMin ?: 0.0) * 60).roundToLong()
+                        val now = System.currentTimeMillis()
+                        val startTime = now - (durationSecManual * 1000)
+                        val pace = avgPaceSecPerKm(distanceMeters, durationSecManual)
+                        val splits = estimateSplits(distanceMeters, durationSecManual)
+
+                        val session = SessionStats(
+                            id = now.toString(),
+                            activity = selectedActivity.label,
+                            startEpochMs = startTime,
+                            endEpochMs = now,
+                            durationSec = durationSecManual,
+                            distanceMeters = distanceMeters,
+                            avgPaceSecPerKm = pace,
+                            splitPaceSecPerKm = splits,
+                            polyline = emptyList()
+                        )
+                        SessionStore.saveSession(context, session)
+                        manualDistanceKm = ""
+                        manualDurationMin = ""
+                        showManualEntry = false
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showManualEntry = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
     Surface(Modifier.fillMaxSize()) {
         Column(
             Modifier
@@ -739,6 +815,17 @@ fun MapScreen(
                             ) {
                                 Text("Log", color = ComposeColor.White)
                             }
+                            Button(
+                                onClick = { showManualEntry = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFF1E88E5)),
+                                shape = RoundedCornerShape(30.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .padding(end = 8.dp)
+                            ) {
+                                Text("Add", color = ComposeColor.White)
+                            }
                         }
 
                         // 🔹 Start / Stop button
@@ -844,7 +931,7 @@ fun MapScreen(
                             modifier = Modifier
                                 .weight(1.5f)
                                 .height(48.dp)
-                                .padding(start = if (isRecording) 0.dp else 8.dp)
+                                .padding(start = if (isRecording) 0.dp else 0.dp)
                         ) {
                             Text(
                                 if (!isRecording) "Start" else "Stop & Share",
@@ -939,6 +1026,14 @@ fun formatHMS(sec: Long): String {
     val m = (sec % 3600) / 60
     val s = sec % 60
     return "%02d:%02d:%02d".format(h, m, s)
+}
+
+private fun estimateSplits(distanceMeters: Double, durationSec: Long): List<Long> {
+    if (distanceMeters <= 0.0 || durationSec <= 0L) return emptyList()
+    val pace = avgPaceSecPerKm(distanceMeters, durationSec)
+    val count = floor(distanceMeters / 1000.0).toInt()
+    if (count <= 0) return emptyList()
+    return List(count) { pace }
 }
 
 private fun zoomToTrailOnMapOpen(map: MapLibreMap, trail: List<Point>) {
