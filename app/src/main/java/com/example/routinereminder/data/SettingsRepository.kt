@@ -3,8 +3,10 @@ package com.example.routinereminder.data
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import java.time.DayOfWeek
 import javax.inject.Inject
 import com.example.routinereminder.location.TrackingService
 
@@ -48,6 +50,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val MAP_TRACKING_MODE = stringPreferencesKey("map_tracking_mode")
     val MAP_CONSUMED_CALORIES_LOGGING_ENABLED = booleanPreferencesKey("map_consumed_calories_logging_enabled")
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
+    val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -62,6 +65,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         const val DEFAULT_IMPORT_TARGET_CALENDAR_ID_FOR_BOTH_MODE = "google_primary"
         const val DEFAULT_EVENT_DURATION_HOURS = 1
         const val DEFAULT_EVENT_DURATION_MINUTES = 0
+        const val MAX_EVENT_SETS = 20
+        const val MAX_ACTIVE_SETS_PER_DAY = 3
     }
 
     suspend fun saveUserSettings(userSettings: UserSettings) {
@@ -160,6 +165,63 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         return dataStore.data.map { preferences ->
             preferences[FOOD_CONSUMED_TRACKING_ENABLED] ?: false
         }.distinctUntilChanged()
+    }
+
+    fun getEventSetNames(): Flow<List<String>> {
+        return dataStore.data.map { preferences ->
+            val storedNames = preferences[EVENT_SET_NAMES].orEmpty()
+            val nameMap = storedNames.mapNotNull { entry ->
+                val parts = entry.split("|", limit = 2)
+                val id = parts.firstOrNull()?.toIntOrNull()
+                val name = parts.getOrNull(1)?.trim().orEmpty()
+                if (id != null && name.isNotBlank()) {
+                    id to name
+                } else {
+                    null
+                }
+            }.toMap()
+
+            List(MAX_EVENT_SETS) { index ->
+                nameMap[index + 1] ?: defaultEventSetName(index)
+            }
+        }
+    }
+
+    suspend fun saveEventSetNames(names: List<String>) {
+        val normalizedNames = names.take(MAX_EVENT_SETS).mapIndexed { index, name ->
+            val finalName = name.trim().ifBlank { defaultEventSetName(index) }
+            "${index + 1}|$finalName"
+        }.toSet()
+        dataStore.edit { preferences ->
+            preferences[EVENT_SET_NAMES] = normalizedNames
+        }
+    }
+
+    fun getDefaultActiveSetsForWeekday(day: DayOfWeek): Flow<Set<Int>> {
+        return dataStore.data.map { preferences ->
+            preferences[defaultEventSetKey(day)].orEmpty()
+                .mapNotNull { it.toIntOrNull() }
+                .filter { it in 1..MAX_EVENT_SETS }
+                .take(MAX_ACTIVE_SETS_PER_DAY)
+                .toSet()
+        }
+    }
+
+    fun getDefaultActiveSetsByWeekday(): Flow<Map<DayOfWeek, Set<Int>>> {
+        val flows = DayOfWeek.values().map { day -> getDefaultActiveSetsForWeekday(day) }
+        return combine(flows) { selections ->
+            DayOfWeek.values().zip(selections.toList()).toMap()
+        }
+    }
+
+    suspend fun saveDefaultActiveSetsForWeekday(day: DayOfWeek, setIds: Set<Int>) {
+        val normalized = setIds.filter { it in 1..MAX_EVENT_SETS }
+            .take(MAX_ACTIVE_SETS_PER_DAY)
+            .map { it.toString() }
+            .toSet()
+        dataStore.edit { preferences ->
+            preferences[defaultEventSetKey(day)] = normalized
+        }
     }
 
     suspend fun saveDefaultEventSettings(settings: DefaultEventSettings) {
@@ -378,5 +440,14 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         return dataStore.data.map { preferences ->
             preferences[EXERCISE_DB_CACHE_TOTAL]
         }
+    }
+
+    private fun defaultEventSetName(index: Int): String {
+        val letter = ('A' + index)
+        return "Set $letter"
+    }
+
+    private fun defaultEventSetKey(day: DayOfWeek): Preferences.Key<Set<String>> {
+        return stringSetPreferencesKey("default_event_sets_${day.name.lowercase()}")
     }
 }

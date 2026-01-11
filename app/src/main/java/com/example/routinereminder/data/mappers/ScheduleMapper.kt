@@ -22,7 +22,8 @@ fun ScheduleItem.toEntity(): Schedule = Schedule(
     calendarEventId = calendarEventId,
     origin = origin,
     targetCalendarSystem = targetCalendarSystem,
-    colorArgb = colorArgb
+    colorArgb = colorArgb,
+    setId = setId
 )
 
 // Map from Room entity → UI model
@@ -46,5 +47,6 @@ fun Schedule.toItem(): ScheduleItem =
         origin = origin,
         targetCalendarSystem = targetCalendarSystem,
         colorArgb = colorArgb,
+        setId = setId,
         isDone = isDone
     )

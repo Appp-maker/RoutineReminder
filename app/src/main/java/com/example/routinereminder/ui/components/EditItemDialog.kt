@@ -47,6 +47,7 @@ fun EditItemDialog(
     initialItem: ScheduleItem?,
     defaultEventSettings: DefaultEventSettings,
     useGoogleBackupMode: Boolean, // Added parameter
+    eventSetNames: List<String>,
     onDismissRequest: () -> Unit,
     onSave: (ScheduleItem) -> Unit
 ) {
@@ -121,6 +122,8 @@ fun EditItemDialog(
     var selectedColorArgb by remember(initialItem) {
         mutableStateOf(initialItem?.colorArgb ?: DEFAULT_SERIES_COLOR_ARGB)
     }
+    var selectedSetId by remember(initialItem) { mutableStateOf(initialItem?.setId) }
+    var setMenuExpanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
@@ -193,7 +196,8 @@ fun EditItemDialog(
                 targetCalendarSystem = finalTargetCalendarSystem,
                 notifyEnabled = notifyEnabled,
                 showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false,
-                colorArgb = selectedColorArgb
+                colorArgb = selectedColorArgb,
+                setId = selectedSetId
             )
         } else {
             val currentRepeatDaysToSave = selectedRepeatDays.takeIf { it.isNotEmpty() }
@@ -226,7 +230,8 @@ fun EditItemDialog(
                 targetCalendarSystem = finalTargetCalendarSystem,
                 notifyEnabled = notifyEnabled,
                 showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false,
-                colorArgb = selectedColorArgb
+                colorArgb = selectedColorArgb,
+                setId = selectedSetId
             )
         }
         if (itemToSave.name.isNotBlank()) {
@@ -327,6 +332,49 @@ fun EditItemDialog(
                         selectedColor = Color(selectedColorArgb),
                         onColorSelected = { selectedColorArgb = it.toArgb() }
                     )
+                    Spacer(Modifier.height(16.dp))
+
+                    Text(stringResource(R.string.event_set_label), style = MaterialTheme.typography.labelMedium)
+                    ExposedDropdownMenuBox(
+                        expanded = setMenuExpanded,
+                        onExpandedChange = { setMenuExpanded = !setMenuExpanded }
+                    ) {
+                        val selectedSetLabel = selectedSetId?.let { id ->
+                            eventSetNames.getOrNull(id - 1)
+                        } ?: stringResource(R.string.event_set_none)
+                        OutlinedTextField(
+                            value = selectedSetLabel,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.event_set_label)) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = setMenuExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = setMenuExpanded,
+                            onDismissRequest = { setMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.event_set_none)) },
+                                onClick = {
+                                    selectedSetId = null
+                                    setMenuExpanded = false
+                                }
+                            )
+                            eventSetNames.forEachIndexed { index, name ->
+                                val setId = index + 1
+                                DropdownMenuItem(
+                                    text = { Text(name) },
+                                    onClick = {
+                                        selectedSetId = setId
+                                        setMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { isOneTime = !isOneTime }) {

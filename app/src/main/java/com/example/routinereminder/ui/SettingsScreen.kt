@@ -9,6 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -37,6 +38,8 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.util.*
+import java.time.DayOfWeek
+import java.time.format.TextStyle
 
 fun censorEmailForDisplay(email: String?): String? {
     if (email.isNullOrBlank()) return null
@@ -123,6 +126,8 @@ fun SettingsScreen(
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     val currentMapCaloriesLoggingEnabled by viewModel.mapCaloriesLoggingEnabled.collectAsState()
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
+    val eventSetNames by viewModel.eventSetNames.collectAsState()
+    val defaultActiveSetsByWeekday by viewModel.defaultActiveSetsByWeekday.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
     val selectedGoogleAccountName by viewModel.selectedGoogleAccountName.collectAsState()
@@ -158,6 +163,8 @@ fun SettingsScreen(
     var calendarSyncCalendarToAppEnabled by remember(currentCalendarSyncCalendarToAppEnabled) { mutableStateOf(currentCalendarSyncCalendarToAppEnabled) }
     var mapCaloriesLoggingEnabledChecked by remember(currentMapCaloriesLoggingEnabled) { mutableStateOf(currentMapCaloriesLoggingEnabled) }
     var foodConsumedTrackingEnabledChecked by remember(currentFoodConsumedTrackingEnabled) { mutableStateOf(currentFoodConsumedTrackingEnabled) }
+    val eventSetNameInputs = remember { mutableStateListOf<String>() }
+    var defaultActiveSetSelections by remember { mutableStateOf<Map<DayOfWeek, Set<Int>>>(emptyMap()) }
 
 
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
@@ -214,6 +221,15 @@ fun SettingsScreen(
         calendarSyncCalendarToAppEnabled = currentCalendarSyncCalendarToAppEnabled
         mapCaloriesLoggingEnabledChecked = currentMapCaloriesLoggingEnabled
         justSavedSuccessfully = false
+    }
+
+    LaunchedEffect(eventSetNames) {
+        eventSetNameInputs.clear()
+        eventSetNameInputs.addAll(eventSetNames)
+    }
+
+    LaunchedEffect(defaultActiveSetsByWeekday) {
+        defaultActiveSetSelections = defaultActiveSetsByWeekday
     }
 
     LaunchedEffect(Unit) {
@@ -427,6 +443,8 @@ fun SettingsScreen(
                         viewModel.updateShowAllEvents(showAllEventsChecked)
                         viewModel.saveMapCaloriesLoggingEnabled(mapCaloriesLoggingEnabledChecked)
                         viewModel.saveFoodConsumedTrackingEnabled(foodConsumedTrackingEnabledChecked)
+                        viewModel.saveEventSetNames(eventSetNameInputs.toList())
+                        viewModel.saveDefaultActiveSetsByWeekday(defaultActiveSetSelections)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
                         } else {
@@ -576,6 +594,22 @@ fun SettingsScreen(
                         showDetailsInNotificationChecked = showDetailsInNotificationChecked,
                         onShowDetailsInNotificationChange = { showDetailsInNotificationChecked = it; justSavedSuccessfully = false },
                         selectedGoogleAccountName = selectedGoogleAccountName
+                    )
+                    EventSetsSettingsSection(
+                        eventSetNames = eventSetNameInputs,
+                        defaultActiveSetsByWeekday = defaultActiveSetSelections,
+                        onEventSetNameChange = { index, name ->
+                            if (index in eventSetNameInputs.indices) {
+                                eventSetNameInputs[index] = name
+                                justSavedSuccessfully = false
+                            }
+                        },
+                        onDefaultActiveSetsChange = { day, selections ->
+                            defaultActiveSetSelections = defaultActiveSetSelections.toMutableMap().apply {
+                                put(day, selections)
+                            }
+                            justSavedSuccessfully = false
+                        }
                     )
                     SettingsCategory.SYNC -> {
                         DataSyncSettingsSection(
@@ -1291,6 +1325,81 @@ private fun DefaultEventsSettingsSection(
     Text(stringResource(R.string.settings_default_events_notification_options_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
     SettingSwitchItem(text = stringResource(R.string.settings_default_events_system_notification), checked = systemNotificationChecked, onCheckedChange = onSystemNotificationChange)
     SettingSwitchItem(text = stringResource(R.string.settings_default_events_show_details_notification), checked = showDetailsInNotificationChecked, enabled = systemNotificationChecked, onCheckedChange = onShowDetailsInNotificationChange)
+    Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Composable
+private fun EventSetsSettingsSection(
+    eventSetNames: List<String>,
+    defaultActiveSetsByWeekday: Map<DayOfWeek, Set<Int>>,
+    onEventSetNameChange: (Int, String) -> Unit,
+    onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit
+) {
+    val context = LocalContext.current
+    Text(stringResource(R.string.settings_event_sets_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
+    Text(
+        text = stringResource(R.string.settings_event_sets_description),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+
+    eventSetNames.forEachIndexed { index, name ->
+        val label = stringResource(R.string.settings_event_set_name_label, ('A' + index))
+        OutlinedTextField(
+            value = name,
+            onValueChange = { onEventSetNameChange(index, it.take(24)) },
+            label = { Text(label) },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        )
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(R.string.settings_event_sets_defaults_title), style = MaterialTheme.typography.titleMedium)
+    Text(
+        text = stringResource(R.string.settings_event_sets_defaults_hint, SettingsRepository.MAX_ACTIVE_SETS_PER_DAY),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+
+    DayOfWeek.values().forEach { day ->
+        val selections = defaultActiveSetsByWeekday[day].orEmpty()
+        Text(
+            text = day.getDisplayName(TextStyle.FULL, Locale.getDefault()),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(eventSetNames.size) { index ->
+                val setId = index + 1
+                val isSelected = selections.contains(setId)
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        val updated = selections.toMutableSet()
+                        if (isSelected) {
+                            updated.remove(setId)
+                            onDefaultActiveSetsChange(day, updated)
+                        } else {
+                            if (updated.size >= SettingsRepository.MAX_ACTIVE_SETS_PER_DAY) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.settings_event_sets_limit_reached, SettingsRepository.MAX_ACTIVE_SETS_PER_DAY),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                updated.add(setId)
+                                onDefaultActiveSetsChange(day, updated)
+                            }
+                        }
+                    },
+                    label = { Text(eventSetNames[index]) }
+                )
+            }
+        }
+    }
+
     Spacer(modifier = Modifier.height(16.dp))
 }
 

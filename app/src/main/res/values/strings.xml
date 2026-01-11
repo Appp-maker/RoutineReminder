@@ -95,6 +95,16 @@
     <string name="settings_map_log_daily_calories_hint">Uses your running history for today instead of manual entry on the map.</string>
     <string name="settings_calorie_track_consumed">Track consumed foods with checkboxes</string>
     <string name="settings_calorie_track_consumed_hint">When enabled, calories start at 0 until you check foods as consumed.</string>
+    <string name="settings_event_sets_title">Event Sets</string>
+    <string name="settings_event_sets_description">Name up to 20 sets to organize alternative plans.</string>
+    <string name="settings_event_set_name_label">Set %1$c name</string>
+    <string name="settings_event_sets_defaults_title">Default active sets by weekday</string>
+    <string name="settings_event_sets_defaults_hint">Choose up to %1$d sets that are active by default for each weekday.</string>
+    <string name="settings_event_sets_limit_reached">You can select up to %1$d sets per day.</string>
+    <string name="event_set_label">Event set</string>
+    <string name="event_set_none">No set</string>
+    <string name="event_sets_active_today">Active sets for this day</string>
+    <string name="event_sets_max_selected">You can enable up to %1$d sets per day.</string>
     <string name="map_calories_log_empty_toast">No run calories saved for today yet.</string>
 
     <!-- Tabs -->
