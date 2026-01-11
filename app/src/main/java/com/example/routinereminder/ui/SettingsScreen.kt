@@ -73,6 +73,7 @@ enum class SettingsCategory {
     PROFILE,
     SYNC,
     DEFAULT_EVENTS,
+    MAP,
     APP
 }
 
@@ -92,7 +93,7 @@ fun SettingsScreen(
      val initialCategory = when (from) {
          "routine" -> if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else SettingsCategory.SYNC
          "calories" -> if (caloriesEnabled) SettingsCategory.PROFILE else SettingsCategory.SYNC
-         "map" -> SettingsCategory.APP
+         "map" -> SettingsCategory.MAP
          else -> SettingsCategory.SYNC
      }
 
@@ -454,15 +455,18 @@ fun SettingsScreen(
                     "routine" -> listOfNotNull(
                         if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else null,
                         SettingsCategory.SYNC,
+                        SettingsCategory.MAP,
                         SettingsCategory.APP
                     )
                     "calories" -> listOfNotNull(
                         if (caloriesEnabled) SettingsCategory.PROFILE else null,
                         SettingsCategory.SYNC,
+                        SettingsCategory.MAP,
                         SettingsCategory.APP
                     )
                     else -> listOf(
                         SettingsCategory.SYNC,
+                        SettingsCategory.MAP,
                         SettingsCategory.APP
                     )
 
@@ -493,6 +497,7 @@ fun SettingsScreen(
                                 SettingsCategory.PROFILE -> "Profile"
                                 SettingsCategory.DEFAULT_EVENTS -> stringResource(R.string.settings_category_default_events)
                                 SettingsCategory.SYNC -> stringResource(R.string.settings_category_sync)
+                                SettingsCategory.MAP -> stringResource(R.string.settings_category_map)
                                 SettingsCategory.APP -> stringResource(R.string.settings_category_app)
                             }
 
@@ -618,6 +623,15 @@ fun SettingsScreen(
                             selectedGoogleAccountName = selectedGoogleAccountName // Pass down
                         )
                     }
+                    SettingsCategory.MAP -> MapSettingsSection(
+                        mapCaloriesLoggingEnabled = mapCaloriesLoggingEnabledChecked,
+                        onMapCaloriesLoggingEnabledChange = { mapCaloriesLoggingEnabledChecked = it; justSavedSuccessfully = false },
+                        trackingMode = TrackingMode.fromValue(mapTrackingMode),
+                        onTrackingModeChange = { mode ->
+                            viewModel.saveMapTrackingMode(mode.value)
+                            justSavedSuccessfully = false
+                        }
+                    )
                     SettingsCategory.APP -> AppSettingsSection(
                         context = context,
                         selectedTabs = selectedTabs,
@@ -636,14 +650,7 @@ fun SettingsScreen(
                             accountNameToManage = account
                             showDataManagementDialog = source
                         },
-                        calendarEventCounts = calendarEventCounts,
-                        mapCaloriesLoggingEnabled = mapCaloriesLoggingEnabledChecked,
-                        onMapCaloriesLoggingEnabledChange = { mapCaloriesLoggingEnabledChecked = it; justSavedSuccessfully = false },
-                        trackingMode = TrackingMode.fromValue(mapTrackingMode),
-                        onTrackingModeChange = { mode ->
-                            viewModel.saveMapTrackingMode(mode.value)
-                            justSavedSuccessfully = false
-                        }
+                        calendarEventCounts = calendarEventCounts
                     )
                 }
             }
@@ -1250,69 +1257,15 @@ private fun DefaultEventsSettingsSection(
 }
 
 @Composable
-private fun AppSettingsSection(
-    context: Context,
-    selectedTabs: Set<AppTab>,
-    onTabSelectionChange: (Set<AppTab>) -> Unit,
-    selectedGoogleAccountName: String?,
-    showAllEvents: Boolean,
-    onShowAllEventsChange: (Boolean) -> Unit,
-    onDataManagementClick: (String, String?) -> Unit,
-    calendarEventCounts: CalendarEventCounts,
+private fun MapSettingsSection(
     mapCaloriesLoggingEnabled: Boolean,
     onMapCaloriesLoggingEnabledChange: (Boolean) -> Unit,
     trackingMode: TrackingMode,
     onTrackingModeChange: (TrackingMode) -> Unit
 ) {
-    var backupSyncHoursInputText by remember { mutableStateOf("1") }
-    var backupSyncMinutesInputText by remember { mutableStateOf("0") }
-    val isGoogleAccountSelected = selectedGoogleAccountName != null
-    var showAboutDialog by remember { mutableStateOf(false) }
-    var showCreditsDialog by remember { mutableStateOf(false) }
-    var showLegalDialog by remember { mutableStateOf(false) }
     var trackingMenuExpanded by remember { mutableStateOf(false) }
 
-    if (showAboutDialog) {
-        AlertDialog(
-            onDismissRequest = { showAboutDialog = false },
-            title = { Text(stringResource(R.string.settings_app_about_action)) },
-            text = { Text(stringResource(R.string.settings_app_about_body)) },
-            confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) {
-                    Text(stringResource(R.string.alert_action_close))
-                }
-            }
-        )
-    }
-
-    if (showCreditsDialog) {
-        AlertDialog(
-            onDismissRequest = { showCreditsDialog = false },
-            title = { Text(stringResource(R.string.settings_app_credits_action)) },
-            text = { Text(stringResource(R.string.settings_app_credits_body)) },
-            confirmButton = {
-                TextButton(onClick = { showCreditsDialog = false }) {
-                    Text(stringResource(R.string.alert_action_close))
-                }
-            }
-        )
-    }
-
-    if (showLegalDialog) {
-        AlertDialog(
-            onDismissRequest = { showLegalDialog = false },
-            title = { Text(stringResource(R.string.settings_app_legal_action)) },
-            text = { Text(stringResource(R.string.settings_app_legal_body)) },
-            confirmButton = {
-                TextButton(onClick = { showLegalDialog = false }) {
-                    Text(stringResource(R.string.alert_action_close))
-                }
-            }
-        )
-    }
-
-    Text(stringResource(R.string.settings_app_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
-    Text("General", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.settings_category_map), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1358,6 +1311,67 @@ private fun AppSettingsSection(
         modifier = Modifier.padding(bottom = 8.dp)
     )
     Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Composable
+private fun AppSettingsSection(
+    context: Context,
+    selectedTabs: Set<AppTab>,
+    onTabSelectionChange: (Set<AppTab>) -> Unit,
+    selectedGoogleAccountName: String?,
+    showAllEvents: Boolean,
+    onShowAllEventsChange: (Boolean) -> Unit,
+    onDataManagementClick: (String, String?) -> Unit,
+    calendarEventCounts: CalendarEventCounts
+) {
+    var backupSyncHoursInputText by remember { mutableStateOf("1") }
+    var backupSyncMinutesInputText by remember { mutableStateOf("0") }
+    val isGoogleAccountSelected = selectedGoogleAccountName != null
+    var showAboutDialog by remember { mutableStateOf(false) }
+    var showCreditsDialog by remember { mutableStateOf(false) }
+    var showLegalDialog by remember { mutableStateOf(false) }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = { Text(stringResource(R.string.settings_app_about_action)) },
+            text = { Text(stringResource(R.string.settings_app_about_body)) },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) {
+                    Text(stringResource(R.string.alert_action_close))
+                }
+            }
+        )
+    }
+
+    if (showCreditsDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreditsDialog = false },
+            title = { Text(stringResource(R.string.settings_app_credits_action)) },
+            text = { Text(stringResource(R.string.settings_app_credits_body)) },
+            confirmButton = {
+                TextButton(onClick = { showCreditsDialog = false }) {
+                    Text(stringResource(R.string.alert_action_close))
+                }
+            }
+        )
+    }
+
+    if (showLegalDialog) {
+        AlertDialog(
+            onDismissRequest = { showLegalDialog = false },
+            title = { Text(stringResource(R.string.settings_app_legal_action)) },
+            text = { Text(stringResource(R.string.settings_app_legal_body)) },
+            confirmButton = {
+                TextButton(onClick = { showLegalDialog = false }) {
+                    Text(stringResource(R.string.alert_action_close))
+                }
+            }
+        )
+    }
+
+    Text(stringResource(R.string.settings_app_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
+    Text("General", style = MaterialTheme.typography.titleMedium)
     Text(stringResource(R.string.settings_tabs_title), style = MaterialTheme.typography.titleMedium)
     Text(
         text = stringResource(R.string.settings_tabs_description),
