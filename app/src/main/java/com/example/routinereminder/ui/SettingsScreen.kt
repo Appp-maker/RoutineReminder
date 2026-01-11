@@ -569,7 +569,9 @@ fun SettingsScreen(
                         onSystemNotificationChange = { newValue -> systemNotificationChecked = newValue; if (!newValue) showDetailsInNotificationChecked = false; justSavedSuccessfully = false },
                         showDetailsInNotificationChecked = showDetailsInNotificationChecked,
                         onShowDetailsInNotificationChange = { showDetailsInNotificationChecked = it; justSavedSuccessfully = false },
-                        selectedGoogleAccountName = selectedGoogleAccountName // Pass down
+                        selectedGoogleAccountName = selectedGoogleAccountName,
+                        showAllEvents = showAllEventsChecked,
+                        onShowAllEventsChange = { showAllEventsChecked = it; justSavedSuccessfully = false }
                     )
                     SettingsCategory.SYNC -> {
                         DataSyncSettingsSection(
@@ -648,8 +650,6 @@ fun SettingsScreen(
                             }
                         },
                         selectedGoogleAccountName = selectedGoogleAccountName,
-                        showAllEvents = showAllEventsChecked,
-                        onShowAllEventsChange = { showAllEventsChecked = it },
                         onDataManagementClick = { source, account ->
                             accountNameToManage = account
                             showDataManagementDialog = source
@@ -1158,7 +1158,9 @@ private fun DefaultEventsSettingsSection(
     onSystemNotificationChange: (Boolean) -> Unit,
     showDetailsInNotificationChecked: Boolean,
     onShowDetailsInNotificationChange: (Boolean) -> Unit,
-    selectedGoogleAccountName: String?
+    selectedGoogleAccountName: String?,
+    showAllEvents: Boolean,
+    onShowAllEventsChange: (Boolean) -> Unit
 ) {
     Text(stringResource(R.string.settings_default_events_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
     Text(stringResource(R.string.settings_default_events_start_time), style = MaterialTheme.typography.titleMedium)
@@ -1258,6 +1260,17 @@ private fun DefaultEventsSettingsSection(
     SettingSwitchItem(text = stringResource(R.string.settings_default_events_system_notification), checked = systemNotificationChecked, onCheckedChange = onSystemNotificationChange)
     SettingSwitchItem(text = stringResource(R.string.settings_default_events_show_details_notification), checked = showDetailsInNotificationChecked, enabled = systemNotificationChecked, onCheckedChange = onShowDetailsInNotificationChange)
     Spacer(modifier = Modifier.height(16.dp))
+    SettingSwitchItem(
+        text = "Show all events",
+        checked = showAllEvents,
+        onCheckedChange = onShowAllEventsChange
+    )
+    Text(
+        text = "Warning: This will show events from all calendars, even those you are not syncing from. This may cause unexpected behavior.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    )
+    Spacer(modifier = Modifier.height(16.dp))
 }
 
 @Composable
@@ -1323,8 +1336,6 @@ private fun AppSettingsSection(
     selectedTabs: Set<AppTab>,
     onTabSelectionChange: (Set<AppTab>) -> Unit,
     selectedGoogleAccountName: String?,
-    showAllEvents: Boolean,
-    onShowAllEventsChange: (Boolean) -> Unit,
     onDataManagementClick: (String, String?) -> Unit,
     calendarEventCounts: CalendarEventCounts
 ) {
@@ -1459,17 +1470,6 @@ private fun AppSettingsSection(
             enabled = isGoogleAccountSelected
         )
     }
-
-    SettingSwitchItem(
-        text = "Show all events",
-        checked = showAllEvents,
-        onCheckedChange = onShowAllEventsChange
-    )
-    Text(
-        text = "Warning: This will show events from all calendars, even those you are not syncing from. This may cause unexpected behavior.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-    )
 
     Spacer(modifier = Modifier.height(16.dp))
     Text("Data Management", style = MaterialTheme.typography.titleMedium)
