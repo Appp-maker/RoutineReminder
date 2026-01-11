@@ -82,7 +82,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
-import com.example.routinereminder.ui.components.formatChecklistText
+import com.example.routinereminder.ui.components.checklistCompletionState
+import com.example.routinereminder.ui.components.formatChecklistLineText
+import com.example.routinereminder.ui.components.parseChecklistLines
+import com.example.routinereminder.ui.components.toggleChecklistLine
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -939,7 +942,17 @@ private fun ScheduleItemListContent(
                         currentDate = currentDate,
                         isDoneToday = isDoneToday,
                         eventSetColors = eventSetColors,
-                        onLongPress = onLongPress
+                        onLongPress = onLongPress,
+                        onChecklistUpdate = { updatedItem, updatedNotes, completion ->
+                            viewModel.upsertScheduleItem(updatedItem.copy(notes = updatedNotes))
+                            if (completion.hasCheckboxes) {
+                                if (completion.allChecked) {
+                                    viewModel.markScheduleItemDone(updatedItem, currentDate.toEpochDay())
+                                } else {
+                                    viewModel.unmarkScheduleItemDone(updatedItem, currentDate.toEpochDay())
+                                }
+                            }
+                        }
                     )
                 }
                 DisplayScheduleItem.NowIndicator -> {
@@ -1318,9 +1331,11 @@ fun ScheduleItemView(
     currentDate: LocalDate,
     isDoneToday: Boolean,
     eventSetColors: List<Int>,
-    onLongPress: (ScheduleItem) -> Unit
+    onLongPress: (ScheduleItem) -> Unit,
+    onChecklistUpdate: (ScheduleItem, String, com.example.routinereminder.ui.components.ChecklistCompletion) -> Unit
 ) {
     var isExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
+    var notesText by remember(item.id, item.notes) { mutableStateOf(item.notes.orEmpty()) }
     val timeString = String.format(Locale.getDefault(), "%02d:%02d", item.hour, item.minute)
     val realNowDateTime = LocalDateTime.now()
     val itemAbsoluteStartDateTime = currentDate.atTime(item.hour, item.minute)
@@ -1381,7 +1396,8 @@ fun ScheduleItemView(
             .fillMaxWidth()
             .background(rowBackgroundColor)
             .combinedClickable(
-                onClick = { isExpanded = !isExpanded },
+                onClick = { },
+                onDoubleClick = { isExpanded = !isExpanded },
                 onLongClick = { onLongPress(item) }
             )
             .padding(vertical = 4.dp, horizontal = 2.dp)
@@ -1503,21 +1519,59 @@ fun ScheduleItemView(
                 }
             }
         }
-        if (!item.notes.isNullOrBlank()) {
-            Text(
-                text = formatChecklistText(item.notes.orEmpty()),
-                style = MaterialTheme.typography.bodySmall,
-                color = baseTextColor,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis,
+        if (notesText.isNotBlank()) {
+            val checklistLines = remember(notesText) { parseChecklistLines(notesText) }
+            val visibleChecklistLines = if (isExpanded) checklistLines else checklistLines.take(3)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(rowBackgroundColor)
                     .padding(vertical = 0.dp, horizontal = 2.dp)
-
                     .animateContentSize()
-
-            )
+            ) {
+                visibleChecklistLines.forEachIndexed { index, line ->
+                    if (line.hasCheckbox) {
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Checkbox(
+                                checked = line.isChecked,
+                                onCheckedChange = {
+                                    val updatedNotes = toggleChecklistLine(notesText, index)
+                                    notesText = updatedNotes
+                                    onChecklistUpdate(
+                                        item,
+                                        updatedNotes,
+                                        checklistCompletionState(updatedNotes)
+                                    )
+                                },
+                                modifier = Modifier.padding(end = 6.dp)
+                            )
+                            Text(
+                                text = formatChecklistLineText(line.text),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = baseTextColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = formatChecklistLineText(line.text),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = baseTextColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                Text(
+                    text = if (isExpanded) "Double tap to collapse description." else "Double tap to expand description.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
         }
     }
 
