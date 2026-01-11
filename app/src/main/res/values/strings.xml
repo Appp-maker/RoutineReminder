@@ -106,6 +106,7 @@
     <string name="event_set_none">No set</string>
     <string name="event_sets_active_today">Active sets for this day</string>
     <string name="event_sets_max_selected">You can enable up to %1$d sets per day.</string>
+    <string name="event_sets_select_label">Select active sets</string>
     <string name="map_calories_log_empty_toast">No run calories saved for today yet.</string>
 
     <!-- Tabs -->
