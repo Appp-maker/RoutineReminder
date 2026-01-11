@@ -945,6 +945,8 @@ fun WorkoutScreen(
     }
 }
 
+}
+
 @Composable
 private fun WorkoutPlanExerciseRow(
     exercise: WorkoutPlanExercise,
