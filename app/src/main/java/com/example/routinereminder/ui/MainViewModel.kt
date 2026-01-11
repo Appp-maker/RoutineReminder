@@ -853,7 +853,10 @@ class MainViewModel @Inject constructor(
 
                 val filtered = itemsForDate
                     .filter { item -> item.setId == null || item.setId in effectiveActiveSetIds }
-                    .sortedBy { item -> item.hour * 60 + item.minute }
+                    .sortedWith(
+                        compareBy<ScheduleItem> { it.durationMinutes }
+                            .thenBy { item -> item.hour * 60 + item.minute }
+                    )
 
                 withContext(Dispatchers.Main) {
                     _scheduleItems.value = filtered
