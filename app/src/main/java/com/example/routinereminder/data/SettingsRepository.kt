@@ -15,6 +15,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val USER_AGE = intPreferencesKey("user_age")
     val USER_GENDER = stringPreferencesKey("user_gender")
     val USER_ACTIVITY_LEVEL = stringPreferencesKey("user_activity_level")
+    val USER_CUSTOM_CALORIES_TARGET = doublePreferencesKey("user_custom_calories_target")
 
     val SYNC_INTERVAL_MINUTES = longPreferencesKey("sync_interval_minutes")
     val CLOUD_SYNC_ENABLED = booleanPreferencesKey("cloud_sync_enabled")
@@ -64,6 +65,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             preferences[USER_AGE] = userSettings.age
             preferences[USER_GENDER] = userSettings.gender.name
             preferences[USER_ACTIVITY_LEVEL] = userSettings.activityLevel.name
+            preferences[USER_CUSTOM_CALORIES_TARGET] = userSettings.customCaloriesTarget
         }
     }
 
@@ -74,6 +76,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             val age = preferences[USER_AGE]
             val gender = preferences[USER_GENDER]?.let { Gender.valueOf(it) }
             val activityLevel = preferences[USER_ACTIVITY_LEVEL]?.let { ActivityLevel.valueOf(it) }
+            val customCaloriesTarget = preferences[USER_CUSTOM_CALORIES_TARGET] ?: 0.0
 
             if (weightKg != null && heightCm != null && age != null && gender != null && activityLevel != null) {
                 UserSettings(
@@ -81,7 +84,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
                     heightCm = heightCm,
                     age = age,
                     gender = gender,
-                    activityLevel = activityLevel
+                    activityLevel = activityLevel,
+                    customCaloriesTarget = customCaloriesTarget
                 )
             } else {
                 null

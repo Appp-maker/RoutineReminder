@@ -99,10 +99,11 @@ fun SettingsScreen(
      var selectedCategory by remember(from, enabledTabs) { mutableStateOf(initialCategory) }
 
 
-     val userSettings by viewModel.userSettings.collectAsState()
+    val userSettings by viewModel.userSettings.collectAsState()
     var weightInput by remember { mutableStateOf("") }
     var heightInput by remember { mutableStateOf("") }
     var ageInput by remember { mutableStateOf("") }
+    var customCaloriesInput by remember { mutableStateOf("") }
     var selectedGender by remember { mutableStateOf(Gender.MALE) }
     var selectedActivityLevel by remember { mutableStateOf(ActivityLevel.SEDENTARY) }
 
@@ -164,6 +165,7 @@ fun SettingsScreen(
             weightInput = it.weightKg.toString()
             heightInput = it.heightCm.toString()
             ageInput = it.age.toString()
+            customCaloriesInput = it.customCaloriesTarget.takeIf { value -> value > 0.0 }?.toString() ?: ""
             selectedGender = it.gender
             selectedActivityLevel = it.activityLevel
         }
@@ -234,7 +236,7 @@ fun SettingsScreen(
     }
 
     val hasUnsavedChanges by remember(
-        weightInput, heightInput, ageInput, selectedGender, selectedActivityLevel, userSettings,
+        weightInput, heightInput, ageInput, customCaloriesInput, selectedGender, selectedActivityLevel, userSettings,
         syncHoursInputText, syncMinutesInputText, currentSyncInterval,
         defaultEventHourState, defaultEventMinuteState, startTimeOption,
         defaultDurationHoursText, defaultDurationMinutesText,
@@ -254,6 +256,7 @@ fun SettingsScreen(
             if (weightInput.toDoubleOrNull() != userSettings?.weightKg) return@derivedStateOf true
             if (heightInput.toDoubleOrNull() != userSettings?.heightCm) return@derivedStateOf true
             if (ageInput.toIntOrNull() != userSettings?.age) return@derivedStateOf true
+            if ((customCaloriesInput.toDoubleOrNull() ?: 0.0) != userSettings?.customCaloriesTarget) return@derivedStateOf true
             if (selectedGender != userSettings?.gender) return@derivedStateOf true
             if (selectedActivityLevel != userSettings?.activityLevel) return@derivedStateOf true
             val syncH = syncHoursInputText.toLongOrNull() ?: 0L
@@ -332,7 +335,8 @@ fun SettingsScreen(
                             heightCm = heightInput.toDoubleOrNull() ?: 0.0,
                             age = ageInput.toIntOrNull() ?: 0,
                             gender = selectedGender,
-                            activityLevel = selectedActivityLevel
+                            activityLevel = selectedActivityLevel,
+                            customCaloriesTarget = customCaloriesInput.toDoubleOrNull() ?: 0.0
                         )
                         viewModel.saveUserSettings(newSettings)
 
@@ -485,6 +489,8 @@ fun SettingsScreen(
                         onHeightChange = { heightInput = it },
                         age = ageInput,
                         onAgeChange = { ageInput = it },
+                        customCalories = customCaloriesInput,
+                        onCustomCaloriesChange = { customCaloriesInput = it },
                         gender = selectedGender,
                         onGenderChange = { selectedGender = it },
                         activityLevel = selectedActivityLevel,
@@ -708,6 +714,8 @@ fun ProfileSettingsSection(
     onHeightChange: (String) -> Unit,
     age: String,
     onAgeChange: (String) -> Unit,
+    customCalories: String,
+    onCustomCaloriesChange: (String) -> Unit,
     gender: Gender,
     onGenderChange: (Gender) -> Unit,
     activityLevel: ActivityLevel,
@@ -735,6 +743,14 @@ fun ProfileSettingsSection(
             value = age,
             onValueChange = onAgeChange,
             label = { Text("Age") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = customCalories,
+            onValueChange = onCustomCaloriesChange,
+            label = { Text("Daily calories target (optional)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )

@@ -8,7 +8,8 @@ data class UserSettings(
     val heightCm: Double,
     val age: Int,
     val gender: Gender,
-    val activityLevel: ActivityLevel
+    val activityLevel: ActivityLevel,
+    val customCaloriesTarget: Double
 )
 
 enum class Gender {
