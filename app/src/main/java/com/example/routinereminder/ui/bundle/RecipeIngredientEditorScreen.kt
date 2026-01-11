@@ -11,9 +11,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -29,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
 import androidx.navigation.NavController
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.ui.Screen
 import java.util.Locale
@@ -119,268 +125,282 @@ fun RecipeIngredientEditorScreen(
     val numericKeyboard = KeyboardOptions(keyboardType = KeyboardType.Number)
     val decimalKeyboard = KeyboardOptions(keyboardType = KeyboardType.Decimal)
 
-    Column(
-        modifier = Modifier
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Text(
-            text = if (ingredientId == null) "Add Ingredient" else "Edit Ingredient",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Text(
-            text = "Nutrition values should be entered per 100 g of the ingredient.",
-            style = MaterialTheme.typography.bodySmall
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            IngredientModeButton(
-                text = "Custom",
-                selected = entryMode == IngredientEntryMode.CUSTOM,
-                onClick = {
-                    entryMode = IngredientEntryMode.CUSTOM
-                    hasNonCustomSelection = false
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(if (ingredientId == null) "Add Ingredient" else "Edit Ingredient")
                 },
-                modifier = Modifier.weight(1f)
-            )
-            IngredientModeButton(
-                text = "Scan barcode",
-                selected = entryMode == IngredientEntryMode.BARCODE,
-                onClick = {
-                    entryMode = IngredientEntryMode.BARCODE
-                    hasNonCustomSelection = false
-                },
-                modifier = Modifier.weight(1f)
-            )
-            IngredientModeButton(
-                text = "Search",
-                selected = entryMode == IngredientEntryMode.SEARCH,
-                onClick = {
-                    entryMode = IngredientEntryMode.SEARCH
-                    hasNonCustomSelection = false
-                },
-                modifier = Modifier.weight(1f)
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
             )
         }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Nutrition values should be entered per 100 g of the ingredient.",
+                style = MaterialTheme.typography.bodySmall
+            )
 
-        Text(
-            text = "Source: Open Food Facts (ODbL v1.0)",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        when (entryMode) {
-            IngredientEntryMode.CUSTOM -> {
-                Text(
-                    text = "Enter ingredient details manually.",
-                    style = MaterialTheme.typography.bodySmall
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IngredientModeButton(
+                    text = "Custom",
+                    selected = entryMode == IngredientEntryMode.CUSTOM,
+                    onClick = {
+                        entryMode = IngredientEntryMode.CUSTOM
+                        hasNonCustomSelection = false
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                IngredientModeButton(
+                    text = "Scan barcode",
+                    selected = entryMode == IngredientEntryMode.BARCODE,
+                    onClick = {
+                        entryMode = IngredientEntryMode.BARCODE
+                        hasNonCustomSelection = false
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                IngredientModeButton(
+                    text = "Search",
+                    selected = entryMode == IngredientEntryMode.SEARCH,
+                    onClick = {
+                        entryMode = IngredientEntryMode.SEARCH
+                        hasNonCustomSelection = false
+                    },
+                    modifier = Modifier.weight(1f)
                 )
             }
 
-            IngredientEntryMode.BARCODE -> {
-                Text(
-                    text = "Scan a barcode to pull nutrition data.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Button(
-                    onClick = { navController.navigate(Screen.BarcodeScanner.route) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Open barcode scanner")
-                }
-                barcodeError?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+            Text(
+                text = "Source: Open Food Facts (ODbL v1.0)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-            IngredientEntryMode.SEARCH -> {
-                Text(
-                    text = "Search for an ingredient and select the best match.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    label = { Text("Search Open Food Facts") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Button(
-                    onClick = { viewModel.searchFood(searchQuery) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Search")
-                }
-                searchError?.let {
+            when (entryMode) {
+                IngredientEntryMode.CUSTOM -> {
                     Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        text = "Enter ingredient details manually.",
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
-                if (searchResults.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        searchResults.forEach { product ->
-                            FoodSearchResultCard(
-                                product = product,
-                                onSelect = {
-                                    applyFoodProduct(product)
-                                    hasNonCustomSelection = true
-                                    searchQuery = product.name
-                                    viewModel.clearSearchResults()
-                                }
-                            )
+
+                IngredientEntryMode.BARCODE -> {
+                    Text(
+                        text = "Scan a barcode to pull nutrition data.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Button(
+                        onClick = { navController.navigate(Screen.BarcodeScanner.route) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Open barcode scanner")
+                    }
+                    barcodeError?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                IngredientEntryMode.SEARCH -> {
+                    Text(
+                        text = "Search for an ingredient and select the best match.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        label = { Text("Search Open Food Facts") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button(
+                        onClick = { viewModel.searchFood(searchQuery) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Search")
+                    }
+                    searchError?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    if (searchResults.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            searchResults.forEach { product ->
+                                FoodSearchResultCard(
+                                    product = product,
+                                    onSelect = {
+                                        applyFoodProduct(product)
+                                        hasNonCustomSelection = true
+                                        searchQuery = product.name
+                                        viewModel.clearSearchResults()
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if (entryMode == IngredientEntryMode.CUSTOM || hasNonCustomSelection) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Ingredient name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = grams,
-                onValueChange = { grams = it },
-                label = { Text("Amount (g)") },
-                keyboardOptions = numericKeyboard,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = calories,
-                onValueChange = { calories = it },
-                label = { Text("Calories (kcal per 100 g)") },
-                keyboardOptions = decimalKeyboard,
-                enabled = entryMode == IngredientEntryMode.CUSTOM,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = protein,
-                onValueChange = { protein = it },
-                label = { Text("Protein (g per 100 g)") },
-                keyboardOptions = decimalKeyboard,
-                enabled = entryMode == IngredientEntryMode.CUSTOM,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = carbs,
-                onValueChange = { carbs = it },
-                label = { Text("Carbs (g per 100 g)") },
-                keyboardOptions = decimalKeyboard,
-                enabled = entryMode == IngredientEntryMode.CUSTOM,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = fat,
-                onValueChange = { fat = it },
-                label = { Text("Fat (g per 100 g)") },
-                keyboardOptions = decimalKeyboard,
-                enabled = entryMode == IngredientEntryMode.CUSTOM,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = fiber,
-                onValueChange = { fiber = it },
-                label = { Text("Fiber (g per 100 g)") },
-                keyboardOptions = decimalKeyboard,
-                enabled = entryMode == IngredientEntryMode.CUSTOM,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = saturatedFat,
-                onValueChange = { saturatedFat = it },
-                label = { Text("Saturated fat (g per 100 g)") },
-                keyboardOptions = decimalKeyboard,
-                enabled = entryMode == IngredientEntryMode.CUSTOM,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = addedSugars,
-                onValueChange = { addedSugars = it },
-                label = { Text("Added sugars (g per 100 g)") },
-                keyboardOptions = decimalKeyboard,
-                enabled = entryMode == IngredientEntryMode.CUSTOM,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = sodium,
-                onValueChange = { sodium = it },
-                label = { Text("Sodium (mg per 100 g)") },
-                keyboardOptions = decimalKeyboard,
-                enabled = entryMode == IngredientEntryMode.CUSTOM,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        val gramsValue = grams.toIntOrNull()
-        val caloriesValue = calories.toDoubleOrNull()
-        val proteinValue = protein.toDoubleOrNull()
-        val carbsValue = carbs.toDoubleOrNull()
-        val fatValue = fat.toDoubleOrNull()
-        val fiberValue = fiber.toDoubleOrNull()
-        val saturatedFatValue = saturatedFat.toDoubleOrNull()
-        val addedSugarsValue = addedSugars.toDoubleOrNull()
-        val sodiumValue = sodium.toDoubleOrNull()
-
-        val canSave = name.isNotBlank()
-            && gramsValue != null
-            && gramsValue > 0
-            && caloriesValue != null
-            && proteinValue != null
-            && carbsValue != null
-            && fatValue != null
-            && fiberValue != null
-            && saturatedFatValue != null
-            && addedSugarsValue != null
-            && sodiumValue != null
-
-        Button(
-            enabled = canSave,
-            onClick = {
-                val gramsDouble = gramsValue?.toDouble() ?: 0.0
-                val portionFactor = if (gramsDouble > 0.0) gramsDouble / 100.0 else 0.0
-                viewModel.upsertIngredient(
-                    ingredientId = ingredientId,
-                    bundleId = bundleId,
-                    name = name,
-                    portionSizeG = gramsValue ?: 0,
-                    calories = (caloriesValue ?: 0.0) * portionFactor,
-                    proteinG = (proteinValue ?: 0.0) * portionFactor,
-                    carbsG = (carbsValue ?: 0.0) * portionFactor,
-                    fatG = (fatValue ?: 0.0) * portionFactor,
-                    fiberG = (fiberValue ?: 0.0) * portionFactor,
-                    saturatedFatG = (saturatedFatValue ?: 0.0) * portionFactor,
-                    addedSugarsG = (addedSugarsValue ?: 0.0) * portionFactor,
-                    sodiumMg = (sodiumValue ?: 0.0) * portionFactor
+            if (entryMode == IngredientEntryMode.CUSTOM || hasNonCustomSelection) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Ingredient name") },
+                    modifier = Modifier.fillMaxWidth()
                 )
-                navController.popBackStack()
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(if (ingredientId == null) "Save ingredient" else "Update ingredient")
+
+                OutlinedTextField(
+                    value = grams,
+                    onValueChange = { grams = it },
+                    label = { Text("Amount (g)") },
+                    keyboardOptions = numericKeyboard,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = calories,
+                    onValueChange = { calories = it },
+                    label = { Text("Calories (kcal per 100 g)") },
+                    keyboardOptions = decimalKeyboard,
+                    enabled = entryMode == IngredientEntryMode.CUSTOM,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = protein,
+                    onValueChange = { protein = it },
+                    label = { Text("Protein (g per 100 g)") },
+                    keyboardOptions = decimalKeyboard,
+                    enabled = entryMode == IngredientEntryMode.CUSTOM,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = carbs,
+                    onValueChange = { carbs = it },
+                    label = { Text("Carbs (g per 100 g)") },
+                    keyboardOptions = decimalKeyboard,
+                    enabled = entryMode == IngredientEntryMode.CUSTOM,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = fat,
+                    onValueChange = { fat = it },
+                    label = { Text("Fat (g per 100 g)") },
+                    keyboardOptions = decimalKeyboard,
+                    enabled = entryMode == IngredientEntryMode.CUSTOM,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = fiber,
+                    onValueChange = { fiber = it },
+                    label = { Text("Fiber (g per 100 g)") },
+                    keyboardOptions = decimalKeyboard,
+                    enabled = entryMode == IngredientEntryMode.CUSTOM,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = saturatedFat,
+                    onValueChange = { saturatedFat = it },
+                    label = { Text("Saturated fat (g per 100 g)") },
+                    keyboardOptions = decimalKeyboard,
+                    enabled = entryMode == IngredientEntryMode.CUSTOM,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = addedSugars,
+                    onValueChange = { addedSugars = it },
+                    label = { Text("Added sugars (g per 100 g)") },
+                    keyboardOptions = decimalKeyboard,
+                    enabled = entryMode == IngredientEntryMode.CUSTOM,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = sodium,
+                    onValueChange = { sodium = it },
+                    label = { Text("Sodium (mg per 100 g)") },
+                    keyboardOptions = decimalKeyboard,
+                    enabled = entryMode == IngredientEntryMode.CUSTOM,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            val gramsValue = grams.toIntOrNull()
+            val caloriesValue = calories.toDoubleOrNull()
+            val proteinValue = protein.toDoubleOrNull()
+            val carbsValue = carbs.toDoubleOrNull()
+            val fatValue = fat.toDoubleOrNull()
+            val fiberValue = fiber.toDoubleOrNull()
+            val saturatedFatValue = saturatedFat.toDoubleOrNull()
+            val addedSugarsValue = addedSugars.toDoubleOrNull()
+            val sodiumValue = sodium.toDoubleOrNull()
+
+            val canSave = name.isNotBlank()
+                && gramsValue != null
+                && gramsValue > 0
+                && caloriesValue != null
+                && proteinValue != null
+                && carbsValue != null
+                && fatValue != null
+                && fiberValue != null
+                && saturatedFatValue != null
+                && addedSugarsValue != null
+                && sodiumValue != null
+
+            Button(
+                enabled = canSave,
+                onClick = {
+                    val gramsDouble = gramsValue?.toDouble() ?: 0.0
+                    val portionFactor = if (gramsDouble > 0.0) gramsDouble / 100.0 else 0.0
+                    viewModel.upsertIngredient(
+                        ingredientId = ingredientId,
+                        bundleId = bundleId,
+                        name = name,
+                        portionSizeG = gramsValue ?: 0,
+                        calories = (caloriesValue ?: 0.0) * portionFactor,
+                        proteinG = (proteinValue ?: 0.0) * portionFactor,
+                        carbsG = (carbsValue ?: 0.0) * portionFactor,
+                        fatG = (fatValue ?: 0.0) * portionFactor,
+                        fiberG = (fiberValue ?: 0.0) * portionFactor,
+                        saturatedFatG = (saturatedFatValue ?: 0.0) * portionFactor,
+                        addedSugarsG = (addedSugarsValue ?: 0.0) * portionFactor,
+                        sodiumMg = (sodiumValue ?: 0.0) * portionFactor
+                    )
+                    navController.popBackStack()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (ingredientId == null) "Save ingredient" else "Update ingredient")
+            }
         }
     }
 }
