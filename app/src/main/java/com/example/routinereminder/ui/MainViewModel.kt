@@ -301,7 +301,7 @@ class MainViewModel @Inject constructor(
             }
         }
 
-        applyDefaultActiveSetsForDate(_selectedDate.value)
+        applyActiveSetsForDate(_selectedDate.value)
         refreshScheduleItems()
     }
 
