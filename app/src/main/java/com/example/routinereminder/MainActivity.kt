@@ -1533,7 +1533,7 @@ fun ScheduleItemView(
                 visibleChecklistLines.forEachIndexed { index, line ->
                     if (line.hasCheckbox) {
                         Row(
-                            verticalAlignment = Alignment.Top,
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Checkbox(
