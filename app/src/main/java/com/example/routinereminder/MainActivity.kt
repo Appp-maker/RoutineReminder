@@ -98,6 +98,7 @@ import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.ui.CalorieTrackerScreen
 import com.example.routinereminder.ui.AppTab
 import com.example.routinereminder.ui.MainViewModel
+import com.example.routinereminder.ui.SettingsCategory
 import com.example.routinereminder.ui.SettingsScreen
 import com.example.routinereminder.ui.WorkoutScreen
 import com.example.routinereminder.ui.bundle.BundleDetailScreen
@@ -462,6 +463,7 @@ fun MainAppUI(
                                 eventSetColors = eventSetColors,
                                 activeSetIds = activeSetIds,
                                 availableSetIds = availableSetIds,
+                                hasManualActiveSetsForDate = hasManualActiveSetsForDate,
                                 onPreviousDay = { viewModel.selectPreviousDay() },
                                 onNextDay = { viewModel.selectNextDay() },
                                 onDateSelected = viewModel::selectDate,
@@ -1157,6 +1159,7 @@ fun MainScreenContent(
     eventSetColors: List<Int>,
     activeSetIds: Set<Int>,
     availableSetIds: Set<Int>,
+    hasManualActiveSetsForDate: Boolean,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onDateSelected: (LocalDate) -> Unit,
