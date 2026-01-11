@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,7 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -33,22 +34,11 @@ import androidx.compose.ui.unit.dp
 import com.example.routinereminder.R
 import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
 import com.example.routinereminder.data.SERIES_COLOR_OPTIONS
+import kotlin.math.roundToInt
 
 val SeriesColorOptions = SERIES_COLOR_OPTIONS.map { Color(it) }
 
 fun defaultSeriesColorArgb(): Int = DEFAULT_SERIES_COLOR_ARGB
-
-private data class NamedColor(val name: String, val color: Color)
-
-private fun colorNameForSelection(namedColors: List<NamedColor>, color: Color): String {
-    return namedColors.firstOrNull { it.color.toArgb() == color.toArgb() }?.name.orEmpty()
-}
-
-private fun parseNamedColor(namedColors: List<NamedColor>, input: String): Color? {
-    val cleaned = input.trim().lowercase()
-    if (cleaned.isEmpty()) return null
-    return namedColors.firstOrNull { it.name.lowercase() == cleaned }?.color
-}
 
 @Composable
 fun SeriesColorPicker(
@@ -61,23 +51,10 @@ fun SeriesColorPicker(
     showLabel: Boolean = true,
     allowCustomColor: Boolean = true
 ) {
-    val namedColors = listOf(
-        NamedColor(stringResource(R.string.color_name_blue), Color(DEFAULT_SERIES_COLOR_ARGB)),
-        NamedColor(stringResource(R.string.color_name_green), Color(0xFF43A047)),
-        NamedColor(stringResource(R.string.color_name_orange), Color(0xFFF4511E)),
-        NamedColor(stringResource(R.string.color_name_purple), Color(0xFF8E24AA)),
-        NamedColor(stringResource(R.string.color_name_yellow), Color(0xFFFDD835)),
-        NamedColor(stringResource(R.string.color_name_teal), Color(0xFF00897B)),
-        NamedColor(stringResource(R.string.color_name_brown), Color(0xFF6D4C41)),
-        NamedColor(stringResource(R.string.color_name_pink), Color(0xFFD81B60))
-    )
-    val namedColorList = namedColors.joinToString(", ") { it.name }
-    var customColorInput by remember { mutableStateOf(colorNameForSelection(namedColors, selectedColor)) }
-    var customColorError by remember { mutableStateOf(false) }
+    var customColor by remember { mutableStateOf(selectedColor) }
 
     LaunchedEffect(selectedColor) {
-        customColorInput = colorNameForSelection(namedColors, selectedColor)
-        customColorError = false
+        customColor = selectedColor
     }
 
     Column(modifier = modifier) {
@@ -110,23 +87,96 @@ fun SeriesColorPicker(
         }
         if (allowCustomColor) {
             Spacer(modifier = Modifier.height(10.dp))
-            OutlinedTextField(
-                value = customColorInput,
-                onValueChange = { newValue ->
-                    customColorInput = newValue
-                    val parsed = parseNamedColor(namedColors, newValue)
-                    customColorError = parsed == null && newValue.isNotBlank()
-                    if (parsed != null) {
-                        onColorSelected(parsed)
-                    }
-                },
-                label = { Text(stringResource(R.string.custom_color_label)) },
-                supportingText = { Text(stringResource(R.string.custom_color_helper, namedColorList)) },
-                isError = customColorError,
+            val red = (customColor.red * 255).roundToInt().coerceIn(0, 255)
+            val green = (customColor.green * 255).roundToInt().coerceIn(0, 255)
+            val blue = (customColor.blue * 255).roundToInt().coerceIn(0, 255)
+            val hexValue = String.format("#%02X%02X%02X", red, green, blue)
+
+            Text(
+                stringResource(R.string.custom_color_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(customColor, CircleShape)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = hexValue,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            ColorChannelSlider(
+                label = stringResource(R.string.custom_color_red_label),
+                value = red,
                 enabled = enabled,
-                singleLine = true
+                onValueChange = { newRed ->
+                    val nextColor = Color(newRed / 255f, green / 255f, blue / 255f)
+                    customColor = nextColor
+                    onColorSelected(nextColor)
+                }
+            )
+            ColorChannelSlider(
+                label = stringResource(R.string.custom_color_green_label),
+                value = green,
+                enabled = enabled,
+                onValueChange = { newGreen ->
+                    val nextColor = Color(red / 255f, newGreen / 255f, blue / 255f)
+                    customColor = nextColor
+                    onColorSelected(nextColor)
+                }
+            )
+            ColorChannelSlider(
+                label = stringResource(R.string.custom_color_blue_label),
+                value = blue,
+                enabled = enabled,
+                onValueChange = { newBlue ->
+                    val nextColor = Color(red / 255f, green / 255f, newBlue / 255f)
+                    customColor = nextColor
+                    onColorSelected(nextColor)
+                }
             )
         }
+    }
+}
+
+@Composable
+private fun ColorChannelSlider(
+    label: String,
+    value: Int,
+    enabled: Boolean,
+    onValueChange: (Int) -> Unit
+) {
+    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            )
+            Text(
+                text = value.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            )
+        }
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.roundToInt().coerceIn(0, 255)) },
+            valueRange = 0f..255f,
+            steps = 254,
+            enabled = enabled
+        )
     }
 }
 
