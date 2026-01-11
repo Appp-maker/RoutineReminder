@@ -451,25 +451,29 @@ fun SettingsScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
+                val includeMapTab = from == "map"
                 val allowedCategories = when (from) {
                     "routine" -> listOfNotNull(
                         if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else null,
                         SettingsCategory.SYNC,
-                        SettingsCategory.MAP,
+                        if (includeMapTab) SettingsCategory.MAP else null,
                         SettingsCategory.APP
                     )
                     "calories" -> listOfNotNull(
                         if (caloriesEnabled) SettingsCategory.PROFILE else null,
+                        SettingsCategory.SYNC,
+                        if (includeMapTab) SettingsCategory.MAP else null,
+                        SettingsCategory.APP
+                    )
+                    "map" -> listOf(
                         SettingsCategory.SYNC,
                         SettingsCategory.MAP,
                         SettingsCategory.APP
                     )
                     else -> listOf(
                         SettingsCategory.SYNC,
-                        SettingsCategory.MAP,
                         SettingsCategory.APP
                     )
-
                 }
 
 // ⚠ Ensure invalid category gets corrected:
