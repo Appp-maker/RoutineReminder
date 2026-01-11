@@ -958,7 +958,7 @@ fun WorkoutScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Box(
-                        modifier = Modifier.size(width = 36.dp, height = sliderHeight),
+                        modifier = Modifier.size(width = sliderHeight, height = 36.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Slider(
@@ -980,7 +980,7 @@ fun WorkoutScreen(
                             valueRange = 0f..sliderRangeMax,
                             steps = alphabet.size - 2,
                             modifier = Modifier
-                                .fillMaxHeight()
+                                .fillMaxWidth()
                                 .rotate(-90f)
                                 .scale(1.2f),
                             colors = SliderDefaults.colors(
@@ -1041,7 +1041,6 @@ private fun WorkoutPlanExerciseRow(
                     text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                     style = MaterialTheme.typography.bodySmall
                 )
-                ExerciseGifUrlText(gifUrl = exercise.gifUrl)
                 summary?.let {
                     Text(
                         text = it,
@@ -1206,7 +1205,6 @@ private fun ExerciseSearchRow(
                     text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                     style = MaterialTheme.typography.bodySmall
                 )
-                ExerciseGifUrlText(gifUrl = exercise.gifUrl)
             }
             IconButton(onClick = onAdd) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.workout_exercise_add))
@@ -1305,21 +1303,6 @@ private fun ExercisePreviewDialog(
                 Text(stringResource(R.string.alert_action_ok))
             }
         }
-    )
-}
-
-@Composable
-private fun ExerciseGifUrlText(gifUrl: String?) {
-    val text = if (!gifUrl.isNullOrBlank()) {
-        stringResource(R.string.workout_exercise_gif_url, gifUrl)
-    } else {
-        stringResource(R.string.workout_exercise_gif_url_unavailable)
-    }
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
     )
 }
 

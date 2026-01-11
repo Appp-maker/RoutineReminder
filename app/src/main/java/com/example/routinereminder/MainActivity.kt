@@ -1522,6 +1522,7 @@ fun ScheduleItemView(
         if (notesText.isNotBlank()) {
             val checklistLines = remember(notesText) { parseChecklistLines(notesText) }
             val visibleChecklistLines = if (isExpanded) checklistLines else checklistLines.take(3)
+            val checklistTextIndent = 54.dp
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1532,7 +1533,7 @@ fun ScheduleItemView(
                 visibleChecklistLines.forEachIndexed { index, line ->
                     if (line.hasCheckbox) {
                         Row(
-                            verticalAlignment = Alignment.Top,
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Checkbox(
@@ -1561,6 +1562,7 @@ fun ScheduleItemView(
                             text = formatChecklistLineText(line.text),
                             style = MaterialTheme.typography.bodySmall,
                             color = baseTextColor,
+                            modifier = Modifier.padding(start = checklistTextIndent),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
