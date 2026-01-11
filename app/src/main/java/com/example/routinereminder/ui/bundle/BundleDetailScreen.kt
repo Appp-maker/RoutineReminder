@@ -425,6 +425,8 @@ fun BundleDetailScreen(
     }
 }
 
+}
+
 @Composable
 fun IngredientSummaryRow(item: RecipeIngredient) {
     Column(
