@@ -1493,9 +1493,7 @@ fun ScheduleItemView(
                 }
             }
         }
-    }
-
-    if (!item.notes.isNullOrBlank()) {
+        if (!item.notes.isNullOrBlank()) {
             Text(
                 text = formatChecklistText(item.notes.orEmpty()),
                 style = MaterialTheme.typography.bodySmall,
