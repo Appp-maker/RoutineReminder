@@ -541,6 +541,13 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun resetManualActiveEventSets() {
+        viewModelScope.launch {
+            settingsRepository.clearManualActiveEventSets()
+            applyActiveSetsForDate(_selectedDate.value)
+        }
+    }
+
     private fun applyActiveSetsForDate(date: LocalDate) {
         viewModelScope.launch {
             val saved = settingsRepository.getActiveSetsForDate(date).first()

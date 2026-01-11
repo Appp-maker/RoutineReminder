@@ -616,6 +616,10 @@ fun SettingsScreen(
                         eventSetNames = eventSetNameInputs,
                         eventSetColors = eventSetColorInputs,
                         defaultActiveSetsByWeekday = defaultActiveSetSelections,
+                        onResetManualActiveSets = {
+                            viewModel.resetManualActiveEventSets()
+                            justSavedSuccessfully = false
+                        },
                         onEventSetNameChange = { index, name ->
                             if (index in eventSetNameInputs.indices) {
                                 eventSetNameInputs[index] = name
@@ -1357,11 +1361,13 @@ private fun EventSetsSettingsSection(
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
     defaultActiveSetsByWeekday: Map<DayOfWeek, Set<Int>>,
+    onResetManualActiveSets: () -> Unit,
     onEventSetNameChange: (Int, String) -> Unit,
     onEventSetColorChange: (Int, Int) -> Unit,
     onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit
 ) {
     val context = LocalContext.current
+    var showResetDialog by remember { mutableStateOf(false) }
     Text(stringResource(R.string.settings_event_sets_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Text(
         text = stringResource(R.string.settings_event_sets_description),
@@ -1369,6 +1375,39 @@ private fun EventSetsSettingsSection(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         modifier = Modifier.padding(bottom = 12.dp)
     )
+    OutlinedButton(
+        onClick = { showResetDialog = true },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(stringResource(R.string.settings_event_sets_reset_manual_action))
+    }
+    Text(
+        text = stringResource(R.string.settings_event_sets_reset_manual_warning),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
+    )
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text(stringResource(R.string.settings_event_sets_reset_manual_title)) },
+            text = { Text(stringResource(R.string.settings_event_sets_reset_manual_confirm)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showResetDialog = false
+                    onResetManualActiveSets()
+                }) {
+                    Text(stringResource(R.string.settings_event_sets_reset_manual_confirm_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text(stringResource(R.string.alert_action_cancel))
+                }
+            }
+        )
+    }
 
     eventSetNames.forEachIndexed { index, name ->
         val label = stringResource(R.string.settings_event_set_name_label, ('A' + index))

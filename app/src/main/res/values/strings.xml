@@ -97,6 +97,11 @@
     <string name="settings_calorie_track_consumed_hint">When enabled, calories start at 0 until you check foods as consumed.</string>
     <string name="settings_event_sets_title">Event Sets</string>
     <string name="settings_event_sets_description">Name up to 20 sets to organize alternative plans.</string>
+    <string name="settings_event_sets_reset_manual_action">Reset manual active sets</string>
+    <string name="settings_event_sets_reset_manual_warning">Warning: This clears all manually selected active sets for specific dates.</string>
+    <string name="settings_event_sets_reset_manual_title">Reset manual active sets</string>
+    <string name="settings_event_sets_reset_manual_confirm">This will remove every manually selected active set override so days fall back to the weekday defaults. Continue?</string>
+    <string name="settings_event_sets_reset_manual_confirm_action">Reset manual sets</string>
     <string name="settings_event_set_name_label">Set %1$c name</string>
     <string name="settings_event_set_color_label">Set %1$c color</string>
     <string name="settings_event_sets_defaults_title">Default active sets by weekday</string>

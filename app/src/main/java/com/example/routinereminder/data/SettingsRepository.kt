@@ -275,6 +275,17 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }
     }
 
+    suspend fun clearManualActiveEventSets() {
+        dataStore.edit { preferences ->
+            val keysToRemove = preferences.asMap().keys.filter { key ->
+                key.name.startsWith("active_event_sets_")
+            }
+            keysToRemove.forEach { key ->
+                preferences.remove(key)
+            }
+        }
+    }
+
     suspend fun saveDefaultEventSettings(settings: DefaultEventSettings) {
         dataStore.edit { preferences ->
             preferences[DEFAULT_EVENT_HOUR] = settings.hour
