@@ -278,7 +278,7 @@ fun MapScreen(
     }
 
     LaunchedEffect(runState?.sessionId, runState?.isRecording) {
-        showResumePrompt = runState != null && !isTrackingServiceRunning(context)
+        showResumePrompt = runState?.isRecording == true && !isTrackingServiceRunning(context)
     }
 
     LaunchedEffect(runState?.sessionId, splitDurations.size) {
