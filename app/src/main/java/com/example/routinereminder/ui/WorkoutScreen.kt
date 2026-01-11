@@ -63,6 +63,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -82,6 +83,7 @@ import com.example.routinereminder.data.workout.WorkoutPlan
 import com.example.routinereminder.data.workout.WorkoutPlanExercise
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.SettingsIconButton
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import androidx.navigation.NavController
@@ -911,31 +913,17 @@ fun WorkoutScreen(
                 }.sorted()
             }
             val sliderRangeMax = alphabet.lastIndex.toFloat()
-            val edgeSnapThreshold = sliderRangeMax * 0.1f
             fun sliderValueToIndex(value: Float): Int {
-                val clamped = value.coerceIn(0f, sliderRangeMax)
-                return when {
-                    clamped <= edgeSnapThreshold -> 0
-                    clamped >= sliderRangeMax - edgeSnapThreshold -> alphabet.lastIndex
-                    else -> {
-                        val normalized = (clamped - edgeSnapThreshold) / (sliderRangeMax - (edgeSnapThreshold * 2))
-                        (normalized * alphabet.lastIndex).roundToInt().coerceIn(0, alphabet.lastIndex)
-                    }
-                }
+                val reversed = sliderRangeMax - value
+                return reversed.roundToInt().coerceIn(0, alphabet.lastIndex)
             }
             fun indexToSliderValue(index: Int): Float {
-                val clamped = index.coerceIn(0, alphabet.lastIndex)
-                return when (clamped) {
-                    0 -> 0f
-                    alphabet.lastIndex -> sliderRangeMax
-                    else -> {
-                        val normalized = clamped.toFloat() / alphabet.lastIndex.toFloat()
-                        edgeSnapThreshold + (normalized * (sliderRangeMax - (edgeSnapThreshold * 2)))
-                    }
-                }
+                val clamped = index.coerceIn(0, alphabet.lastIndex).toFloat()
+                return sliderRangeMax - clamped
             }
             var sliderValue by remember { mutableStateOf(0f) }
             var isDragging by remember { mutableStateOf(false) }
+            var sliderVisible by remember { mutableStateOf(true) }
             val sliderLetter by remember(sliderValue, availableLetterIndices) {
                 derivedStateOf {
                     val targetIndex = sliderValueToIndex(sliderValue)
@@ -949,49 +937,59 @@ fun WorkoutScreen(
                     sliderValue = indexToSliderValue(index)
                 }
             }
+            LaunchedEffect(isDragging, exerciseListState.isScrollInProgress) {
+                if (isDragging || exerciseListState.isScrollInProgress) {
+                    sliderVisible = true
+                } else {
+                    delay(2000)
+                    sliderVisible = false
+                }
+            }
             val showScrollIndicator = isDragging || exerciseListState.isScrollInProgress
             val scrollIndicatorLetter = if (isDragging) sliderLetter else currentLetter
             val configuration = LocalConfiguration.current
             val sliderHeight = maxOf(240.dp, (configuration.screenHeightDp * 0.65f).dp)
-            Column(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(
-                    modifier = Modifier.size(width = sliderHeight, height = 36.dp),
-                    contentAlignment = Alignment.Center
+            if (sliderVisible) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 0.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { value ->
-                            sliderValue = value
-                            isDragging = true
-                            val targetIndex = sliderValueToIndex(value)
-                            val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
-                            val targetLetter = nearestIndex?.let { alphabet[it] } ?: return@Slider
-                            val listIndex = letterIndexMap[targetLetter] ?: return@Slider
-                            coroutineScope.launch {
-                                exerciseListState.scrollToItem(
-                                    index = exerciseStartIndex + listIndex
-                                )
-                            }
-                        },
-                        onValueChangeFinished = { isDragging = false },
-                        valueRange = 0f..sliderRangeMax,
-                        steps = alphabet.size - 2,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .rotate(-90f)
-                            .scale(1.2f),
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
-                            activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                    Box(
+                        modifier = Modifier.size(width = 36.dp, height = sliderHeight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Slider(
+                            value = sliderValue,
+                            onValueChange = { value ->
+                                sliderValue = value
+                                isDragging = true
+                                val targetIndex = sliderValueToIndex(value)
+                                val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
+                                val targetLetter = nearestIndex?.let { alphabet[it] } ?: return@Slider
+                                val listIndex = letterIndexMap[targetLetter] ?: return@Slider
+                                coroutineScope.launch {
+                                    exerciseListState.scrollToItem(
+                                        index = exerciseStartIndex + listIndex
+                                    )
+                                }
+                            },
+                            onValueChangeFinished = { isDragging = false },
+                            valueRange = 0f..sliderRangeMax,
+                            steps = alphabet.size - 2,
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .rotate(-90f)
+                                .scale(1.2f),
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                                activeTrackColor = Color.Transparent,
+                                inactiveTrackColor = Color.Transparent
+                            )
                         )
-                    )
+                    }
                 }
             }
             if (showScrollIndicator && scrollIndicatorLetter != null) {
