@@ -16,19 +16,45 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.routinereminder.R
 import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
 import com.example.routinereminder.data.SERIES_COLOR_OPTIONS
 
 val SeriesColorOptions = SERIES_COLOR_OPTIONS.map { Color(it) }
 
 fun defaultSeriesColorArgb(): Int = DEFAULT_SERIES_COLOR_ARGB
+
+private fun colorToHex(color: Color): String {
+    val rgb = color.toArgb() and 0x00FFFFFF
+    return String.format("#%06X", rgb)
+}
+
+private fun parseHexColor(input: String): Color? {
+    val cleaned = input.trim().removePrefix("#")
+    if (cleaned.length != 6 && cleaned.length != 8) return null
+    if (!cleaned.matches(Regex("[0-9a-fA-F]+"))) return null
+    val value = cleaned.toLong(16)
+    val argb = if (cleaned.length == 6) {
+        0xFF000000L or value
+    } else {
+        value
+    }
+    return Color(argb.toInt())
+}
 
 @Composable
 fun SeriesColorPicker(
@@ -38,8 +64,17 @@ fun SeriesColorPicker(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     colorOptions: List<Color> = SeriesColorOptions,
-    showLabel: Boolean = true
+    showLabel: Boolean = true,
+    allowCustomColor: Boolean = true
 ) {
+    var customColorInput by remember { mutableStateOf(colorToHex(selectedColor)) }
+    var customColorError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedColor) {
+        customColorInput = colorToHex(selectedColor)
+        customColorError = false
+    }
+
     Column(modifier = modifier) {
         if (showLabel) {
             Text(
@@ -67,6 +102,25 @@ fun SeriesColorPicker(
                         .clickable(enabled = enabled) { onColorSelected(color) }
                 )
             }
+        }
+        if (allowCustomColor) {
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedTextField(
+                value = customColorInput,
+                onValueChange = { newValue ->
+                    customColorInput = newValue
+                    val parsed = parseHexColor(newValue)
+                    customColorError = parsed == null && newValue.isNotBlank()
+                    if (parsed != null) {
+                        onColorSelected(parsed)
+                    }
+                },
+                label = { Text(stringResource(R.string.custom_color_label)) },
+                supportingText = { Text(stringResource(R.string.custom_color_helper)) },
+                isError = customColorError,
+                enabled = enabled,
+                singleLine = true
+            )
         }
     }
 }

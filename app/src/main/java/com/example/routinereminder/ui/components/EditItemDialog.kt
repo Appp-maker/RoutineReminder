@@ -401,7 +401,8 @@ fun EditItemDialog(
                         onColorSelected = { selectedColorArgb = it.toArgb() },
                         enabled = !isUsingSetColor,
                         colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else SeriesColorOptions,
-                        showLabel = !isUsingSetColor
+                        showLabel = !isUsingSetColor,
+                        allowCustomColor = !isUsingSetColor
                     )
                     Spacer(Modifier.height(16.dp))
 
