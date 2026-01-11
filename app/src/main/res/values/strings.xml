@@ -144,6 +144,13 @@
     <string name="workout_download_prompt_confirm">Download now</string>
     <string name="workout_download_prompt_dismiss">Not now</string>
     <string name="workout_download_pending_title">Exercise library not downloaded yet</string>
+    <string name="workout_download_notification_title">Exercise library download</string>
+    <string name="workout_download_notification_body">Your exercise library is downloading in the background. You can pause and resume at any time.</string>
+    <string name="workout_download_notification_paused_body">Download paused. Resume to finish fetching the exercise library.</string>
+    <string name="workout_download_paused_title">Download paused</string>
+    <string name="workout_download_pause_action">Pause download</string>
+    <string name="workout_download_resume_action">Resume download</string>
+    <string name="workout_download_notification_dismiss">Hide</string>
     <string name="workout_gif_download_title">Downloading exercise gifs</string>
     <string name="workout_gif_download_progress">Downloaded %1$d of %2$d exercise gifs.</string>
     <string name="workout_search_label">Search exercise name</string>
