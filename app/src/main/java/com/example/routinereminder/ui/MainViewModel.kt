@@ -27,10 +27,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.DayOfWeek
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -119,6 +121,22 @@ class MainViewModel @Inject constructor(
     val mapCaloriesLoggingEnabled: StateFlow<Boolean> = _mapCaloriesLoggingEnabled.asStateFlow()
     private val _foodConsumedTrackingEnabled = MutableStateFlow(false)
     val foodConsumedTrackingEnabled: StateFlow<Boolean> = _foodConsumedTrackingEnabled.asStateFlow()
+
+    private val _eventSetNames = MutableStateFlow(
+        List(SettingsRepository.MAX_EVENT_SETS) { index ->
+            "Set ${('A' + index)}"
+        }
+    )
+    val eventSetNames: StateFlow<List<String>> = _eventSetNames.asStateFlow()
+
+    private val _availableSetIds = MutableStateFlow<Set<Int>>(emptySet())
+    val availableSetIds: StateFlow<Set<Int>> = _availableSetIds.asStateFlow()
+
+    private val _activeSetIds = MutableStateFlow<Set<Int>>(emptySet())
+    val activeSetIds: StateFlow<Set<Int>> = _activeSetIds.asStateFlow()
+
+    private val _defaultActiveSetsByWeekday = MutableStateFlow<Map<DayOfWeek, Set<Int>>>(emptyMap())
+    val defaultActiveSetsByWeekday: StateFlow<Map<DayOfWeek, Set<Int>>> = _defaultActiveSetsByWeekday.asStateFlow()
 
     val showGoogleCalendarChooser = Channel<Unit>()
 
@@ -249,6 +267,16 @@ class MainViewModel @Inject constructor(
                 _foodConsumedTrackingEnabled.value = enabled
             }
         }
+        viewModelScope.launch {
+            settingsRepository.getEventSetNames().collectLatest { names ->
+                _eventSetNames.value = names
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getDefaultActiveSetsByWeekday().collectLatest { defaults ->
+                _defaultActiveSetsByWeekday.value = defaults
+            }
+        }
 
         viewModelScope.launch {
             runSessionRepository.activeRunState.collectLatest { state ->
@@ -258,6 +286,7 @@ class MainViewModel @Inject constructor(
             }
         }
 
+        applyDefaultActiveSetsForDate(_selectedDate.value)
         refreshScheduleItems()
     }
 
@@ -439,6 +468,7 @@ class MainViewModel @Inject constructor(
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
+        applyDefaultActiveSetsForDate(date)
         refreshScheduleItems()
         refreshDoneStatesForDate(date.toEpochDay())
     }
@@ -447,6 +477,7 @@ class MainViewModel @Inject constructor(
     fun selectPreviousDay() {
         val newDate = _selectedDate.value.minusDays(1)
         _selectedDate.value = newDate
+        applyDefaultActiveSetsForDate(newDate)
         refreshScheduleItems()
         refreshDoneStatesForDate(newDate.toEpochDay())
     }
@@ -454,8 +485,47 @@ class MainViewModel @Inject constructor(
     fun selectNextDay() {
         val newDate = _selectedDate.value.plusDays(1)
         _selectedDate.value = newDate
+        applyDefaultActiveSetsForDate(newDate)
         refreshScheduleItems()
         refreshDoneStatesForDate(newDate.toEpochDay())
+    }
+
+    fun toggleActiveSet(setId: Int): Boolean {
+        if (setId !in _availableSetIds.value) return false
+        val current = _activeSetIds.value.toMutableSet()
+        val updated = if (setId in current) {
+            current.remove(setId)
+            current
+        } else {
+            if (current.size >= SettingsRepository.MAX_ACTIVE_SETS_PER_DAY) {
+                return false
+            }
+            current.add(setId)
+            current
+        }
+        _activeSetIds.value = updated
+        return true
+    }
+
+    fun saveEventSetNames(names: List<String>) {
+        viewModelScope.launch {
+            settingsRepository.saveEventSetNames(names)
+        }
+    }
+
+    fun saveDefaultActiveSetsByWeekday(selections: Map<DayOfWeek, Set<Int>>) {
+        viewModelScope.launch {
+            selections.forEach { (day, sets) ->
+                settingsRepository.saveDefaultActiveSetsForWeekday(day, sets)
+            }
+        }
+    }
+
+    private fun applyDefaultActiveSetsForDate(date: LocalDate) {
+        viewModelScope.launch {
+            val defaults = settingsRepository.getDefaultActiveSetsForWeekday(date.dayOfWeek).first()
+            _activeSetIds.value = defaults
+        }
     }
 
 
@@ -737,17 +807,57 @@ class MainViewModel @Inject constructor(
         syncJob = viewModelScope.launch(Dispatchers.IO) {
             kotlinx.coroutines.flow.combine(
                 scheduleDao.observeAll(),
-                _selectedDate
-            ) { entities: List<com.example.routinereminder.data.entities.Schedule>, date: LocalDate ->
-                entities
+                _selectedDate,
+                _activeSetIds
+            ) { entities: List<com.example.routinereminder.data.entities.Schedule>, date: LocalDate, activeSetIds: Set<Int> ->
+                val itemsForDate = entities
                     .map { it.toItem() }
                     .filter { item -> item.occursOnDate(date) }
                     .distinctBy { item -> item.id }
+                val availableSetIds = itemsForDate.mapNotNull { it.setId }.toSet()
+                val effectiveActiveSetIds = activeSetIds.intersect(availableSetIds)
+
+                Triple(
+                    itemsForDate,
+                    availableSetIds,
+                    effectiveActiveSetIds
+                )
+            }.collectLatest { (itemsForDate, availableSetIds, effectiveActiveSetIds) ->
+                if (_availableSetIds.value != availableSetIds) {
+                    _availableSetIds.value = availableSetIds
+                }
+                if (_activeSetIds.value != effectiveActiveSetIds) {
+                    _activeSetIds.value = effectiveActiveSetIds
+                }
+
+                updateNotificationsForSetSelection(itemsForDate, effectiveActiveSetIds, _selectedDate.value)
+
+                val filtered = itemsForDate
+                    .filter { item -> item.setId == null || item.setId in effectiveActiveSetIds }
                     .sortedBy { item -> item.hour * 60 + item.minute }
-            }.collectLatest { filtered: List<ScheduleItem> ->
+
                 withContext(Dispatchers.Main) {
                     _scheduleItems.value = filtered
                 }
+            }
+        }
+    }
+
+    private suspend fun updateNotificationsForSetSelection(
+        itemsForDate: List<ScheduleItem>,
+        activeSetIds: Set<Int>,
+        date: LocalDate
+    ) {
+        val epochDay = date.toEpochDay()
+        val doneIds = scheduleDoneDao.getDoneStatesForDay(epochDay).toSet()
+        itemsForDate.forEach { item ->
+            if (!item.notifyEnabled) return@forEach
+            val isActive = item.setId == null || item.setId in activeSetIds
+            val isDone = item.id in doneIds
+            if (isActive && !isDone) {
+                notificationScheduler.scheduleSingleOccurrence(item, epochDay)
+            } else {
+                notificationScheduler.cancelSingleOccurrence(item, epochDay)
             }
         }
     }

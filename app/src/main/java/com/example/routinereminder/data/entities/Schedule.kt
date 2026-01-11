@@ -35,6 +35,7 @@ data class Schedule(
     val targetCalendarSystem: String? = null,
     @ColumnInfo(defaultValue = DEFAULT_SERIES_COLOR_ARGB_SQL)
     val colorArgb: Int = DEFAULT_SERIES_COLOR_ARGB,
+    val setId: Int? = null,
 
     // NEW FIELD — Marks event as completed.
     // If true: UI shows it as finished AND notifications must not fire.

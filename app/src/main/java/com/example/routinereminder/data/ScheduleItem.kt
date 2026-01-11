@@ -24,6 +24,7 @@ data class ScheduleItem(
     val origin: String = "APP_CREATED",
     val targetCalendarSystem: String? = null,
     val colorArgb: Int = DEFAULT_SERIES_COLOR_ARGB,
+    val setId: Int? = null,
 
     // ⭐ REQUIRED for Done/Undo UI
     val isDone: Boolean = false

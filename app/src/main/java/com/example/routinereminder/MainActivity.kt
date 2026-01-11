@@ -28,6 +28,7 @@ import java.io.FileOutputStream
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.TextStyle
 import com.example.routinereminder.data.entities.ScheduleDone
+import com.example.routinereminder.data.SettingsRepository
 import androidx.navigation.NavController
 import com.example.routinereminder.ui.Screen
 import com.example.routinereminder.ui.BarcodeScannerScreen
@@ -56,6 +57,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -356,6 +358,9 @@ fun MainAppUI(
         val selectedDate by viewModel.selectedDate.collectAsState()
         val defaultEventSettings by viewModel.defaultEventSettings.collectAsState()
         val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
+        val eventSetNames by viewModel.eventSetNames.collectAsState()
+        val activeSetIds by viewModel.activeSetIds.collectAsState()
+        val availableSetIds by viewModel.availableSetIds.collectAsState()
 
         if (enabledTabsState == null) {
             FirstLaunchTabSelectionDialog(
@@ -450,6 +455,9 @@ fun MainAppUI(
                             MainScreenContent(
                                 items = scheduleItems,
                                 currentDate = selectedDate,
+                                eventSetNames = eventSetNames,
+                                activeSetIds = activeSetIds,
+                                availableSetIds = availableSetIds,
                                 onPreviousDay = { viewModel.selectPreviousDay() },
                                 onNextDay = { viewModel.selectNextDay() },
                                 onDateSelected = viewModel::selectDate,
@@ -643,6 +651,7 @@ fun MainAppUI(
                             initialItem = itemToEdit,
                             defaultEventSettings = defaultEventSettings,
                             useGoogleBackupMode = useGoogleBackupMode,
+                            eventSetNames = eventSetNames,
                             onDismissRequest = { showEditDialog = false },
                             onSave = {
                                 viewModel.upsertScheduleItem(it)
@@ -979,11 +988,56 @@ fun UnifiedDateHeader(
     }
 }
 
+@Composable
+private fun EventSetToggleRow(
+    eventSetNames: List<String>,
+    availableSetIds: Set<Int>,
+    activeSetIds: Set<Int>,
+    onToggleSet: (Int) -> Boolean
+) {
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
+    Column {
+        Text(
+            text = stringResource(R.string.event_sets_active_today),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            availableSetIds.sorted().forEach { setId ->
+                val name = eventSetNames.getOrNull(setId - 1) ?: "Set $setId"
+                FilterChip(
+                    selected = activeSetIds.contains(setId),
+                    onClick = {
+                        val updated = onToggleSet(setId)
+                        if (!updated) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.event_sets_max_selected, SettingsRepository.MAX_ACTIVE_SETS_PER_DAY),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    label = { Text(name) }
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenContent(
     items: List<ScheduleItem>,
     currentDate: LocalDate,
+    eventSetNames: List<String>,
+    activeSetIds: Set<Int>,
+    availableSetIds: Set<Int>,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onDateSelected: (LocalDate) -> Unit,
@@ -1040,6 +1094,16 @@ fun MainScreenContent(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            if (availableSetIds.isNotEmpty()) {
+                EventSetToggleRow(
+                    eventSetNames = eventSetNames,
+                    availableSetIds = availableSetIds,
+                    activeSetIds = activeSetIds,
+                    onToggleSet = { setId -> viewModel.toggleActiveSet(setId) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             ScheduleItemListContent(
                 items = items,
