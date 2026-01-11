@@ -237,6 +237,71 @@ fun WorkoutScreen(
         )
     }
 
+    if (uiState.showDownloadNotification && (uiState.isExerciseDbDownloading || uiState.isExerciseDbPaused)) {
+        val totalCount = uiState.exerciseDbTotalCount
+        val downloadedCount = uiState.exerciseDbDownloadedCount
+        AlertDialog(
+            onDismissRequest = viewModel::dismissDownloadNotification,
+            title = { Text(stringResource(R.string.workout_download_notification_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(
+                            if (uiState.isExerciseDbPaused) {
+                                R.string.workout_download_notification_paused_body
+                            } else {
+                                R.string.workout_download_notification_body
+                            }
+                        )
+                    )
+                    if (downloadedCount > 0) {
+                        Text(
+                            text = if (totalCount != null && totalCount > 0) {
+                                stringResource(
+                                    R.string.workout_download_progress_known,
+                                    downloadedCount,
+                                    totalCount
+                                )
+                            } else {
+                                stringResource(
+                                    R.string.workout_download_progress_unknown,
+                                    downloadedCount
+                                )
+                            },
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (uiState.isExerciseDbPaused) {
+                            viewModel.resumeExerciseDbDownload()
+                        } else {
+                            viewModel.pauseExerciseDbDownload()
+                        }
+                    }
+                ) {
+                    Text(
+                        stringResource(
+                            if (uiState.isExerciseDbPaused) {
+                                R.string.workout_download_resume_action
+                            } else {
+                                R.string.workout_download_pause_action
+                            }
+                        )
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissDownloadNotification) {
+                    Text(stringResource(R.string.workout_download_notification_dismiss))
+                }
+            }
+        )
+    }
+
     if (showNewPlanDialog) {
         AlertDialog(
             onDismissRequest = { showNewPlanDialog = false },
@@ -590,7 +655,22 @@ fun WorkoutScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                     if (!uiState.isExerciseDbReady) {
-                        if (uiState.isExerciseDbDownloading) {
+                        if (uiState.isExerciseDbPaused) {
+                            Text(
+                                text = stringResource(R.string.workout_download_paused_title),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.workout_download_notification_paused_body),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Button(
+                                onClick = viewModel::resumeExerciseDbDownload,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.workout_download_resume_action))
+                            }
+                        } else if (uiState.isExerciseDbDownloading) {
                             Text(
                                 text = stringResource(R.string.workout_download_title),
                                 style = MaterialTheme.typography.bodyMedium
