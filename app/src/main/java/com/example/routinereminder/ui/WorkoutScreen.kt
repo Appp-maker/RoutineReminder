@@ -486,7 +486,14 @@ fun WorkoutScreen(
                         SettingsIconButton(onClick = { navController.navigate("settings/workout") })
                     }
                     Button(
-                        onClick = { showCaloriesDialog = true },
+                        onClick = {
+                            if (consumedCaloriesInput.isBlank()) {
+                                selectedPlan?.caloriesPerWorkout?.takeIf { it > 0 }?.let { calories ->
+                                    consumedCaloriesInput = calories.toString()
+                                }
+                            }
+                            showCaloriesDialog = true
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(stringResource(R.string.calorie_tracker_add_consumed_action))
@@ -508,6 +515,24 @@ fun WorkoutScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     } else {
+                        TextField(
+                            value = selectedPlan.caloriesPerWorkout?.toString().orEmpty(),
+                            onValueChange = { value ->
+                                val cleaned = value.filter { it.isDigit() }
+                                val calories = cleaned.toIntOrNull()
+                                viewModel.updatePlanCalories(selectedPlan.id, calories)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = TextFieldDefaults.MinHeight),
+                            label = { Text(stringResource(R.string.workout_plan_calories_label)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        Text(
+                            text = stringResource(R.string.workout_plan_calories_hint),
+                            style = MaterialTheme.typography.bodySmall
+                        )
                         if (selectedPlan.exercises.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.workout_plan_empty_body),
