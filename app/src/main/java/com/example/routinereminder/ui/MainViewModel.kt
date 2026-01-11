@@ -301,7 +301,7 @@ class MainViewModel @Inject constructor(
             }
         }
 
-        applyActiveSetsForDate(_selectedDate.value)
+        applyDefaultActiveSetsForDate(_selectedDate.value)
         refreshScheduleItems()
     }
 
@@ -483,7 +483,7 @@ class MainViewModel @Inject constructor(
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
-        applyActiveSetsForDate(date)
+        applyDefaultActiveSetsForDate(date)
         refreshScheduleItems()
         refreshDoneStatesForDate(date.toEpochDay())
     }
@@ -492,7 +492,7 @@ class MainViewModel @Inject constructor(
     fun selectPreviousDay() {
         val newDate = _selectedDate.value.minusDays(1)
         _selectedDate.value = newDate
-        applyActiveSetsForDate(newDate)
+        applyDefaultActiveSetsForDate(newDate)
         refreshScheduleItems()
         refreshDoneStatesForDate(newDate.toEpochDay())
     }
@@ -500,7 +500,7 @@ class MainViewModel @Inject constructor(
     fun selectNextDay() {
         val newDate = _selectedDate.value.plusDays(1)
         _selectedDate.value = newDate
-        applyActiveSetsForDate(newDate)
+        applyDefaultActiveSetsForDate(newDate)
         refreshScheduleItems()
         refreshDoneStatesForDate(newDate.toEpochDay())
     }
@@ -547,11 +547,11 @@ class MainViewModel @Inject constructor(
     fun resetManualActiveEventSets() {
         viewModelScope.launch {
             settingsRepository.clearManualActiveEventSets()
-            applyActiveSetsForDate(_selectedDate.value)
+            applyDefaultActiveSetsForDate(_selectedDate.value)
         }
     }
 
-    private fun applyActiveSetsForDate(date: LocalDate) {
+    private fun applyDefaultActiveSetsForDate(date: LocalDate) {
         viewModelScope.launch {
             val saved = settingsRepository.getActiveSetsForDate(date).first()
             _hasManualActiveSetsForDate.value = saved != null
