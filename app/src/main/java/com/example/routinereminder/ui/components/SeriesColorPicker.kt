@@ -38,22 +38,16 @@ val SeriesColorOptions = SERIES_COLOR_OPTIONS.map { Color(it) }
 
 fun defaultSeriesColorArgb(): Int = DEFAULT_SERIES_COLOR_ARGB
 
-private fun colorToHex(color: Color): String {
-    val rgb = color.toArgb() and 0x00FFFFFF
-    return String.format("#%06X", rgb)
+private data class NamedColor(val name: String, val color: Color)
+
+private fun colorNameForSelection(namedColors: List<NamedColor>, color: Color): String {
+    return namedColors.firstOrNull { it.color.toArgb() == color.toArgb() }?.name.orEmpty()
 }
 
-private fun parseHexColor(input: String): Color? {
-    val cleaned = input.trim().removePrefix("#")
-    if (cleaned.length != 6 && cleaned.length != 8) return null
-    if (!cleaned.matches(Regex("[0-9a-fA-F]+"))) return null
-    val value = cleaned.toLong(16)
-    val argb = if (cleaned.length == 6) {
-        0xFF000000L or value
-    } else {
-        value
-    }
-    return Color(argb.toInt())
+private fun parseNamedColor(namedColors: List<NamedColor>, input: String): Color? {
+    val cleaned = input.trim().lowercase()
+    if (cleaned.isEmpty()) return null
+    return namedColors.firstOrNull { it.name.lowercase() == cleaned }?.color
 }
 
 @Composable
@@ -67,11 +61,22 @@ fun SeriesColorPicker(
     showLabel: Boolean = true,
     allowCustomColor: Boolean = true
 ) {
-    var customColorInput by remember { mutableStateOf(colorToHex(selectedColor)) }
+    val namedColors = listOf(
+        NamedColor(stringResource(R.string.color_name_blue), Color(DEFAULT_SERIES_COLOR_ARGB)),
+        NamedColor(stringResource(R.string.color_name_green), Color(0xFF43A047)),
+        NamedColor(stringResource(R.string.color_name_orange), Color(0xFFF4511E)),
+        NamedColor(stringResource(R.string.color_name_purple), Color(0xFF8E24AA)),
+        NamedColor(stringResource(R.string.color_name_yellow), Color(0xFFFDD835)),
+        NamedColor(stringResource(R.string.color_name_teal), Color(0xFF00897B)),
+        NamedColor(stringResource(R.string.color_name_brown), Color(0xFF6D4C41)),
+        NamedColor(stringResource(R.string.color_name_pink), Color(0xFFD81B60))
+    )
+    val namedColorList = namedColors.joinToString(", ") { it.name }
+    var customColorInput by remember { mutableStateOf(colorNameForSelection(namedColors, selectedColor)) }
     var customColorError by remember { mutableStateOf(false) }
 
     LaunchedEffect(selectedColor) {
-        customColorInput = colorToHex(selectedColor)
+        customColorInput = colorNameForSelection(namedColors, selectedColor)
         customColorError = false
     }
 
@@ -109,14 +114,14 @@ fun SeriesColorPicker(
                 value = customColorInput,
                 onValueChange = { newValue ->
                     customColorInput = newValue
-                    val parsed = parseHexColor(newValue)
+                    val parsed = parseNamedColor(namedColors, newValue)
                     customColorError = parsed == null && newValue.isNotBlank()
                     if (parsed != null) {
                         onColorSelected(parsed)
                     }
                 },
                 label = { Text(stringResource(R.string.custom_color_label)) },
-                supportingText = { Text(stringResource(R.string.custom_color_helper)) },
+                supportingText = { Text(stringResource(R.string.custom_color_helper, namedColorList)) },
                 isError = customColorError,
                 enabled = enabled,
                 singleLine = true
