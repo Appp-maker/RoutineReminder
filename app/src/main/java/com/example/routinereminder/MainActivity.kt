@@ -1514,6 +1514,8 @@ fun ScheduleItemView(
         }
     }
 
+}
+
 
 @Composable
 fun ItemActionDialog(
