@@ -363,6 +363,7 @@ fun MainAppUI(
         val eventSetColors by viewModel.eventSetColors.collectAsState()
         val activeSetIds by viewModel.activeSetIds.collectAsState()
         val availableSetIds by viewModel.availableSetIds.collectAsState()
+        val hasManualActiveSetsForDate by viewModel.hasManualActiveSetsForDate.collectAsState()
 
         if (enabledTabsState == null) {
             FirstLaunchTabSelectionDialog(
@@ -1024,6 +1025,7 @@ private fun EventSetToggleRow(
     eventSetNames: List<String>,
     availableSetIds: Set<Int>,
     activeSetIds: Set<Int>,
+    hasManualSetsForDate: Boolean,
     onToggleSet: (Int) -> Boolean,
     onOpenSettings: () -> Unit
 ) {
@@ -1053,23 +1055,33 @@ private fun EventSetToggleRow(
         stringResource(R.string.event_sets_compact_label, compactNames.joinToString(" / "))
     }
 
-    OutlinedButton(
-        onClick = { showDialog = true },
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = buttonLabel,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f, fill = false)
-        )
-        Icon(
-            imageVector = Icons.Filled.ArrowDropDown,
-            contentDescription = null,
-            modifier = Modifier.padding(start = 8.dp)
-        )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = { showDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = buttonLabel,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            Icon(
+                imageVector = Icons.Filled.ArrowDropDown,
+                contentDescription = null,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+        if (hasManualSetsForDate) {
+            Text(
+                text = stringResource(R.string.event_sets_manual_override),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp, top = 4.dp)
+            )
+        }
     }
 
     if (showDialog) {
@@ -1207,6 +1219,7 @@ fun MainScreenContent(
                     eventSetNames = eventSetNames,
                     availableSetIds = availableSetIds,
                     activeSetIds = activeSetIds,
+                    hasManualSetsForDate = hasManualActiveSetsForDate,
                     onToggleSet = { setId -> viewModel.toggleActiveSet(setId) },
                     onOpenSettings = { navController.navigate("settings/routine?category=event_sets") }
                 )

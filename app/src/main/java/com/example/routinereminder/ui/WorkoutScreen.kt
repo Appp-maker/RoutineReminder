@@ -1159,7 +1159,7 @@ private data class ExercisePreview(
     val subtitle: String,
     val gifFile: File?,
     val gifUrl: String?,
-    val imageUrls: List<String>,
+    val imageUrls: List<String>?,
     val videoUrl: String?,
     val instructions: List<String>
 )
@@ -1170,8 +1170,9 @@ private fun ExercisePreviewDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val allImageUrls = remember(preview.gifUrl, preview.imageUrls) {
-        preview.imageUrls.takeIf { it.isNotEmpty() } ?: deriveFallbackImageUrls(preview.gifUrl)
+    val safeImageUrls = preview.imageUrls.orEmpty()
+    val allImageUrls = remember(preview.gifUrl, safeImageUrls) {
+        safeImageUrls.takeIf { it.isNotEmpty() } ?: deriveFallbackImageUrls(preview.gifUrl)
     }
     val model = preview.gifFile ?: preview.gifUrl ?: allImageUrls.firstOrNull()
     val supplementalImageUrls = remember(model, allImageUrls) {

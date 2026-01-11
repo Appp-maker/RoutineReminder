@@ -872,12 +872,6 @@ fun AllFoodsList(
             .background(Color(0xFF2A2A2A))
             .padding(16.dp)
     ) {
-        Text(
-            text = "List all food",
-            color = Color.White,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
         if (foods.isEmpty()) {
             Text(
                 text = "No foods logged for this day.",
