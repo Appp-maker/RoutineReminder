@@ -4,7 +4,7 @@ import org.maplibre.geojson.Point
 
 data class SessionStats(
     val id: String,
-    val activity: String,            // e.g. "Running", "Walking"
+    val activity: String,            // e.g. "Run/Walk", "Cycling"
     val startEpochMs: Long,          // start timestamp in ms
     val endEpochMs: Long,            // end timestamp in ms
     val durationSec: Long,           // total seconds
