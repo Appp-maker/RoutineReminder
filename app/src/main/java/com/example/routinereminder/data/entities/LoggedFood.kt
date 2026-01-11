@@ -4,6 +4,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Embedded
 import androidx.room.ColumnInfo
+import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
+import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB_SQL
 import java.time.DayOfWeek
 
 @Entity(tableName = "logged_food")
@@ -37,6 +39,8 @@ data class LoggedFood(
     val bundleId: Long? = null,
 
     // ---- recurrence fields ----
+    @ColumnInfo(defaultValue = DEFAULT_SERIES_COLOR_ARGB_SQL)
+    val colorArgb: Int = DEFAULT_SERIES_COLOR_ARGB,
     val isOneTime: Boolean = false,
     val dateEpochDay: Long? = null,
     val startEpochDay: Long? = null,

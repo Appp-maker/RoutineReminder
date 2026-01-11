@@ -809,7 +809,8 @@ class MainViewModel @Inject constructor(
                 calendarMetaMap = calendarMetaMap,
                 existingId = existing?.id ?: 0,
                 existingOrigin = existing?.origin,
-                existingTargetCalendarSystem = existing?.targetCalendarSystem
+                existingTargetCalendarSystem = existing?.targetCalendarSystem,
+                existingColorArgb = existing?.colorArgb
             )
             if (existing != null) {
                 if (!isSameContent(existing, eventItem)) {
@@ -911,7 +912,8 @@ class MainViewModel @Inject constructor(
             left.dateEpochDay == right.dateEpochDay &&
             left.startEpochDay == right.startEpochDay &&
             left.repeatOnDays == right.repeatOnDays &&
-            left.repeatEveryWeeks == right.repeatEveryWeeks
+            left.repeatEveryWeeks == right.repeatEveryWeeks &&
+            left.colorArgb == right.colorArgb
     }
 }
 

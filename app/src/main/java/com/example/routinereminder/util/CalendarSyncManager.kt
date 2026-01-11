@@ -6,6 +6,7 @@ import android.content.Context
 import android.provider.CalendarContract
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
+import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -291,7 +292,8 @@ object CalendarSyncManager {
         calendarMetaMap: Map<Long, CalendarMeta>,
         existingId: Long = 0,
         existingOrigin: String? = null,
-        existingTargetCalendarSystem: String? = null
+        existingTargetCalendarSystem: String? = null,
+        existingColorArgb: Int? = null
     ): ScheduleItem {
         val zoneId = ZoneId.systemDefault()
         val endMillis = if (event.endMillis > event.startMillis) {
@@ -331,7 +333,8 @@ object CalendarSyncManager {
             addToCalendarOnSave = false,
             calendarEventId = event.id,
             origin = origin,
-            targetCalendarSystem = targetCalendarSystem
+            targetCalendarSystem = targetCalendarSystem,
+            colorArgb = existingColorArgb ?: DEFAULT_SERIES_COLOR_ARGB
         )
     }
 

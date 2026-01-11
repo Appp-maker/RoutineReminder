@@ -35,15 +35,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
 import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.data.entities.LoggedFood
 import com.example.routinereminder.ui.CalorieTrackerViewModel
+import com.example.routinereminder.ui.components.SeriesColorPicker
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -73,7 +76,8 @@ fun PortionDialog(
         isOneTime: Boolean,
         repeatDays: Set<DayOfWeek>,
         repeatEveryWeeks: Int,
-        startDate: LocalDate
+        startDate: LocalDate,
+        colorArgb: Int
     ) -> Unit,
 
     // NEW: optional bundle callback
@@ -95,6 +99,7 @@ fun PortionDialog(
     val initialRepeatDays = existingLoggedFood?.repeatOnDays ?: emptySet()
     val initialRepeatEveryWeeks = existingLoggedFood?.repeatEveryWeeks ?: 1
     val initialStartDate = existingLoggedFood?.startEpochDay?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.now()
+    val initialColorArgb = existingLoggedFood?.colorArgb ?: DEFAULT_SERIES_COLOR_ARGB
 
     var portionText by remember {
         mutableStateOf(
@@ -115,6 +120,7 @@ fun PortionDialog(
     var selectedDays by remember { mutableStateOf(initialRepeatDays) }
     var repeatEveryWeeks by remember { mutableStateOf(initialRepeatEveryWeeks) }
     var startDate by remember { mutableStateOf(initialStartDate) }
+    var selectedColorArgb by remember(existingLoggedFood) { mutableStateOf(initialColorArgb) }
     var customName by remember { mutableStateOf(foodProduct.name) }
     var customCalories by remember { mutableStateOf(foodProduct.caloriesPer100g.toString()) }
     var customCarbs by remember { mutableStateOf(foodProduct.carbsPer100g.toString()) }
@@ -458,6 +464,15 @@ fun PortionDialog(
                         }
                     }
 
+                    SeriesColorPicker(
+                        label = "Series color",
+                        selectedColor = Color(selectedColorArgb),
+                        onColorSelected = { selectedColorArgb = it.toArgb() },
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
                     if (showSchedulingOptions) {
                         Spacer(Modifier.height(16.dp))
 
@@ -573,7 +588,8 @@ fun PortionDialog(
                                         isOneTime,
                                         selectedDays,
                                         repeatEveryWeeks,
-                                        startDate
+                                        startDate,
+                                        selectedColorArgb
                                     )
                                 }
 

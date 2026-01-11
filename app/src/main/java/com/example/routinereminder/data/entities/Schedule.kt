@@ -4,6 +4,9 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
+import androidx.room.ColumnInfo
+import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
+import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB_SQL
 import java.time.DayOfWeek
 
 @Entity(
@@ -30,6 +33,8 @@ data class Schedule(
     val calendarEventId: Long? = null,
     val origin: String = "APP_CREATED",
     val targetCalendarSystem: String? = null,
+    @ColumnInfo(defaultValue = DEFAULT_SERIES_COLOR_ARGB_SQL)
+    val colorArgb: Int = DEFAULT_SERIES_COLOR_ARGB,
 
     // NEW FIELD — Marks event as completed.
     // If true: UI shows it as finished AND notifications must not fire.

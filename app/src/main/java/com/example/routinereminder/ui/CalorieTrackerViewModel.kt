@@ -379,6 +379,7 @@ class CalorieTrackerViewModel @Inject constructor(
         repeatEveryWeeks: Int,
         startDate: LocalDate,
         updatedFoodProduct: FoodProduct,
+        colorArgb: Int,
         updateAllFuture: Boolean = false
     ) {
         viewModelScope.launch {
@@ -418,7 +419,8 @@ class CalorieTrackerViewModel @Inject constructor(
                         repeatOnDays = newRepeatDays,
                         repeatEveryWeeks = newRepeatEveryWeeks,
                         startEpochDay = newStartEpochDay,
-                        dateEpochDay = newDateEpochDay
+                        dateEpochDay = newDateEpochDay,
+                        colorArgb = colorArgb
                     )
                     dao.upsert(updated)
                 }
@@ -439,7 +441,8 @@ class CalorieTrackerViewModel @Inject constructor(
                     repeatOnDays = newRepeatDays,
                     repeatEveryWeeks = newRepeatEveryWeeks,
                     startEpochDay = newStartEpochDay,
-                    dateEpochDay = newDateEpochDay
+                    dateEpochDay = newDateEpochDay,
+                    colorArgb = colorArgb
                 )
                 dao.upsert(updatedFood)
             }
@@ -465,7 +468,8 @@ class CalorieTrackerViewModel @Inject constructor(
         isOneTime: Boolean,
         repeatDays: Set<DayOfWeek>,
         repeatEveryWeeks: Int,
-        startDate: LocalDate
+        startDate: LocalDate,
+        colorArgb: Int
     ) {
         viewModelScope.launch {
             val bundleDao = appDatabase.foodBundleDao()
@@ -501,7 +505,8 @@ class CalorieTrackerViewModel @Inject constructor(
                     bundleName = bundleWithItems.bundle.name,
                     bundleId = bundleWithItems.bundle.id,
                     isOneTime = true,
-                    dateEpochDay = startDate.toEpochDay()
+                    dateEpochDay = startDate.toEpochDay(),
+                    colorArgb = colorArgb
                 )
 
                 loggedFoodDao.upsert(loggedFood)
@@ -537,7 +542,8 @@ class CalorieTrackerViewModel @Inject constructor(
                                 isOneTime = false,
                                 startEpochDay = startDate.toEpochDay(),
                                 repeatOnDays = repeatDays,
-                                repeatEveryWeeks = repeatEveryWeeks
+                                repeatEveryWeeks = repeatEveryWeeks,
+                                colorArgb = colorArgb
                             )
 
                             loggedFoodDao.upsert(recurringFood)
@@ -687,7 +693,8 @@ class CalorieTrackerViewModel @Inject constructor(
         isOneTime: Boolean,
         repeatDays: Set<java.time.DayOfWeek>,
         repeatEveryWeeks: Int,
-        startDate: java.time.LocalDate
+        startDate: java.time.LocalDate,
+        colorArgb: Int
     ) {
         viewModelScope.launch {
             val dao = appDatabase.loggedFoodDao()
@@ -717,7 +724,8 @@ class CalorieTrackerViewModel @Inject constructor(
                     isConsumed = false,
                     mealSlot = mealSlot,
                     isOneTime = true,
-                    dateEpochDay = startDate.toEpochDay()
+                    dateEpochDay = startDate.toEpochDay(),
+                    colorArgb = colorArgb
                 )
 
                 dao.upsert(loggedFood)
@@ -753,7 +761,8 @@ class CalorieTrackerViewModel @Inject constructor(
                                 isOneTime = false,
                                 startEpochDay = startDate.toEpochDay(),
                                 repeatOnDays = repeatDays,
-                                repeatEveryWeeks = repeatEveryWeeks
+                                repeatEveryWeeks = repeatEveryWeeks,
+                                colorArgb = colorArgb
                             )
 
 

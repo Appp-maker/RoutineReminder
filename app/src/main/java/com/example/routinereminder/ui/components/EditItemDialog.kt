@@ -24,13 +24,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.routinereminder.R
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
+import com.example.routinereminder.ui.components.SeriesColorPicker
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -115,6 +118,9 @@ fun EditItemDialog(
 
     var notifyEnabled by remember(initialItem, defaultEventSettings) { mutableStateOf(initialItem?.notifyEnabled ?: defaultEventSettings.systemNotification) }
     var showDetailsInNotification by remember(initialItem, defaultEventSettings) { mutableStateOf(initialItem?.showDetailsInNotification ?: defaultEventSettings.showDetailsInNotification) }
+    var selectedColorArgb by remember(initialItem) {
+        mutableStateOf(initialItem?.colorArgb ?: DEFAULT_SERIES_COLOR_ARGB)
+    }
 
     val context = LocalContext.current
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
@@ -186,7 +192,8 @@ fun EditItemDialog(
                 addToCalendarOnSave = finalAddToCalendar,
                 targetCalendarSystem = finalTargetCalendarSystem,
                 notifyEnabled = notifyEnabled,
-                showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false
+                showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false,
+                colorArgb = selectedColorArgb
             )
         } else {
             val currentRepeatDaysToSave = selectedRepeatDays.takeIf { it.isNotEmpty() }
@@ -218,7 +225,8 @@ fun EditItemDialog(
                 addToCalendarOnSave = finalAddToCalendar,
                 targetCalendarSystem = finalTargetCalendarSystem,
                 notifyEnabled = notifyEnabled,
-                showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false
+                showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false,
+                colorArgb = selectedColorArgb
             )
         }
         if (itemToSave.name.isNotBlank()) {
@@ -312,6 +320,13 @@ fun EditItemDialog(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     }
+                    Spacer(Modifier.height(16.dp))
+
+                    SeriesColorPicker(
+                        label = "Event color",
+                        selectedColor = Color(selectedColorArgb),
+                        onColorSelected = { selectedColorArgb = it.toArgb() }
+                    )
                     Spacer(Modifier.height(16.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { isOneTime = !isOneTime }) {
