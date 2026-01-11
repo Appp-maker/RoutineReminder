@@ -800,17 +800,15 @@ fun MealSlotDetail(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f) // makes the scroll area take remaining space in the card
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             foods.forEach { food ->
                 if (food.bundleId == null) {
                     // ----- NORMAL FOOD -----
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onFoodClick(food) }
-                            .padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    FoodRowCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onFoodClick(food) }
                     ) {
                         SeriesColorDot(
                             color = Color(food.colorArgb),
@@ -865,6 +863,27 @@ fun AllFoodsList(
     onDelete: (LoggedFood) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val mealSlotOrder = listOf(
+        "Breakfast",
+        "Mid-Morning",
+        "Lunch",
+        "Afternoon Snack",
+        "Dinner",
+        "Evening Snack"
+    )
+    val groupedFoods = foods.groupBy { food ->
+        val slot = food.mealSlot?.trim().orEmpty()
+        if (slot.isBlank() || slot.equals("unspecified", ignoreCase = true)) {
+            "Unassigned"
+        } else {
+            slot
+        }
+    }
+    val orderedMealSlots = buildList {
+        addAll(mealSlotOrder.filter { it in groupedFoods.keys })
+        addAll(groupedFoods.keys.filter { it !in mealSlotOrder }.sorted())
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -885,22 +904,20 @@ fun AllFoodsList(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(foods) { food ->
-                val mealLabel = food.mealSlot ?: "Unassigned"
-                Column {
+            orderedMealSlots.forEachIndexed { index, mealSlot ->
+                item {
                     Text(
-                        text = mealLabel,
+                        text = mealSlot,
                         color = Color.LightGray,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
+                }
+                items(groupedFoods[mealSlot].orEmpty(), key = { it.id }) { food ->
                     if (food.bundleId == null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onFoodClick(food) }
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        FoodRowCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { onFoodClick(food) }
                         ) {
                             SeriesColorDot(
                                 color = Color(food.colorArgb),
@@ -927,7 +944,11 @@ fun AllFoodsList(
                                 )
                             }
                             IconButton(onClick = { onDelete(food) }) {
-                                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    tint = Color.Red
+                                )
                             }
                         }
                     } else {
@@ -939,9 +960,29 @@ fun AllFoodsList(
                         )
                     }
                 }
+                if (index < orderedMealSlots.lastIndex) {
+                    item { Spacer(modifier = Modifier.height(4.dp)) }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun FoodRowCard(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1C1C1C))
+            .clickable { onClick() }
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
 }
 @Composable
 fun ExpandableRecipeRow(
