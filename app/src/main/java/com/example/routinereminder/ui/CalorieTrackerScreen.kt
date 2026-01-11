@@ -76,6 +76,7 @@ fun CalorieTrackerScreen(
     val loggedFoods by viewModel.loggedFoods.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val foodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
     var selectedMealFilter by remember { mutableStateOf<String?>(null) }
     var activeMealSlot by remember { mutableStateOf<String?>(null) }
     var showSearchDialog by remember { mutableStateOf(false) }
@@ -643,6 +644,7 @@ fun CalorieTrackerScreen(
                         AllFoodsList(
                             foods = loggedFoods,
                             viewModel = viewModel,
+                            showConsumedToggle = foodConsumedTrackingEnabled,
                             onFoodClick = { editingFood = it },
                             onDelete = {
                                 if (it.isOneTime || it.repeatOnDays.isNullOrEmpty()) {
@@ -708,6 +710,7 @@ fun CalorieTrackerScreen(
                             slotName = activeMealSlot!!,
                             foods = loggedFoods.filter { it.mealSlot == activeMealSlot },
                             viewModel = viewModel,
+                            showConsumedToggle = foodConsumedTrackingEnabled,
                             onFoodClick = { editingFood = it },
                             onDelete = {
                                 if (it.isOneTime || it.repeatOnDays.isNullOrEmpty()) {
@@ -737,6 +740,7 @@ fun MealSlotDetail(
     slotName: String,
     foods: List<LoggedFood>,
     viewModel: CalorieTrackerViewModel,
+    showConsumedToggle: Boolean,
     onFoodClick: (LoggedFood) -> Unit,
     onDelete: (LoggedFood) -> Unit,
     onBackToGrid: () -> Unit,
@@ -809,6 +813,18 @@ fun MealSlotDetail(
                                 fontSize = 12.sp
                             )
                         }
+                        if (showConsumedToggle) {
+                            Checkbox(
+                                checked = food.isConsumed,
+                                onCheckedChange = { isChecked ->
+                                    viewModel.setFoodConsumed(food, isChecked)
+                                },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = MaterialTheme.colorScheme.primary,
+                                    uncheckedColor = Color.LightGray
+                                )
+                            )
+                        }
                         IconButton(onClick = { onDelete(food) }) {
                             Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
                         }
@@ -818,6 +834,7 @@ fun MealSlotDetail(
                     ExpandableRecipeRow(
                         food = food,
                         viewModel = viewModel,
+                        showConsumedToggle = showConsumedToggle,
                         onDeleteRecipe = { onDelete(food) }
                     )
                 }
@@ -832,6 +849,7 @@ fun MealSlotDetail(
 fun AllFoodsList(
     foods: List<LoggedFood>,
     viewModel: CalorieTrackerViewModel,
+    showConsumedToggle: Boolean,
     onFoodClick: (LoggedFood) -> Unit,
     onDelete: (LoggedFood) -> Unit,
     modifier: Modifier = Modifier
@@ -887,6 +905,18 @@ fun AllFoodsList(
                                     fontSize = 12.sp
                                 )
                             }
+                            if (showConsumedToggle) {
+                                Checkbox(
+                                    checked = food.isConsumed,
+                                    onCheckedChange = { isChecked ->
+                                        viewModel.setFoodConsumed(food, isChecked)
+                                    },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = MaterialTheme.colorScheme.primary,
+                                        uncheckedColor = Color.LightGray
+                                    )
+                                )
+                            }
                             IconButton(onClick = { onDelete(food) }) {
                                 Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
                             }
@@ -895,6 +925,7 @@ fun AllFoodsList(
                         ExpandableRecipeRow(
                             food = food,
                             viewModel = viewModel,
+                            showConsumedToggle = showConsumedToggle,
                             onDeleteRecipe = { onDelete(food) }
                         )
                     }
@@ -907,6 +938,7 @@ fun AllFoodsList(
 fun ExpandableRecipeRow(
     food: LoggedFood,
     viewModel: CalorieTrackerViewModel,
+    showConsumedToggle: Boolean,
     onDeleteRecipe: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -941,6 +973,18 @@ fun ExpandableRecipeRow(
                 )
             }
 
+            if (showConsumedToggle) {
+                Checkbox(
+                    checked = food.isConsumed,
+                    onCheckedChange = { isChecked ->
+                        viewModel.setFoodConsumed(food, isChecked)
+                    },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = MaterialTheme.colorScheme.primary,
+                        uncheckedColor = Color.LightGray
+                    )
+                )
+            }
             IconButton(onClick = onDeleteRecipe) {
                 Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
             }

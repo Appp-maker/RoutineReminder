@@ -72,6 +72,8 @@ class CalorieTrackerViewModel @Inject constructor(
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
     private val _pendingBundlePreview = MutableStateFlow<Long?>(null)
     val pendingBundlePreview = _pendingBundlePreview.asStateFlow()
+    private val _foodConsumedTrackingEnabled = MutableStateFlow(false)
+    val foodConsumedTrackingEnabled = _foodConsumedTrackingEnabled.asStateFlow()
 
     fun requestBundlePreview(bundleId: Long) {
         _pendingBundlePreview.value = bundleId
@@ -88,6 +90,12 @@ class CalorieTrackerViewModel @Inject constructor(
                 _userSettings.value = settings
                 _isProfileComplete.value = settings != null && settings.weightKg > 0 && settings.heightCm > 0 && settings.age > 0
                 calculateDailyTargets()
+                calculateDailyTotals()
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getFoodConsumedTrackingEnabled().collectLatest { enabled ->
+                _foodConsumedTrackingEnabled.value = enabled
                 calculateDailyTotals()
             }
         }
@@ -298,6 +306,7 @@ class CalorieTrackerViewModel @Inject constructor(
                 saturatedFatG = 0.0,
                 addedSugarsG = 0.0,
                 sodiumMg = 0.0,
+                isConsumed = false,
                 mealSlot = mealSlot,
                 isOneTime = true,
                 dateEpochDay = date.toEpochDay()
@@ -487,6 +496,7 @@ class CalorieTrackerViewModel @Inject constructor(
                     saturatedFatG = saturatedFatPerGram * portionSizeG,
                     addedSugarsG = addedSugarsPerGram * portionSizeG,
                     sodiumMg = sodiumPerGram * portionSizeG,
+                    isConsumed = false,
                     mealSlot = mealSlot,
                     bundleName = bundleWithItems.bundle.name,
                     bundleId = bundleWithItems.bundle.id,
@@ -520,6 +530,7 @@ class CalorieTrackerViewModel @Inject constructor(
                                 saturatedFatG = saturatedFatPerGram * portionSizeG,
                                 addedSugarsG = addedSugarsPerGram * portionSizeG,
                                 sodiumMg = sodiumPerGram * portionSizeG,
+                                isConsumed = false,
                                 mealSlot = mealSlot,
                                 bundleName = bundleWithItems.bundle.name,
                                 bundleId = bundleWithItems.bundle.id,
@@ -608,6 +619,7 @@ class CalorieTrackerViewModel @Inject constructor(
                 saturatedFatG = saturatedFat,
                 addedSugarsG = addedSugars,
                 sodiumMg = sodium,
+                isConsumed = false,
                 mealSlot = mealSlot
             )
             appDatabase.loggedFoodDao().upsert(loggedFood)
@@ -618,14 +630,19 @@ class CalorieTrackerViewModel @Inject constructor(
 
     private suspend fun calculateDailyTotals() {
         val loggedFoods = appDatabase.loggedFoodDao().getFoodsForDate(date = selectedDate.value.toString())
-        val calories = loggedFoods.sumOf { it.calories }
-        val protein = loggedFoods.sumOf { it.proteinG }
-        val carbs = loggedFoods.sumOf { it.carbsG }
-        val fat = loggedFoods.sumOf { it.fatG }
-        val fiber = loggedFoods.sumOf { it.fiberG }
-        val saturatedFat = loggedFoods.sumOf { it.saturatedFatG }
-        val addedSugars = loggedFoods.sumOf { it.addedSugarsG }
-        val sodium = loggedFoods.sumOf { it.sodiumMg }
+        val foodsForTotals = if (_foodConsumedTrackingEnabled.value) {
+            loggedFoods.filter { it.isConsumed }
+        } else {
+            loggedFoods
+        }
+        val calories = foodsForTotals.sumOf { it.calories }
+        val protein = foodsForTotals.sumOf { it.proteinG }
+        val carbs = foodsForTotals.sumOf { it.carbsG }
+        val fat = foodsForTotals.sumOf { it.fatG }
+        val fiber = foodsForTotals.sumOf { it.fiberG }
+        val saturatedFat = foodsForTotals.sumOf { it.saturatedFatG }
+        val addedSugars = foodsForTotals.sumOf { it.addedSugarsG }
+        val sodium = foodsForTotals.sumOf { it.sodiumMg }
 
         _dailyTotals.value = DailyTotals(
             calories = calories,
@@ -697,6 +714,7 @@ class CalorieTrackerViewModel @Inject constructor(
                     saturatedFatG = saturatedFatPerGram * portion,
                     addedSugarsG = addedSugarsPerGram * portion,
                     sodiumMg = sodiumPerGram * portion,
+                    isConsumed = false,
                     mealSlot = mealSlot,
                     isOneTime = true,
                     dateEpochDay = startDate.toEpochDay()
@@ -730,6 +748,7 @@ class CalorieTrackerViewModel @Inject constructor(
                                 saturatedFatG = saturatedFatPerGram * portion,
                                 addedSugarsG = addedSugarsPerGram * portion,
                                 sodiumMg = sodiumPerGram * portion,
+                                isConsumed = false,
                                 mealSlot = mealSlot,
                                 isOneTime = false,
                                 startEpochDay = startDate.toEpochDay(),
@@ -805,6 +824,13 @@ class CalorieTrackerViewModel @Inject constructor(
 
     fun selectNextDay() {
         _selectedDate.value = _selectedDate.value.plusDays(1)
+    }
+
+    fun setFoodConsumed(loggedFood: LoggedFood, isConsumed: Boolean) {
+        viewModelScope.launch {
+            appDatabase.loggedFoodDao().upsert(loggedFood.copy(isConsumed = isConsumed))
+            refreshForSelectedDate()
+        }
     }
 
     data class DailyTotals(

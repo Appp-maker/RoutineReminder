@@ -3,6 +3,7 @@ package com.example.routinereminder.data.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Embedded
+import androidx.room.ColumnInfo
 import java.time.DayOfWeek
 
 @Entity(tableName = "logged_food")
@@ -26,6 +27,8 @@ data class LoggedFood(
     val saturatedFatG: Double,
     val addedSugarsG: Double,
     val sodiumMg: Double,
+    @ColumnInfo(defaultValue = "0")
+    val isConsumed: Boolean = false,
 
     // ---- meal slot ----
     val mealSlot: String = "unspecified",
