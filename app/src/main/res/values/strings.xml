@@ -114,6 +114,7 @@
     <string name="event_sets_dialog_title">Sets A / E / K</string>
     <string name="event_sets_dialog_body">Sets let you switch between alternate plans (like A/E/K). Turn on the sets you want active today to show those events. Rename sets in Settings if you want.</string>
     <string name="event_sets_dialog_active_label">Active today</string>
+    <string name="event_sets_manual_override">Manually set for this day</string>
     <string name="event_sets_dialog_settings_action">Event set settings</string>
     <string name="event_sets_dialog_done">Done</string>
     <string name="map_calories_log_empty_toast">No run calories saved for today yet.</string>
