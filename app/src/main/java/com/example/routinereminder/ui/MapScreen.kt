@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
@@ -165,7 +166,8 @@ private fun resolveCalorieProfile(
 @Composable
 fun MapScreen(
     navController: NavController,
-    viewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel(),
+    calorieTrackerViewModel: CalorieTrackerViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val fused = remember { LocationServices.getFusedLocationProviderClient(context) }
@@ -185,6 +187,8 @@ fun MapScreen(
     var showManualEntry by rememberSaveable { mutableStateOf(false) }
     var manualDistanceKm by rememberSaveable { mutableStateOf("") }
     var manualDurationMin by rememberSaveable { mutableStateOf("") }
+    var showCaloriesDialog by rememberSaveable { mutableStateOf(false) }
+    var consumedCaloriesInput by rememberSaveable { mutableStateOf("") }
 
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
@@ -553,6 +557,50 @@ fun MapScreen(
             }
         )
     }
+    if (showCaloriesDialog) {
+        val caloriesValue = consumedCaloriesInput.toIntOrNull()
+        AlertDialog(
+            onDismissRequest = { showCaloriesDialog = false },
+            title = { Text(text = stringResource(R.string.calorie_tracker_add_consumed_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.calorie_tracker_add_consumed_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ComposeColor.Gray
+                    )
+                    OutlinedTextField(
+                        value = consumedCaloriesInput,
+                        onValueChange = { consumedCaloriesInput = it },
+                        label = { Text(stringResource(R.string.calorie_tracker_add_consumed_label)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = caloriesValue != null && caloriesValue > 0,
+                    onClick = {
+                        val calories = caloriesValue ?: return@TextButton
+                        calorieTrackerViewModel.logCaloriesConsumed(
+                            calories = calories,
+                            label = stringResource(R.string.calorie_tracker_quick_log_map)
+                        )
+                        consumedCaloriesInput = ""
+                        showCaloriesDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.calorie_tracker_add_consumed_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCaloriesDialog = false }) {
+                    Text(stringResource(R.string.calorie_tracker_add_consumed_cancel))
+                }
+            }
+        )
+    }
     Surface(Modifier.fillMaxSize()) {
         Column(
             Modifier
@@ -583,6 +631,15 @@ fun MapScreen(
                     }
                 }
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
+            }
+            Button(
+                onClick = { showCaloriesDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFF2E7D32))
+            ) {
+                Text(stringResource(R.string.calorie_tracker_add_consumed_action))
             }
 
             if (splitDurations.isNotEmpty()) {

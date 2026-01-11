@@ -82,7 +82,8 @@ import androidx.navigation.NavController
 fun WorkoutScreen(
     navController: NavController,
     mainViewModel: MainViewModel,
-    viewModel: WorkoutViewModel = hiltViewModel()
+    viewModel: WorkoutViewModel = hiltViewModel(),
+    calorieTrackerViewModel: CalorieTrackerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val defaultEventSettings by mainViewModel.defaultEventSettings.collectAsState()
@@ -106,6 +107,8 @@ fun WorkoutScreen(
     var customExerciseGifUrl by remember { mutableStateOf("") }
     var customExerciseVideoUrl by remember { mutableStateOf("") }
     var customExerciseInstructions by remember { mutableStateOf("") }
+    var showCaloriesDialog by remember { mutableStateOf(false) }
+    var consumedCaloriesInput by remember { mutableStateOf("") }
 
     val selectedPlan = uiState.plans.firstOrNull { it.id == uiState.selectedPlanId }
 
@@ -132,6 +135,50 @@ fun WorkoutScreen(
             dismissButton = {
                 TextButton(onClick = { planToDelete = null }) {
                     Text(stringResource(R.string.alert_action_cancel))
+                }
+            }
+        )
+    }
+    if (showCaloriesDialog) {
+        val caloriesValue = consumedCaloriesInput.toIntOrNull()
+        AlertDialog(
+            onDismissRequest = { showCaloriesDialog = false },
+            title = { Text(text = stringResource(R.string.calorie_tracker_add_consumed_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.calorie_tracker_add_consumed_hint),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    TextField(
+                        value = consumedCaloriesInput,
+                        onValueChange = { consumedCaloriesInput = it },
+                        label = { Text(stringResource(R.string.calorie_tracker_add_consumed_label)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = TextFieldDefaults.textFieldColors()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = caloriesValue != null && caloriesValue > 0,
+                    onClick = {
+                        val calories = caloriesValue ?: return@TextButton
+                        calorieTrackerViewModel.logCaloriesConsumed(
+                            calories = calories,
+                            label = stringResource(R.string.calorie_tracker_quick_log_workout)
+                        )
+                        consumedCaloriesInput = ""
+                        showCaloriesDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.calorie_tracker_add_consumed_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCaloriesDialog = false }) {
+                    Text(stringResource(R.string.calorie_tracker_add_consumed_cancel))
                 }
             }
         )
@@ -437,6 +484,12 @@ fun WorkoutScreen(
                             )
                         }
                         SettingsIconButton(onClick = { navController.navigate("settings/workout") })
+                    }
+                    Button(
+                        onClick = { showCaloriesDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.calorie_tracker_add_consumed_action))
                     }
 
                 }
