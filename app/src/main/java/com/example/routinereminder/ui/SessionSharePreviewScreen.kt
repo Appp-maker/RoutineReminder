@@ -83,26 +83,21 @@ fun SessionSharePreviewScreen(
         Text("Session not found")
         return
     }
-// Hidden MapView used when History flow doesn't provide one
-    val hiddenMapView = remember { MapView(context) }
+    val effectiveMapView = remember(mapView) { mapView ?: MapView(context) }
 
-// keep MapView alive so tiles can render
-    DisposableEffect(Unit) {
-        hiddenMapView.onCreate(null)
-        hiddenMapView.onStart()
-        hiddenMapView.onResume()
+    DisposableEffect(effectiveMapView) {
+        effectiveMapView.onCreate(null)
+        effectiveMapView.onStart()
+        effectiveMapView.onResume()
         onDispose {
-            hiddenMapView.onPause()
-            hiddenMapView.onStop()
-            hiddenMapView.onDestroy()
+            effectiveMapView.onPause()
+            effectiveMapView.onStop()
+            effectiveMapView.onDestroy()
         }
     }
 
-// keep it attached but invisible (1dp) so MapLibre actually draws
-    AndroidView(factory = { hiddenMapView }, modifier = Modifier.size(1.dp))
-
-// use the provided mapView if present; otherwise our hidden one
-    val effectiveMapView = mapView ?: hiddenMapView
+    // keep it attached but invisible (1dp) so MapLibre actually draws
+    AndroidView(factory = { effectiveMapView }, modifier = Modifier.size(1.dp))
 
 
     var shareMode by remember { mutableStateOf(ShareMode.SATELLITE) }
