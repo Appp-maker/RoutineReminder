@@ -51,6 +51,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val MAP_CONSUMED_CALORIES_LOGGING_ENABLED = booleanPreferencesKey("map_consumed_calories_logging_enabled")
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
     val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
+    val EVENT_SET_COLORS = stringSetPreferencesKey("event_set_colors")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -194,6 +195,35 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }.toSet()
         dataStore.edit { preferences ->
             preferences[EVENT_SET_NAMES] = normalizedNames
+        }
+    }
+
+    fun getEventSetColors(): Flow<List<Int>> {
+        return dataStore.data.map { preferences ->
+            val storedColors = preferences[EVENT_SET_COLORS].orEmpty()
+            val colorMap = storedColors.mapNotNull { entry ->
+                val parts = entry.split("|", limit = 2)
+                val id = parts.firstOrNull()?.toIntOrNull()
+                val color = parts.getOrNull(1)?.toIntOrNull()
+                if (id != null && color != null) {
+                    id to color
+                } else {
+                    null
+                }
+            }.toMap()
+
+            List(MAX_EVENT_SETS) { index ->
+                colorMap[index + 1] ?: defaultEventSetColor(index)
+            }
+        }
+    }
+
+    suspend fun saveEventSetColors(colors: List<Int>) {
+        val normalizedColors = colors.take(MAX_EVENT_SETS).mapIndexed { index, color ->
+            "${index + 1}|$color"
+        }.toSet()
+        dataStore.edit { preferences ->
+            preferences[EVENT_SET_COLORS] = normalizedColors
         }
     }
 
@@ -445,6 +475,10 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     private fun defaultEventSetName(index: Int): String {
         val letter = ('A' + index)
         return "Set $letter"
+    }
+
+    private fun defaultEventSetColor(index: Int): Int {
+        return defaultSeriesColorForIndex(index)
     }
 
     private fun defaultEventSetKey(day: DayOfWeek): Preferences.Key<Set<String>> {

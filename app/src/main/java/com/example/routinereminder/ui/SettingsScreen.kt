@@ -24,6 +24,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +36,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.R
 import com.example.routinereminder.data.*
+import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -128,6 +131,7 @@ fun SettingsScreen(
     val currentMapCaloriesLoggingEnabled by viewModel.mapCaloriesLoggingEnabled.collectAsState()
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
+    val eventSetColors by viewModel.eventSetColors.collectAsState()
     val defaultActiveSetsByWeekday by viewModel.defaultActiveSetsByWeekday.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
@@ -165,6 +169,7 @@ fun SettingsScreen(
     var mapCaloriesLoggingEnabledChecked by remember(currentMapCaloriesLoggingEnabled) { mutableStateOf(currentMapCaloriesLoggingEnabled) }
     var foodConsumedTrackingEnabledChecked by remember(currentFoodConsumedTrackingEnabled) { mutableStateOf(currentFoodConsumedTrackingEnabled) }
     val eventSetNameInputs = remember { mutableStateListOf<String>() }
+    val eventSetColorInputs = remember { mutableStateListOf<Int>() }
     var defaultActiveSetSelections by remember { mutableStateOf<Map<DayOfWeek, Set<Int>>>(emptyMap()) }
 
 
@@ -227,6 +232,11 @@ fun SettingsScreen(
     LaunchedEffect(eventSetNames) {
         eventSetNameInputs.clear()
         eventSetNameInputs.addAll(eventSetNames)
+    }
+
+    LaunchedEffect(eventSetColors) {
+        eventSetColorInputs.clear()
+        eventSetColorInputs.addAll(eventSetColors)
     }
 
     LaunchedEffect(defaultActiveSetsByWeekday) {
@@ -445,6 +455,7 @@ fun SettingsScreen(
                         viewModel.saveMapCaloriesLoggingEnabled(mapCaloriesLoggingEnabledChecked)
                         viewModel.saveFoodConsumedTrackingEnabled(foodConsumedTrackingEnabledChecked)
                         viewModel.saveEventSetNames(eventSetNameInputs.toList())
+                        viewModel.saveEventSetColors(eventSetColorInputs.toList())
                         viewModel.saveDefaultActiveSetsByWeekday(defaultActiveSetSelections)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
@@ -600,10 +611,17 @@ fun SettingsScreen(
                     )
                     SettingsCategory.EVENT_SETS -> EventSetsSettingsSection(
                         eventSetNames = eventSetNameInputs,
+                        eventSetColors = eventSetColorInputs,
                         defaultActiveSetsByWeekday = defaultActiveSetSelections,
                         onEventSetNameChange = { index, name ->
                             if (index in eventSetNameInputs.indices) {
                                 eventSetNameInputs[index] = name
+                                justSavedSuccessfully = false
+                            }
+                        },
+                        onEventSetColorChange = { index, color ->
+                            if (index in eventSetColorInputs.indices) {
+                                eventSetColorInputs[index] = color
                                 justSavedSuccessfully = false
                             }
                         },
@@ -1334,8 +1352,10 @@ private fun DefaultEventsSettingsSection(
 @Composable
 private fun EventSetsSettingsSection(
     eventSetNames: List<String>,
+    eventSetColors: List<Int>,
     defaultActiveSetsByWeekday: Map<DayOfWeek, Set<Int>>,
     onEventSetNameChange: (Int, String) -> Unit,
+    onEventSetColorChange: (Int, Int) -> Unit,
     onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit
 ) {
     val context = LocalContext.current
@@ -1354,6 +1374,13 @@ private fun EventSetsSettingsSection(
             onValueChange = { onEventSetNameChange(index, it.take(24)) },
             label = { Text(label) },
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        )
+        val currentColor = eventSetColors.getOrNull(index) ?: DEFAULT_SERIES_COLOR_ARGB
+        SeriesColorPicker(
+            label = stringResource(R.string.settings_event_set_color_label, ('A' + index)),
+            selectedColor = Color(currentColor),
+            onColorSelected = { onEventSetColorChange(index, it.toArgb()) },
+            modifier = Modifier.padding(bottom = 12.dp)
         )
     }
 

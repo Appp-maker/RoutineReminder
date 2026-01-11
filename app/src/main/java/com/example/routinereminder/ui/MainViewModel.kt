@@ -12,6 +12,7 @@ import com.example.routinereminder.data.RunSessionRepository
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.data.UserSettings
+import com.example.routinereminder.data.defaultSeriesColorForIndex
 import com.example.routinereminder.data.model.ActiveRunState
 import com.example.routinereminder.data.model.TrailPoint
 import com.example.routinereminder.data.mappers.toEntity
@@ -128,6 +129,13 @@ class MainViewModel @Inject constructor(
         }
     )
     val eventSetNames: StateFlow<List<String>> = _eventSetNames.asStateFlow()
+
+    private val _eventSetColors = MutableStateFlow(
+        List(SettingsRepository.MAX_EVENT_SETS) { index ->
+            defaultSeriesColorForIndex(index)
+        }
+    )
+    val eventSetColors: StateFlow<List<Int>> = _eventSetColors.asStateFlow()
 
     private val _availableSetIds = MutableStateFlow<Set<Int>>(emptySet())
     val availableSetIds: StateFlow<Set<Int>> = _availableSetIds.asStateFlow()
@@ -270,6 +278,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEventSetNames().collectLatest { names ->
                 _eventSetNames.value = names
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventSetColors().collectLatest { colors ->
+                _eventSetColors.value = colors
             }
         }
         viewModelScope.launch {
@@ -510,6 +523,12 @@ class MainViewModel @Inject constructor(
     fun saveEventSetNames(names: List<String>) {
         viewModelScope.launch {
             settingsRepository.saveEventSetNames(names)
+        }
+    }
+
+    fun saveEventSetColors(colors: List<Int>) {
+        viewModelScope.launch {
+            settingsRepository.saveEventSetColors(colors)
         }
     }
 
