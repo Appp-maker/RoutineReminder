@@ -58,6 +58,7 @@ import kotlin.math.roundToInt
 
 enum class ShareMode { SATELLITE, STATIC }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionSharePreviewScreen(
     sessionId: String,
