@@ -1187,9 +1187,9 @@ private fun computeSplitUpdate(
 fun calcCalories(
     met: Double,
     weightKg: Double,
-    _heightCm: Double,
-    _age: Int,
-    _gender: String,
+    heightCm: Double,
+    age: Int,
+    gender: String,
     durationSec: Long
 ): Double {
     val minutes = durationSec / 60.0
