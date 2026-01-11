@@ -104,9 +104,14 @@
     <string name="settings_event_sets_limit_reached">You can select up to %1$d sets per day.</string>
     <string name="event_set_label">Event set</string>
     <string name="event_set_none">No set</string>
-    <string name="event_sets_active_today">Active sets for this day</string>
     <string name="event_sets_max_selected">You can enable up to %1$d sets per day.</string>
-    <string name="event_sets_select_label">Select active sets</string>
+    <string name="event_sets_compact_label">Sets %1$s</string>
+    <string name="event_sets_compact_placeholder">Sets</string>
+    <string name="event_sets_dialog_title">Sets A / E / K</string>
+    <string name="event_sets_dialog_body">Sets let you switch between alternate plans (like A/E/K). Turn on the sets you want active today to show those events. Rename sets in Settings if you want.</string>
+    <string name="event_sets_dialog_active_label">Active today</string>
+    <string name="event_sets_dialog_settings_action">Event set settings</string>
+    <string name="event_sets_dialog_done">Done</string>
     <string name="map_calories_log_empty_toast">No run calories saved for today yet.</string>
 
     <!-- Tabs -->

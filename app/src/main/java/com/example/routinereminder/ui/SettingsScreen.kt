@@ -89,6 +89,7 @@ enum class SettingsCategory {
 fun SettingsScreen(
     viewModel: MainViewModel,
     from: String,
+    initialCategory: SettingsCategory? = null,
     onDismiss: () -> Unit
 )
  {
@@ -97,14 +98,16 @@ fun SettingsScreen(
      val enabledTabs = enabledTabsState ?: AppTab.defaultTabs
      val routineEnabled = enabledTabs.contains(AppTab.Routine)
      val caloriesEnabled = enabledTabs.contains(AppTab.Calories)
-     val initialCategory = when (from) {
+     val fallbackCategory = when (from) {
          "routine" -> if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else SettingsCategory.SYNC
          "calories" -> if (caloriesEnabled) SettingsCategory.PROFILE else SettingsCategory.SYNC
          "map" -> SettingsCategory.MAP
          else -> SettingsCategory.SYNC
      }
 
-     var selectedCategory by remember(from, enabledTabs) { mutableStateOf(initialCategory) }
+     var selectedCategory by remember(from, enabledTabs, initialCategory) {
+         mutableStateOf(initialCategory ?: fallbackCategory)
+     }
 
 
     val userSettings by viewModel.userSettings.collectAsState()

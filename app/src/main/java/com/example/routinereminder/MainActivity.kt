@@ -591,12 +591,24 @@ fun MainAppUI(
 
 
 
-                        composable("settings/{from}") { backStackEntry ->
+                        composable(
+                            route = "settings/{from}?category={category}",
+                            arguments = listOf(
+                                navArgument("from") { defaultValue = "default" },
+                                navArgument("category") { defaultValue = "" }
+                            )
+                        ) { backStackEntry ->
                         val from = backStackEntry.arguments?.getString("from") ?: "default"
+                        val initialCategory = backStackEntry.arguments?.getString("category")
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { categoryName ->
+                                runCatching { SettingsCategory.valueOf(categoryName.uppercase()) }.getOrNull()
+                            }
 
                             SettingsScreen(
                                 viewModel = viewModel,
                                 from = from,
+                                initialCategory = initialCategory,
                                 onDismiss = { navController.popBackStack() }
                             )
                         }
@@ -1005,10 +1017,11 @@ private fun EventSetToggleRow(
     eventSetNames: List<String>,
     availableSetIds: Set<Int>,
     activeSetIds: Set<Int>,
-    onToggleSet: (Int) -> Boolean
+    onToggleSet: (Int) -> Boolean,
+    onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
-    var expanded by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
     val selectedSetNames = remember(eventSetNames, availableSetIds, activeSetIds) {
         availableSetIds.sorted().mapNotNull { setId ->
             if (activeSetIds.contains(setId)) {
@@ -1018,67 +1031,101 @@ private fun EventSetToggleRow(
             }
         }
     }
-    val buttonLabel = if (selectedSetNames.isEmpty()) {
-        stringResource(R.string.event_sets_select_label)
-    } else {
-        selectedSetNames.joinToString()
-    }
-    Column {
-        Text(
-            text = stringResource(R.string.event_sets_active_today),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Box {
-            OutlinedButton(
-                onClick = { expanded = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = buttonLabel,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                Icon(
-                    imageVector = Icons.Filled.ArrowDropDown,
-                    contentDescription = null,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
+    val compactNames = remember(selectedSetNames) {
+        selectedSetNames.map { name ->
+            if (name.startsWith("Set ") && name.length <= 5) {
+                name.removePrefix("Set ")
+            } else {
+                name
             }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                availableSetIds.sorted().forEach { setId ->
-                    val name = eventSetNames.getOrNull(setId - 1) ?: "Set $setId"
-                    val selected = activeSetIds.contains(setId)
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        leadingIcon = {
+        }
+    }
+    val buttonLabel = if (compactNames.isEmpty()) {
+        stringResource(R.string.event_sets_compact_placeholder)
+    } else {
+        stringResource(R.string.event_sets_compact_label, compactNames.joinToString(" / "))
+    }
+
+    OutlinedButton(
+        onClick = { showDialog = true },
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = buttonLabel,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        Icon(
+            imageVector = Icons.Filled.ArrowDropDown,
+            contentDescription = null,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(stringResource(R.string.event_sets_dialog_title)) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text(stringResource(R.string.event_sets_dialog_body))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.event_sets_dialog_active_label),
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    availableSetIds.sorted().forEach { setId ->
+                        val name = eventSetNames.getOrNull(setId - 1) ?: "Set $setId"
+                        val selected = activeSetIds.contains(setId)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val updated = onToggleSet(setId)
+                                    if (!updated) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(
+                                                R.string.event_sets_max_selected,
+                                                SettingsRepository.MAX_ACTIVE_SETS_PER_DAY
+                                            ),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Checkbox(
                                 checked = selected,
                                 onCheckedChange = null
                             )
-                        },
-                        onClick = {
-                            val updated = onToggleSet(setId)
-                            if (!updated) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(
-                                        R.string.event_sets_max_selected,
-                                        SettingsRepository.MAX_ACTIVE_SETS_PER_DAY
-                                    ),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = name)
                         }
-                    )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.event_sets_dialog_done))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDialog = false
+                        onOpenSettings()
+                    }
+                ) {
+                    Text(stringResource(R.string.event_sets_dialog_settings_action))
                 }
             }
-        }
+        )
     }
 }
 
@@ -1153,7 +1200,8 @@ fun MainScreenContent(
                     eventSetNames = eventSetNames,
                     availableSetIds = availableSetIds,
                     activeSetIds = activeSetIds,
-                    onToggleSet = { setId -> viewModel.toggleActiveSet(setId) }
+                    onToggleSet = { setId -> viewModel.toggleActiveSet(setId) },
+                    onOpenSettings = { navController.navigate("settings/routine?category=event_sets") }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
