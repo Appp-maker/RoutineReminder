@@ -619,6 +619,8 @@ fun WorkoutScreen(
                                             )
                                         },
                                         onRemove = { viewModel.removeExerciseFromPlan(selectedPlan.id, exercise.id) },
+                                        autoEdit = uiState.autoEditExerciseId == exercise.id,
+                                        onAutoEditConsumed = { viewModel.consumeAutoEditExercise(exercise.id) },
                                         onUpdate = { sets, repetitions, duration, rest, weight ->
                                             viewModel.updateExerciseSettings(
                                                 planId = selectedPlan.id,
@@ -867,10 +869,18 @@ private fun WorkoutPlanExerciseRow(
     exercise: WorkoutPlanExercise,
     onPreview: () -> Unit,
     onRemove: () -> Unit,
+    autoEdit: Boolean,
+    onAutoEditConsumed: () -> Unit,
     onUpdate: (Int?, Int?, Int?, Int?, Double?) -> Unit
 ) {
     var isEditing by remember(exercise.id) { mutableStateOf(false) }
     val summary = exerciseSettingsSummary(exercise)
+    LaunchedEffect(autoEdit) {
+        if (autoEdit) {
+            isEditing = true
+            onAutoEditConsumed()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
