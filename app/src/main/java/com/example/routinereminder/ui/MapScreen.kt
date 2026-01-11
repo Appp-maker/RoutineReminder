@@ -88,6 +88,7 @@ import com.example.routinereminder.location.TrackingService
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import com.example.routinereminder.R
 
 
 private enum class ActivityType(val label: String, val met: Double) {
@@ -559,6 +560,7 @@ fun MapScreen(
     }
     if (showCaloriesDialog) {
         val caloriesValue = consumedCaloriesInput.toIntOrNull()
+        val quickLogLabel = stringResource(R.string.calorie_tracker_quick_log_map)
         AlertDialog(
             onDismissRequest = { showCaloriesDialog = false },
             title = { Text(text = stringResource(R.string.calorie_tracker_add_consumed_title)) },
@@ -585,7 +587,7 @@ fun MapScreen(
                         val calories = caloriesValue ?: return@TextButton
                         calorieTrackerViewModel.logCaloriesConsumed(
                             calories = calories,
-                            label = stringResource(R.string.calorie_tracker_quick_log_map)
+                            label = quickLogLabel
                         )
                         consumedCaloriesInput = ""
                         showCaloriesDialog = false

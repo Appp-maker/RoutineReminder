@@ -141,6 +141,7 @@ fun WorkoutScreen(
     }
     if (showCaloriesDialog) {
         val caloriesValue = consumedCaloriesInput.toIntOrNull()
+        val quickLogLabel = stringResource(R.string.calorie_tracker_quick_log_workout)
         AlertDialog(
             onDismissRequest = { showCaloriesDialog = false },
             title = { Text(text = stringResource(R.string.calorie_tracker_add_consumed_title)) },
@@ -167,7 +168,7 @@ fun WorkoutScreen(
                         val calories = caloriesValue ?: return@TextButton
                         calorieTrackerViewModel.logCaloriesConsumed(
                             calories = calories,
-                            label = stringResource(R.string.calorie_tracker_quick_log_workout)
+                            label = quickLogLabel
                         )
                         consumedCaloriesInput = ""
                         showCaloriesDialog = false
