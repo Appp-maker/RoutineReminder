@@ -1187,19 +1187,15 @@ private fun computeSplitUpdate(
 fun calcCalories(
     met: Double,
     weightKg: Double,
-    heightCm: Double,
-    age: Int,
-    gender: String,
+    _heightCm: Double,
+    _age: Int,
+    _gender: String,
     durationSec: Long
 ): Double {
-    val hours = durationSec / 3600.0
+    val minutes = durationSec / 60.0
+    val metCaloriesPerMinute = (met * 3.5 * weightKg) / 200.0
 
-    // Basal Metabolic Rate (Mifflin-St Jeor)
-    val genderConstant = if (gender.equals("Male", ignoreCase = true)) 5 else -161
-    val bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + genderConstant
-
-    // Calories burned
-    return (bmr / 24.0) * met * hours
+    return metCaloriesPerMinute * minutes
 }
 
 private fun isSameDay(firstEpochMs: Long, secondEpochMs: Long): Boolean {
