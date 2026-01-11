@@ -493,26 +493,6 @@ fun WorkoutScreen(
                         }
                         SettingsIconButton(onClick = { navController.navigate("settings/workout") })
                     }
-                    Button(
-                        onClick = {
-                            if (selectedPlan == null) {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(message = selectPlanMessage)
-                                }
-                                return@Button
-                            }
-                            if (workoutCaloriesInput.isBlank()) {
-                                selectedPlan.caloriesPerWorkout?.takeIf { it > 0 }?.let { calories ->
-                                    workoutCaloriesInput = calories.toString()
-                                }
-                            }
-                            showCaloriesDialog = true
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.workout_calorie_adjustment_action))
-                    }
-
                 }
             }
 
