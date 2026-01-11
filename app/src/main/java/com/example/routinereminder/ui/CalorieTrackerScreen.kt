@@ -19,6 +19,7 @@ import com.example.routinereminder.DateDisplayHeader
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -954,7 +956,7 @@ fun ExpandableRecipeRow(
     showConsumedToggle: Boolean,
     onDeleteRecipe: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var showRecipeDialog by remember { mutableStateOf(false) }
     val bundleId = food.bundleId ?: return
     val bundleWithItems by produceState<com.example.routinereminder.data.entities.FoodBundleWithItems?>(
         initialValue = null,
@@ -971,7 +973,7 @@ fun ExpandableRecipeRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFF1C1C1C))
-            .clickable { expanded = !expanded }
+            .clickable { showRecipeDialog = true }
             .padding(12.dp)
     ) {
         Row(
@@ -1006,23 +1008,85 @@ fun ExpandableRecipeRow(
                 Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
             }
         }
+    }
 
-        if (expanded) {
-            Spacer(Modifier.height(8.dp))
-            if (recipeDescription.isNotBlank()) {
-                Text(
-                    formatChecklistText(recipeDescription),
-                    color = Color.LightGray,
-                    fontSize = 13.sp
-                )
-                Spacer(Modifier.height(6.dp))
-            }
-            recipeItems.forEach { item ->
-                Text(
-                    "• ${item.name} – ${item.portionSizeG.toInt()} g",
-                    color = Color.LightGray,
-                    fontSize = 13.sp
-                )
+    if (showRecipeDialog) {
+        Dialog(
+            onDismissRequest = { showRecipeDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = Color(0xFF111111)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                recipeName,
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
+                                color = Color.Gray,
+                                fontSize = 13.sp
+                            )
+                        }
+                        IconButton(onClick = { showRecipeDialog = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+                    if (showConsumedToggle) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = food.isConsumed,
+                                onCheckedChange = { isChecked ->
+                                    viewModel.setFoodConsumed(food, isChecked)
+                                },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = MaterialTheme.colorScheme.primary,
+                                    uncheckedColor = Color.LightGray
+                                )
+                            )
+                            Text("Consumed", color = Color.LightGray)
+                            Spacer(Modifier.weight(1f))
+                            IconButton(onClick = onDeleteRecipe) {
+                                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    if (recipeDescription.isNotBlank()) {
+                        Text(
+                            formatChecklistText(recipeDescription),
+                            color = Color.LightGray,
+                            fontSize = 14.sp
+                        )
+                        Spacer(Modifier.height(12.dp))
+                    }
+
+                    recipeItems.forEach { item ->
+                        Text(
+                            "• ${item.name} – ${item.portionSizeG.toInt()} g",
+                            color = Color.LightGray,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
             }
         }
     }
