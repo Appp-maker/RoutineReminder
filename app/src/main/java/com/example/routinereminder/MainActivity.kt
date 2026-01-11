@@ -847,9 +847,9 @@ private fun ScheduleItemListContent(
     }
     val displayItems = remember(distinctItems, showNowIndicator, nowIndicatorIndex) {
         if (!showNowIndicator || nowIndicatorIndex < 0) {
-            distinctItems.map { DisplayScheduleItem.Event(it) }
+            distinctItems.map<DisplayScheduleItem> { DisplayScheduleItem.Event(it) }
         } else {
-            buildList {
+            buildList<DisplayScheduleItem> {
                 distinctItems.forEachIndexed { index, item ->
                     if (index == nowIndicatorIndex) {
                         add(DisplayScheduleItem.NowIndicator)
