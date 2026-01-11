@@ -64,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -950,6 +951,8 @@ fun WorkoutScreen(
             }
             val showScrollIndicator = isDragging || exerciseListState.isScrollInProgress
             val scrollIndicatorLetter = if (isDragging) sliderLetter else currentLetter
+            val configuration = LocalConfiguration.current
+            val sliderHeight = maxOf(240.dp, (configuration.screenHeightDp * 0.65f).dp)
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
@@ -958,7 +961,7 @@ fun WorkoutScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(width = 36.dp, height = 160.dp),
+                    modifier = Modifier.size(width = 36.dp, height = sliderHeight),
                     contentAlignment = Alignment.Center
                 ) {
                     Slider(
