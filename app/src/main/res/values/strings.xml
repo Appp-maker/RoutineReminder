@@ -159,7 +159,7 @@
     <string name="workout_exercise_repetitions_label">Reps</string>
     <string name="workout_exercise_duration_label">Duration (sec)</string>
     <string name="workout_exercise_rest_label">Rest (sec)</string>
-    <string name="workout_exercise_weight_label">Weight</string>
+    <string name="workout_exercise_weight_label">Weight (optional)</string>
     <string name="workout_plan_edit_exercise">Edit exercise</string>
     <string name="workout_exercise_gif_preview">Exercise gif preview</string>
     <string name="workout_exercise_gif_url">Gif: %1$s</string>
