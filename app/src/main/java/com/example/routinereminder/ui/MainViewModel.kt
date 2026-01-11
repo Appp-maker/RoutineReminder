@@ -481,7 +481,7 @@ class MainViewModel @Inject constructor(
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
-        applyDefaultActiveSetsForDate(date)
+        applyActiveSetsForDate(date)
         refreshScheduleItems()
         refreshDoneStatesForDate(date.toEpochDay())
     }
@@ -490,7 +490,7 @@ class MainViewModel @Inject constructor(
     fun selectPreviousDay() {
         val newDate = _selectedDate.value.minusDays(1)
         _selectedDate.value = newDate
-        applyDefaultActiveSetsForDate(newDate)
+        applyActiveSetsForDate(newDate)
         refreshScheduleItems()
         refreshDoneStatesForDate(newDate.toEpochDay())
     }
@@ -498,7 +498,7 @@ class MainViewModel @Inject constructor(
     fun selectNextDay() {
         val newDate = _selectedDate.value.plusDays(1)
         _selectedDate.value = newDate
-        applyDefaultActiveSetsForDate(newDate)
+        applyActiveSetsForDate(newDate)
         refreshScheduleItems()
         refreshDoneStatesForDate(newDate.toEpochDay())
     }
@@ -517,6 +517,7 @@ class MainViewModel @Inject constructor(
             current
         }
         _activeSetIds.value = updated
+        persistActiveSetsForDate()
         return true
     }
 
@@ -540,10 +541,19 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun applyDefaultActiveSetsForDate(date: LocalDate) {
+    private fun applyActiveSetsForDate(date: LocalDate) {
         viewModelScope.launch {
-            val defaults = settingsRepository.getDefaultActiveSetsForWeekday(date.dayOfWeek).first()
-            _activeSetIds.value = defaults
+            val saved = settingsRepository.getActiveSetsForDate(date).first()
+            _activeSetIds.value = saved
+                ?: settingsRepository.getDefaultActiveSetsForWeekday(date.dayOfWeek).first()
+        }
+    }
+
+    private fun persistActiveSetsForDate() {
+        val date = _selectedDate.value
+        val activeSets = _activeSetIds.value
+        viewModelScope.launch {
+            settingsRepository.saveActiveSetsForDate(date, activeSets)
         }
     }
 
@@ -847,6 +857,7 @@ class MainViewModel @Inject constructor(
                 }
                 if (_activeSetIds.value != effectiveActiveSetIds) {
                     _activeSetIds.value = effectiveActiveSetIds
+                    settingsRepository.saveActiveSetsForDate(_selectedDate.value, effectiveActiveSetIds)
                 }
 
                 updateNotificationsForSetSelection(itemsForDate, effectiveActiveSetIds, _selectedDate.value)

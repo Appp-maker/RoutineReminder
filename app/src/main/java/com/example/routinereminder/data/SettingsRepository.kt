@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
+import java.time.LocalDate
 import javax.inject.Inject
 import com.example.routinereminder.location.TrackingService
 
@@ -237,6 +238,16 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }
     }
 
+    fun getActiveSetsForDate(date: LocalDate): Flow<Set<Int>?> {
+        return dataStore.data.map { preferences ->
+            preferences[activeEventSetKey(date)]
+                ?.mapNotNull { it.toIntOrNull() }
+                ?.filter { it in 1..MAX_EVENT_SETS }
+                ?.take(MAX_ACTIVE_SETS_PER_DAY)
+                ?.toSet()
+        }
+    }
+
     fun getDefaultActiveSetsByWeekday(): Flow<Map<DayOfWeek, Set<Int>>> {
         val flows = DayOfWeek.values().map { day -> getDefaultActiveSetsForWeekday(day) }
         return combine(flows) { selections ->
@@ -251,6 +262,16 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             .toSet()
         dataStore.edit { preferences ->
             preferences[defaultEventSetKey(day)] = normalized
+        }
+    }
+
+    suspend fun saveActiveSetsForDate(date: LocalDate, setIds: Set<Int>) {
+        val normalized = setIds.filter { it in 1..MAX_EVENT_SETS }
+            .take(MAX_ACTIVE_SETS_PER_DAY)
+            .map { it.toString() }
+            .toSet()
+        dataStore.edit { preferences ->
+            preferences[activeEventSetKey(date)] = normalized
         }
     }
 
@@ -483,5 +504,9 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
 
     private fun defaultEventSetKey(day: DayOfWeek): Preferences.Key<Set<String>> {
         return stringSetPreferencesKey("default_event_sets_${day.name.lowercase()}")
+    }
+
+    private fun activeEventSetKey(date: LocalDate): Preferences.Key<Set<String>> {
+        return stringSetPreferencesKey("active_event_sets_${date}")
     }
 }
