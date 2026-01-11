@@ -689,11 +689,15 @@ class CalorieTrackerViewModel @Inject constructor(
         }
 
 
-        val calories = when (userSettings.activityLevel) {
-            ActivityLevel.SEDENTARY -> 25 * userSettings.weightKg
-            ActivityLevel.LIGHT -> 30 * userSettings.weightKg
-            ActivityLevel.MODERATE -> 35 * userSettings.weightKg
-            ActivityLevel.ACTIVE -> 40 * userSettings.weightKg
+        val calories = if (userSettings.customCaloriesTarget > 0) {
+            userSettings.customCaloriesTarget
+        } else {
+            when (userSettings.activityLevel) {
+                ActivityLevel.SEDENTARY -> 25 * userSettings.weightKg
+                ActivityLevel.LIGHT -> 30 * userSettings.weightKg
+                ActivityLevel.MODERATE -> 35 * userSettings.weightKg
+                ActivityLevel.ACTIVE -> 40 * userSettings.weightKg
+            }
         }
         val protein = 1.6 * userSettings.weightKg
         val carbs = (calories * 0.5) / 4
