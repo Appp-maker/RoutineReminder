@@ -106,6 +106,7 @@ fun SettingsScreen(
     var customCaloriesInput by remember { mutableStateOf("") }
     var selectedGender by remember { mutableStateOf(Gender.MALE) }
     var selectedActivityLevel by remember { mutableStateOf(ActivityLevel.SEDENTARY) }
+    var selectedCalorieGoal by remember { mutableStateOf(CalorieGoal.MAINTAIN) }
 
 
     val currentSyncInterval by viewModel.syncIntervalMinutes.collectAsState()
@@ -172,6 +173,7 @@ fun SettingsScreen(
             customCaloriesInput = it.customCaloriesTarget.takeIf { value -> value > 0.0 }?.toString() ?: ""
             selectedGender = it.gender
             selectedActivityLevel = it.activityLevel
+            selectedCalorieGoal = it.calorieGoal
         }
     }
 
@@ -254,7 +256,7 @@ fun SettingsScreen(
     }
 
     val hasUnsavedChanges by remember(
-        weightInput, heightInput, ageInput, customCaloriesInput, selectedGender, selectedActivityLevel, userSettings,
+        weightInput, heightInput, ageInput, customCaloriesInput, selectedGender, selectedActivityLevel, selectedCalorieGoal, userSettings,
         syncHoursInputText, syncMinutesInputText, currentSyncInterval,
         defaultEventHourState, defaultEventMinuteState, startTimeOption,
         defaultDurationHoursText, defaultDurationMinutesText,
@@ -279,6 +281,7 @@ fun SettingsScreen(
             if ((customCaloriesInput.toDoubleOrNull() ?: 0.0) != userSettings?.customCaloriesTarget) return@derivedStateOf true
             if (selectedGender != userSettings?.gender) return@derivedStateOf true
             if (selectedActivityLevel != userSettings?.activityLevel) return@derivedStateOf true
+            if (selectedCalorieGoal != userSettings?.calorieGoal) return@derivedStateOf true
             val syncH = syncHoursInputText.toLongOrNull() ?: 0L
             val syncM = syncMinutesInputText.toLongOrNull() ?: 0L
             if ((syncH * 60 + syncM) != currentSyncInterval) return@derivedStateOf true
@@ -358,7 +361,8 @@ fun SettingsScreen(
                             age = ageInput.toIntOrNull() ?: 0,
                             gender = selectedGender,
                             activityLevel = selectedActivityLevel,
-                            customCaloriesTarget = customCaloriesInput.toDoubleOrNull() ?: 0.0
+                            customCaloriesTarget = customCaloriesInput.toDoubleOrNull() ?: 0.0,
+                            calorieGoal = selectedCalorieGoal
                         )
                         viewModel.saveUserSettings(newSettings)
 
@@ -518,7 +522,9 @@ fun SettingsScreen(
                         gender = selectedGender,
                         onGenderChange = { selectedGender = it },
                         activityLevel = selectedActivityLevel,
-                        onActivityLevelChange = { selectedActivityLevel = it }
+                        onActivityLevelChange = { selectedActivityLevel = it },
+                        calorieGoal = selectedCalorieGoal,
+                        onCalorieGoalChange = { selectedCalorieGoal = it }
                     )
                     SettingsCategory.DEFAULT_EVENTS -> DefaultEventsSettingsSection(
                         startTimeOption = startTimeOption,
@@ -750,7 +756,9 @@ fun ProfileSettingsSection(
     gender: Gender,
     onGenderChange: (Gender) -> Unit,
     activityLevel: ActivityLevel,
-    onActivityLevelChange: (ActivityLevel) -> Unit
+    onActivityLevelChange: (ActivityLevel) -> Unit,
+    calorieGoal: CalorieGoal,
+    onCalorieGoalChange: (CalorieGoal) -> Unit
 ) {
     Column {
         Text("Profile", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
@@ -816,6 +824,28 @@ fun ProfileSettingsSection(
                     RadioButton(selected = (it == activityLevel), onClick = null)
                     Text(text = it.name.lowercase(Locale.getDefault())
                         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Goal", style = MaterialTheme.typography.titleMedium)
+        Column(Modifier.selectableGroup()) {
+            CalorieGoal.values().forEach { goal ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .selectable(selected = (goal == calorieGoal), onClick = { onCalorieGoalChange(goal) })
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(selected = (goal == calorieGoal), onClick = null)
+                    Text(
+                        text = goal.name.lowercase(Locale.getDefault())
+                            .replace('_', ' ')
+                            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
                 }
             }
         }

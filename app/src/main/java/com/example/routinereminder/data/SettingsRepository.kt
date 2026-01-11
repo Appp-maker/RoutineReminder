@@ -16,6 +16,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val USER_GENDER = stringPreferencesKey("user_gender")
     val USER_ACTIVITY_LEVEL = stringPreferencesKey("user_activity_level")
     val USER_CUSTOM_CALORIES_TARGET = doublePreferencesKey("user_custom_calories_target")
+    val USER_CALORIE_GOAL = stringPreferencesKey("user_calorie_goal")
 
     val SYNC_INTERVAL_MINUTES = longPreferencesKey("sync_interval_minutes")
     val CLOUD_SYNC_ENABLED = booleanPreferencesKey("cloud_sync_enabled")
@@ -69,6 +70,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             preferences[USER_GENDER] = userSettings.gender.name
             preferences[USER_ACTIVITY_LEVEL] = userSettings.activityLevel.name
             preferences[USER_CUSTOM_CALORIES_TARGET] = userSettings.customCaloriesTarget
+            preferences[USER_CALORIE_GOAL] = userSettings.calorieGoal.name
         }
     }
 
@@ -80,6 +82,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             val gender = preferences[USER_GENDER]?.let { Gender.valueOf(it) }
             val activityLevel = preferences[USER_ACTIVITY_LEVEL]?.let { ActivityLevel.valueOf(it) }
             val customCaloriesTarget = preferences[USER_CUSTOM_CALORIES_TARGET] ?: 0.0
+            val calorieGoal = preferences[USER_CALORIE_GOAL]?.let { CalorieGoal.valueOf(it) } ?: CalorieGoal.MAINTAIN
 
             if (weightKg != null && heightCm != null && age != null && gender != null && activityLevel != null) {
                 UserSettings(
@@ -88,7 +91,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
                     age = age,
                     gender = gender,
                     activityLevel = activityLevel,
-                    customCaloriesTarget = customCaloriesTarget
+                    customCaloriesTarget = customCaloriesTarget,
+                    calorieGoal = calorieGoal
                 )
             } else {
                 null

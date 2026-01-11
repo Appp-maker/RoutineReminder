@@ -9,7 +9,8 @@ data class UserSettings(
     val age: Int,
     val gender: Gender,
     val activityLevel: ActivityLevel,
-    val customCaloriesTarget: Double
+    val customCaloriesTarget: Double,
+    val calorieGoal: CalorieGoal = CalorieGoal.MAINTAIN
 )
 
 enum class Gender {
@@ -18,6 +19,10 @@ enum class Gender {
 
 enum class ActivityLevel {
     SEDENTARY, LIGHT, MODERATE, ACTIVE
+}
+
+enum class CalorieGoal {
+    MAINTAIN, LOSE_WEIGHT, GAIN_WEIGHT
 }
 
 @Serializable
