@@ -115,6 +115,8 @@ fun SettingsScreen(
     val currentOnAppDeleteImportedAction by viewModel.onAppDeleteImportedAction.collectAsState()
     val currentUseGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
     val currentImportTargetCalendarIdForBothMode by viewModel.importTargetCalendarIdForBothMode.collectAsState()
+    val currentCalendarSyncAppToCalendarEnabled by viewModel.calendarSyncAppToCalendarEnabled.collectAsState()
+    val currentCalendarSyncCalendarToAppEnabled by viewModel.calendarSyncCalendarToAppEnabled.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
@@ -147,6 +149,8 @@ fun SettingsScreen(
     var useGoogleBackupModeChecked by remember(currentUseGoogleBackupMode) { mutableStateOf(currentUseGoogleBackupMode) }
     var selectedImportTargetCalendarIdForBothMode by remember(currentImportTargetCalendarIdForBothMode) { mutableStateOf(currentImportTargetCalendarIdForBothMode) }
     var showAllEventsChecked by remember(showAllEvents) { mutableStateOf(showAllEvents) }
+    var calendarSyncAppToCalendarEnabled by remember(currentCalendarSyncAppToCalendarEnabled) { mutableStateOf(currentCalendarSyncAppToCalendarEnabled) }
+    var calendarSyncCalendarToAppEnabled by remember(currentCalendarSyncCalendarToAppEnabled) { mutableStateOf(currentCalendarSyncCalendarToAppEnabled) }
 
 
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
@@ -169,7 +173,17 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(currentDefaultEventSettings, currentOnCalendarDeleteAction, currentImportTargetCalendarId, currentOnAppDeleteImportedAction, currentUseGoogleBackupMode, currentImportTargetCalendarIdForBothMode, showAllEvents) {
+    LaunchedEffect(
+        currentDefaultEventSettings,
+        currentOnCalendarDeleteAction,
+        currentImportTargetCalendarId,
+        currentOnAppDeleteImportedAction,
+        currentUseGoogleBackupMode,
+        currentImportTargetCalendarIdForBothMode,
+        showAllEvents,
+        currentCalendarSyncAppToCalendarEnabled,
+        currentCalendarSyncCalendarToAppEnabled
+    ) {
         defaultEventHourState = currentDefaultEventSettings.hour
         defaultEventMinuteState = currentDefaultEventSettings.minute
         startTimeOption = StartTimeOption.fromName(currentDefaultEventSettings.startTimeOptionName)
@@ -186,6 +200,8 @@ fun SettingsScreen(
         useGoogleBackupModeChecked = currentUseGoogleBackupMode
         selectedImportTargetCalendarIdForBothMode = currentImportTargetCalendarIdForBothMode
         showAllEventsChecked = showAllEvents
+        calendarSyncAppToCalendarEnabled = currentCalendarSyncAppToCalendarEnabled
+        calendarSyncCalendarToAppEnabled = currentCalendarSyncCalendarToAppEnabled
         justSavedSuccessfully = false
     }
 
@@ -218,7 +234,9 @@ fun SettingsScreen(
             // If backup mode is on, any calendar selection that targets a Google Calendar
             // should revert to a local/default equivalent for UI consistency,
             // as Google Calendar interactions are disabled.
-            if (selectedImportTargetCalendarId.startsWith("google")) {
+            if (selectedImportTargetCalendarId.startsWith("google") ||
+                selectedImportTargetCalendarId == SettingsRepository.IMPORT_TARGET_CALENDAR_BOTH
+            ) {
                 selectedImportTargetCalendarId = SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL
             }
             if (selectedCalendarIdForNewEvents.startsWith("google")) {
@@ -245,6 +263,8 @@ fun SettingsScreen(
         selectedOnAppDeleteImportedAction, currentOnAppDeleteImportedAction,
         useGoogleBackupModeChecked, currentUseGoogleBackupMode,
         selectedImportTargetCalendarIdForBothMode, currentImportTargetCalendarIdForBothMode,
+        calendarSyncAppToCalendarEnabled, currentCalendarSyncAppToCalendarEnabled,
+        calendarSyncCalendarToAppEnabled, currentCalendarSyncCalendarToAppEnabled,
         currentDefaultEventSettings,
         selectedGoogleAccountName, // Added to dependency list
         showAllEventsChecked, showAllEvents,
@@ -276,6 +296,8 @@ fun SettingsScreen(
             if (useGoogleBackupModeChecked != currentUseGoogleBackupMode) return@derivedStateOf true
             // Logic for selectedImportTargetCalendarIdForBothMode might need adjustment
             if (selectedImportTargetCalendarIdForBothMode != currentImportTargetCalendarIdForBothMode) return@derivedStateOf true
+            if (calendarSyncAppToCalendarEnabled != currentCalendarSyncAppToCalendarEnabled) return@derivedStateOf true
+            if (calendarSyncCalendarToAppEnabled != currentCalendarSyncCalendarToAppEnabled) return@derivedStateOf true
             if (showAllEventsChecked != showAllEvents) return@derivedStateOf true
             if (selectedTabs != enabledTabs) return@derivedStateOf true
             // We don't directly compare selectedGoogleAccountName to a stored value for unsaved changes,
@@ -382,6 +404,8 @@ fun SettingsScreen(
                         viewModel.updateOnAppDeleteImportedAction(selectedOnAppDeleteImportedAction)
                         viewModel.updateUseGoogleBackupMode(useGoogleBackupModeChecked)
                         viewModel.updateImportTargetCalendarIdForBothMode(if (useGoogleBackupModeChecked) SettingsRepository.DEFAULT_IMPORT_TARGET_CALENDAR_ID_FOR_BOTH_MODE else currentImportTargetBoth)
+                        viewModel.updateCalendarSyncAppToCalendar(calendarSyncAppToCalendarEnabled)
+                        viewModel.updateCalendarSyncCalendarToApp(calendarSyncCalendarToAppEnabled)
                         viewModel.updateShowAllEvents(showAllEventsChecked)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
@@ -525,7 +549,11 @@ fun SettingsScreen(
                             onUseGoogleBackupModeChange = { newBackupModeState ->
                                 useGoogleBackupModeChecked = newBackupModeState
                                 if (newBackupModeState) {
-                                    if (selectedImportTargetCalendarId.startsWith("google")) selectedImportTargetCalendarId = SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL
+                                    if (selectedImportTargetCalendarId.startsWith("google") ||
+                                        selectedImportTargetCalendarId == SettingsRepository.IMPORT_TARGET_CALENDAR_BOTH
+                                    ) {
+                                        selectedImportTargetCalendarId = SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL
+                                    }
                                     if (selectedCalendarIdForNewEvents.startsWith("google")) selectedCalendarIdForNewEvents = SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL
                                     selectedImportTargetCalendarIdForBothMode = SettingsRepository.DEFAULT_IMPORT_TARGET_CALENDAR_ID_FOR_BOTH_MODE
                                 }
@@ -548,7 +576,6 @@ fun SettingsScreen(
                             useGoogleBackupModeChecked = useGoogleBackupModeChecked,
                             selectedImportTargetCalendarId = selectedImportTargetCalendarId,
                             onImportTargetCalendarIdChange = { selectedImportTargetCalendarId = it; justSavedSuccessfully = false },
-                            googleCalendars = googleCalendars,
                             onSelectGoogleCalendarForImport = {
                                 calendarSelectionPurpose = "import_event"
                                 viewModel.onSelectGoogleCalendarOption()
@@ -560,6 +587,10 @@ fun SettingsScreen(
                                 viewModel.onSelectGoogleCalendarOption()
                                 justSavedSuccessfully = false
                             },
+                            calendarSyncAppToCalendarEnabled = calendarSyncAppToCalendarEnabled,
+                            onCalendarSyncAppToCalendarEnabledChange = { calendarSyncAppToCalendarEnabled = it; justSavedSuccessfully = false },
+                            calendarSyncCalendarToAppEnabled = calendarSyncCalendarToAppEnabled,
+                            onCalendarSyncCalendarToAppEnabledChange = { calendarSyncCalendarToAppEnabled = it; justSavedSuccessfully = false },
                             selectedOnAppDeleteImportedAction = selectedOnAppDeleteImportedAction,
                             onOnAppDeleteImportedActionChange = { selectedOnAppDeleteImportedAction = it; justSavedSuccessfully = false },
                             onManageBlockedImportsClick = { showBlockedImportsDialog = true },
@@ -838,10 +869,13 @@ private fun CalendarSyncSettingsSection(
     useGoogleBackupModeChecked: Boolean,
     selectedImportTargetCalendarId: String,
     onImportTargetCalendarIdChange: (String) -> Unit,
-    googleCalendars: List<CalendarInfo>,
     onSelectGoogleCalendarForImport: () -> Unit,
     selectedImportTargetCalendarIdForBothMode: String,
     onSelectGoogleCalendarForBothModeImport: () -> Unit,
+    calendarSyncAppToCalendarEnabled: Boolean,
+    onCalendarSyncAppToCalendarEnabledChange: (Boolean) -> Unit,
+    calendarSyncCalendarToAppEnabled: Boolean,
+    onCalendarSyncCalendarToAppEnabledChange: (Boolean) -> Unit,
     selectedOnAppDeleteImportedAction: String,
     onOnAppDeleteImportedActionChange: (String) -> Unit,
     onManageBlockedImportsClick: () -> Unit,
@@ -850,6 +884,18 @@ private fun CalendarSyncSettingsSection(
     selectedGoogleAccountName: String? // Added parameter
 ) {
     Text(stringResource(R.string.settings_calendar_sync_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (useGoogleBackupModeChecked) 0.38f else MaterialTheme.colorScheme.onSurface.alpha))
+    SettingSwitchItem(
+        text = stringResource(R.string.settings_calendar_sync_direction_app_to_calendar),
+        checked = calendarSyncAppToCalendarEnabled,
+        onCheckedChange = onCalendarSyncAppToCalendarEnabledChange,
+        enabled = !useGoogleBackupModeChecked
+    )
+    SettingSwitchItem(
+        text = stringResource(R.string.settings_calendar_sync_direction_calendar_to_app),
+        checked = calendarSyncCalendarToAppEnabled,
+        onCheckedChange = onCalendarSyncCalendarToAppEnabledChange,
+        enabled = !useGoogleBackupModeChecked
+    )
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
@@ -884,41 +930,97 @@ private fun CalendarSyncSettingsSection(
         )
     }
     Spacer(modifier = Modifier.height(16.dp)) // This spacer maintains separation to the next element
-
-    SettingSwitchItem(
-        text = stringResource(R.string.settings_calendar_sync_import_gcal_events_auto),
-        checked = false,
-        onCheckedChange = {},
-        enabled = false
-    )
+    val importEnabled = calendarSyncCalendarToAppEnabled && !useGoogleBackupModeChecked
     Column(Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp).selectableGroup()) {
-        Text(stringResource(R.string.settings_calendar_sync_import_from), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
+        Text(
+            stringResource(R.string.settings_calendar_sync_import_from),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (importEnabled) MaterialTheme.colorScheme.onSurface.alpha else 0.38f)
+        )
+        val isGoogleSelected = selectedImportTargetCalendarId.startsWith("google")
+        val isBothSelected = selectedImportTargetCalendarId == SettingsRepository.IMPORT_TARGET_CALENDAR_BOTH
         Row(
             Modifier.fillMaxWidth().padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RadioButton(selected = false, onClick = null, enabled = false)
-            Text(text = stringResource(R.string.settings_calendar_sync_import_from_local), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp), color = LocalContentColor.current.copy(alpha = 0.38f))
+            RadioButton(
+                selected = selectedImportTargetCalendarId == SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL,
+                onClick = { onImportTargetCalendarIdChange(SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL) },
+                enabled = importEnabled
+            )
+            Text(
+                text = stringResource(R.string.settings_calendar_sync_import_from_local),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 8.dp),
+                color = if (importEnabled) LocalContentColor.current else LocalContentColor.current.copy(alpha = 0.38f)
+            )
         }
         // "Google Calendar" option
         Row(
             Modifier.fillMaxWidth().padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RadioButton(selected = false, onClick = null, enabled = false)
-            Text(text = stringResource(R.string.settings_default_events_select_gcal_primary), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp), color = LocalContentColor.current.copy(alpha = 0.38f))
+            RadioButton(
+                selected = isGoogleSelected,
+                onClick = {
+                    val fallback = if (selectedGoogleAccountName != null) {
+                        SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY
+                    } else {
+                        SettingsRepository.IMPORT_TARGET_CALENDAR_PRIMARY
+                    }
+                    onImportTargetCalendarIdChange(fallback)
+                },
+                enabled = importEnabled
+            )
+            Text(
+                text = stringResource(R.string.settings_default_events_select_gcal_primary),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 8.dp),
+                color = if (importEnabled) LocalContentColor.current else LocalContentColor.current.copy(alpha = 0.38f)
+            )
+        }
+        if (isGoogleSelected) {
+            OutlinedButton(
+                onClick = onSelectGoogleCalendarForImport,
+                enabled = importEnabled,
+                modifier = Modifier.padding(start = 32.dp, top = 4.dp)
+            ) {
+                Text(stringResource(R.string.settings_calendar_sync_select_google_calendar))
+            }
         }
         // "Both" option implicitly uses the selected Google Account's primary for the Google part
         Row(
             Modifier.fillMaxWidth().padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RadioButton(selected = false, onClick = null, enabled = false)
-            Text(text = stringResource(R.string.settings_calendar_sync_import_from_both), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp), color = LocalContentColor.current.copy(alpha = 0.38f))
+            RadioButton(
+                selected = isBothSelected,
+                onClick = { onImportTargetCalendarIdChange(SettingsRepository.IMPORT_TARGET_CALENDAR_BOTH) },
+                enabled = importEnabled
+            )
+            Text(
+                text = stringResource(R.string.settings_calendar_sync_import_from_both),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 8.dp),
+                color = if (importEnabled) LocalContentColor.current else LocalContentColor.current.copy(alpha = 0.38f)
+            )
+        }
+        if (isBothSelected) {
+            OutlinedButton(
+                onClick = onSelectGoogleCalendarForBothModeImport,
+                enabled = importEnabled,
+                modifier = Modifier.padding(start = 32.dp, top = 4.dp)
+            ) {
+                Text(stringResource(R.string.settings_calendar_sync_select_google_calendar))
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        Text(stringResource(R.string.settings_calendar_sync_on_app_delete_imported_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
+        Text(
+            stringResource(R.string.settings_calendar_sync_on_app_delete_imported_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (importEnabled) MaterialTheme.colorScheme.onSurface.alpha else 0.38f)
+        )
         val appDeleteOptions = listOf(
             SettingsRepository.ACTION_APP_DELETE_KEEPS_CALENDAR to stringResource(R.string.settings_calendar_sync_on_app_delete_keep),
             SettingsRepository.ACTION_APP_DELETE_DELETES_CALENDAR to stringResource(R.string.settings_calendar_sync_on_app_delete_delete),
@@ -926,13 +1028,26 @@ private fun CalendarSyncSettingsSection(
         )
         appDeleteOptions.forEach { (actionKey, displayText) ->
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = selectedOnAppDeleteImportedAction == actionKey, onClick = null, enabled = false)
-                Text(text = displayText, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp), color = LocalContentColor.current.copy(alpha = 0.38f))
+                RadioButton(
+                    selected = selectedOnAppDeleteImportedAction == actionKey,
+                    onClick = { onOnAppDeleteImportedActionChange(actionKey) },
+                    enabled = importEnabled
+                )
+                Text(
+                    text = displayText,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 8.dp),
+                    color = if (importEnabled) LocalContentColor.current else LocalContentColor.current.copy(alpha = 0.38f)
+                )
             }
         }
     }
     Spacer(modifier = Modifier.height(8.dp))
-    OutlinedButton(onClick = onManageBlockedImportsClick, modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 4.dp), enabled = false) {
+    OutlinedButton(
+        onClick = onManageBlockedImportsClick,
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+        enabled = importEnabled
+    ) {
         Text(stringResource(R.string.settings_calendar_sync_manage_blocked_imports))
     }
     Spacer(modifier = Modifier.height(8.dp))

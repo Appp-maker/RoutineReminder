@@ -28,6 +28,9 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedule WHERE id = :id LIMIT 1")
     suspend fun getItemById(id: Long): Schedule?
 
+    @Query("SELECT * FROM schedule WHERE calendarEventId = :calendarEventId LIMIT 1")
+    suspend fun getItemByCalendarEventId(calendarEventId: Long): Schedule?
+
     // Stream all schedule items
     @Query("SELECT * FROM schedule ORDER BY id DESC")
     fun observeAll(): Flow<List<Schedule>>

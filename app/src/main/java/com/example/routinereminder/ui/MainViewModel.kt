@@ -18,6 +18,8 @@ import com.example.routinereminder.data.mappers.toEntity
 import com.example.routinereminder.data.mappers.toItem
 import com.example.routinereminder.location.TrackingService
 import com.example.routinereminder.util.NotificationScheduler
+import com.example.routinereminder.util.CalendarSyncManager
+import com.example.routinereminder.util.CalendarMeta
 import com.example.routinereminder.workers.ExerciseDbDownloadWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -98,6 +100,14 @@ class MainViewModel @Inject constructor(
 
     private val _calendarEventCounts = MutableStateFlow(CalendarEventCounts())
     val calendarEventCounts: StateFlow<CalendarEventCounts> = _calendarEventCounts.asStateFlow()
+
+    private val _calendarSyncAppToCalendarEnabled = MutableStateFlow(true)
+    val calendarSyncAppToCalendarEnabled: StateFlow<Boolean> =
+        _calendarSyncAppToCalendarEnabled.asStateFlow()
+
+    private val _calendarSyncCalendarToAppEnabled = MutableStateFlow(true)
+    val calendarSyncCalendarToAppEnabled: StateFlow<Boolean> =
+        _calendarSyncCalendarToAppEnabled.asStateFlow()
 
     private val _enabledTabs = MutableStateFlow<Set<AppTab>?>(null)
     val enabledTabs: StateFlow<Set<AppTab>?> = _enabledTabs.asStateFlow()
@@ -204,6 +214,18 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getShowAllEvents().collectLatest { showAll ->
                 _showAllEvents.value = showAll
+            }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.getCalendarSyncAppToCalendar().collectLatest { enabled ->
+                _calendarSyncAppToCalendarEnabled.value = enabled
+            }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.getCalendarSyncCalendarToApp().collectLatest { enabled ->
+                _calendarSyncCalendarToAppEnabled.value = enabled
             }
         }
 
@@ -371,8 +393,10 @@ class MainViewModel @Inject constructor(
 
     fun onAppResumed() {
         refreshScheduleItems()
-
+        viewModelScope.launch(Dispatchers.IO) {
+            syncCalendarsIfNeeded()
         }
+    }
 
 
     fun onAppPaused() {
@@ -454,12 +478,55 @@ class MainViewModel @Inject constructor(
             val epochDay = startDate.toEpochDay()
 
             // Insert once
+            val shouldSyncToCalendar = shouldSyncAppToCalendar() &&
+                (item.addToCalendarOnSave || item.calendarEventId != null)
+            val context = getApplication<Application>()
+            val calendars = if (shouldSyncToCalendar && CalendarSyncManager.hasCalendarPermissions(context)) {
+                CalendarSyncManager.queryCalendars(context)
+            } else {
+                emptyList()
+            }
+            val targetCalendarSystem = item.targetCalendarSystem ?: _defaultEventSettings.value.targetCalendarId
+            val targetCalendarId = if (shouldSyncToCalendar && calendars.isNotEmpty()) {
+                CalendarSyncManager.resolveTargetCalendarId(calendars, targetCalendarSystem, _selectedGoogleAccountName.value)
+            } else {
+                null
+            }
+            val matchingEventId = if (shouldSyncToCalendar && targetCalendarId != null && item.calendarEventId == null) {
+                CalendarSyncManager.findMatchingEventId(context, targetCalendarId, item)
+            } else {
+                null
+            }
+            val calendarEventId = if (shouldSyncToCalendar && targetCalendarId != null && item.calendarEventId == null) {
+                matchingEventId ?: CalendarSyncManager.upsertEvent(context, item, targetCalendarId)
+            } else {
+                item.calendarEventId
+            }
+            val resolvedOrigin = if (calendarEventId != null && item.origin == "APP_CREATED") {
+                if (targetCalendarId != null && CalendarSyncManager.isGoogleCalendar(targetCalendarId, calendars)) {
+                    "APP_CREATED_GOOGLE"
+                } else {
+                    "APP_CREATED_LOCAL"
+                }
+            } else {
+                item.origin
+            }
             val entity = item.copy(
-                origin = "APP_CREATED",
-                startEpochDay = epochDay
+                startEpochDay = epochDay,
+                calendarEventId = calendarEventId,
+                origin = resolvedOrigin,
+                targetCalendarSystem = targetCalendarSystem
             ).toEntity()
 
             scheduleDao.upsert(entity)
+
+            if (shouldSyncToCalendar && item.calendarEventId != null && targetCalendarId != null) {
+                CalendarSyncManager.upsertEvent(
+                    context,
+                    item.copy(calendarEventId = item.calendarEventId),
+                    targetCalendarId
+                )
+            }
 
             if (item.notifyEnabled) {
                 notificationScheduler.scheduleSingleOccurrence(item, epochDay)
@@ -544,7 +611,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             scheduleDao.delete(item.id)
             if (deleteFromCalendar && item.calendarEventId != null) {
-                // TODO: delete from external calendar if you store calendarEventId
+                CalendarSyncManager.deleteEvent(getApplication(), item.calendarEventId)
             }
             refreshScheduleItems()
         }
@@ -595,6 +662,18 @@ class MainViewModel @Inject constructor(
     fun updateImportTargetCalendarIdForBothMode(calendarId: String) {
         viewModelScope.launch {
             settingsRepository.saveImportTargetCalendarIdForBothMode(calendarId)
+        }
+    }
+
+    fun updateCalendarSyncAppToCalendar(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveCalendarSyncAppToCalendar(enabled)
+        }
+    }
+
+    fun updateCalendarSyncCalendarToApp(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveCalendarSyncCalendarToApp(enabled)
         }
     }
 
@@ -664,6 +743,158 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             showGoogleCalendarChooser.send(Unit)
         }
+    }
+
+    private suspend fun syncCalendarsIfNeeded() {
+        if (isSyncing) return
+        if (_useGoogleBackupMode.value) return
+        if (!_calendarSyncAppToCalendarEnabled.value && !_calendarSyncCalendarToAppEnabled.value) return
+        val context = getApplication<Application>()
+        if (!CalendarSyncManager.hasCalendarPermissions(context)) {
+            requestCalendarPermission.send(Unit)
+            return
+        }
+        isSyncing = true
+        try {
+            val calendars = CalendarSyncManager.queryCalendars(context)
+            if (_calendarSyncCalendarToAppEnabled.value) {
+                syncFromCalendarToApp(context, calendars)
+            }
+            if (_calendarSyncAppToCalendarEnabled.value) {
+                syncFromAppToCalendar(context, calendars)
+            }
+        } finally {
+            isSyncing = false
+        }
+    }
+
+    private suspend fun syncFromCalendarToApp(context: Context, calendars: List<CalendarMeta>) {
+        val importTarget = _importTargetCalendarId.value
+        val importTargetBoth = _importTargetCalendarIdForBothMode.value
+        val calendarIds = CalendarSyncManager.resolveImportCalendarIds(
+            calendars,
+            importTarget,
+            importTargetBoth,
+            _selectedGoogleAccountName.value
+        )
+        if (calendarIds.isEmpty()) return
+        val nowMillis = System.currentTimeMillis()
+        val rangeStartMillis = nowMillis - (30L * 24 * 60 * 60 * 1000)
+        val rangeEndMillis = nowMillis + (365L * 24 * 60 * 60 * 1000)
+        val events = CalendarSyncManager.queryEvents(context, calendarIds, rangeStartMillis, rangeEndMillis)
+        val calendarMetaMap = calendars.associateBy { it.id }
+        val scheduleItems = scheduleDao.getAllOnce().map { it.toItem() }.toMutableList()
+
+        events.forEach { event ->
+            val existing = scheduleItems.firstOrNull { it.calendarEventId == event.id }
+            val eventItem = CalendarSyncManager.eventToScheduleItem(
+                event = event,
+                calendarMetaMap = calendarMetaMap,
+                existingId = existing?.id ?: 0,
+                existingOrigin = existing?.origin,
+                existingTargetCalendarSystem = existing?.targetCalendarSystem
+            )
+            if (existing != null) {
+                if (!isSameContent(existing, eventItem)) {
+                    scheduleDao.upsert(eventItem.toEntity())
+                    scheduleItems.remove(existing)
+                    scheduleItems.add(eventItem)
+                }
+            } else {
+                val matching = scheduleItems.firstOrNull { candidate ->
+                    candidate.calendarEventId == null && isSameContent(candidate, eventItem)
+                }
+                if (matching != null) {
+                    val linkedOrigin = if (matching.origin == "APP_CREATED") {
+                        if (CalendarSyncManager.isGoogleCalendar(event.calendarId, calendars)) {
+                            "APP_CREATED_GOOGLE"
+                        } else {
+                            "APP_CREATED_LOCAL"
+                        }
+                    } else {
+                        matching.origin
+                    }
+                    val linked = matching.copy(
+                        calendarEventId = event.id,
+                        origin = linkedOrigin,
+                        targetCalendarSystem = eventItem.targetCalendarSystem
+                    )
+                    scheduleDao.upsert(linked.toEntity())
+                    scheduleItems.remove(matching)
+                    scheduleItems.add(linked)
+                } else {
+                    scheduleDao.upsert(eventItem.toEntity())
+                    scheduleItems.add(eventItem)
+                }
+            }
+        }
+
+        val deleteAction = _onCalendarDeleteAction.value
+        scheduleItems.filter { it.calendarEventId != null }.forEach { item ->
+            val eventId = item.calendarEventId ?: return@forEach
+            if (!CalendarSyncManager.eventExists(context, eventId)) {
+                if (deleteAction == SettingsRepository.ACTION_DELETE_FROM_APP) {
+                    scheduleDao.delete(item.id)
+                }
+            }
+        }
+    }
+
+    private suspend fun syncFromAppToCalendar(context: Context, calendars: List<CalendarMeta>) {
+        val scheduleItems = scheduleDao.getAllOnce().map { it.toItem() }
+        scheduleItems.forEach { item ->
+            if (!item.addToCalendarOnSave && item.calendarEventId == null) return@forEach
+            val targetSystem = item.targetCalendarSystem ?: _defaultEventSettings.value.targetCalendarId
+            val calendarId = CalendarSyncManager.resolveTargetCalendarId(
+                calendars,
+                targetSystem,
+                _selectedGoogleAccountName.value
+            ) ?: return@forEach
+            if (item.calendarEventId == null) {
+                val existingEventId = CalendarSyncManager.findMatchingEventId(context, calendarId, item)
+                val createdEventId = existingEventId ?: CalendarSyncManager.upsertEvent(
+                    context,
+                    item,
+                    calendarId
+                )
+                if (createdEventId != null) {
+                    val origin = if (item.origin == "APP_CREATED") {
+                        if (CalendarSyncManager.isGoogleCalendar(calendarId, calendars)) {
+                            "APP_CREATED_GOOGLE"
+                        } else {
+                            "APP_CREATED_LOCAL"
+                        }
+                    } else {
+                        item.origin
+                    }
+                    val updated = item.copy(
+                        calendarEventId = createdEventId,
+                        origin = origin,
+                        targetCalendarSystem = targetSystem
+                    )
+                    scheduleDao.upsert(updated.toEntity())
+                }
+            } else {
+                CalendarSyncManager.upsertEvent(context, item, calendarId)
+            }
+        }
+    }
+
+    private fun shouldSyncAppToCalendar(): Boolean {
+        return !_useGoogleBackupMode.value && _calendarSyncAppToCalendarEnabled.value
+    }
+
+    private fun isSameContent(left: ScheduleItem, right: ScheduleItem): Boolean {
+        return left.name == right.name &&
+            left.notes == right.notes &&
+            left.hour == right.hour &&
+            left.minute == right.minute &&
+            left.durationMinutes == right.durationMinutes &&
+            left.isOneTime == right.isOneTime &&
+            left.dateEpochDay == right.dateEpochDay &&
+            left.startEpochDay == right.startEpochDay &&
+            left.repeatOnDays == right.repeatOnDays &&
+            left.repeatEveryWeeks == right.repeatEveryWeeks
     }
 }
 

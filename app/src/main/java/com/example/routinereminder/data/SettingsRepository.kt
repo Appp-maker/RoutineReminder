@@ -35,6 +35,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val IMPORT_TARGET_CALENDAR_ID_FOR_BOTH_MODE = stringPreferencesKey("import_target_calendar_id_for_both_mode")
     val SELECTED_GOOGLE_ACCOUNT_NAME = stringPreferencesKey("selected_google_account_name")
     val SHOW_ALL_EVENTS = booleanPreferencesKey("show_all_events")
+    val CALENDAR_SYNC_APP_TO_CALENDAR = booleanPreferencesKey("calendar_sync_app_to_calendar")
+    val CALENDAR_SYNC_CALENDAR_TO_APP = booleanPreferencesKey("calendar_sync_calendar_to_app")
     val ENABLED_TABS = stringSetPreferencesKey("enabled_tabs")
     val EXERCISE_DB_LAST_REFRESH = longPreferencesKey("exercise_db_last_refresh_epoch_ms")
     val EXERCISE_DB_LAST_PROMPT = longPreferencesKey("exercise_db_last_prompt_epoch_ms")
@@ -48,6 +50,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         const val ACTION_DELETE_FROM_APP = "DELETE_FROM_APP"
         const val IMPORT_TARGET_CALENDAR_LOCAL = "local"
         const val IMPORT_TARGET_CALENDAR_PRIMARY = "google_primary"
+        const val IMPORT_TARGET_CALENDAR_BOTH = "both"
         const val IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY = "google_selected_account_primary"
         const val ACTION_APP_DELETE_KEEPS_CALENDAR = "APP_DELETE_KEEPS_CALENDAR"
         const val ACTION_APP_DELETE_DELETES_CALENDAR = "APP_DELETE_DELETES_CALENDAR"
@@ -252,6 +255,30 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getShowAllEvents(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[SHOW_ALL_EVENTS] ?: false
+        }
+    }
+
+    suspend fun saveCalendarSyncAppToCalendar(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[CALENDAR_SYNC_APP_TO_CALENDAR] = enabled
+        }
+    }
+
+    fun getCalendarSyncAppToCalendar(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[CALENDAR_SYNC_APP_TO_CALENDAR] ?: true
+        }
+    }
+
+    suspend fun saveCalendarSyncCalendarToApp(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[CALENDAR_SYNC_CALENDAR_TO_APP] = enabled
+        }
+    }
+
+    fun getCalendarSyncCalendarToApp(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[CALENDAR_SYNC_CALENDAR_TO_APP] ?: true
         }
     }
 
