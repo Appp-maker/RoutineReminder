@@ -11,6 +11,7 @@ import androidx.navigation.NavController
 import com.example.routinereminder.data.entities.PORTION_TYPE_CUSTOM
 import com.example.routinereminder.data.entities.PORTION_TYPE_GRAMS
 import com.example.routinereminder.ui.Screen
+import com.example.routinereminder.ui.components.RichTextEditor
 
 @Composable
 fun CreateBundleScreen(
@@ -43,11 +44,12 @@ fun CreateBundleScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        OutlinedTextField(
+        RichTextEditor(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth()
+            label = "Description",
+            modifier = Modifier.fillMaxWidth(),
+            outlined = true
         )
 
         Spacer(Modifier.height(12.dp))

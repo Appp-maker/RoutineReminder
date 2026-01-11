@@ -281,10 +281,10 @@ fun EditItemDialog(
                         singleLine = true
                     )
                     Spacer(Modifier.height(8.dp))
-                    TextField(
+                    RichTextEditor(
                         value = notes,
                         onValueChange = { notes = it },
-                        label = { Text("Notes (optional)") },
+                        label = "Notes (optional)",
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2
                     )
