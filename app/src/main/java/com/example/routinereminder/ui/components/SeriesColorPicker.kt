@@ -36,20 +36,24 @@ fun SeriesColorPicker(
     selectedColor: Color,
     onColorSelected: (Color) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    colorOptions: List<Color> = SeriesColorOptions,
+    showLabel: Boolean = true
 ) {
     Column(modifier = modifier) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        )
-        Spacer(modifier = Modifier.height(6.dp))
+        if (showLabel) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SeriesColorOptions.forEach { color ->
+            colorOptions.forEach { color ->
                 val isSelected = color.toArgb() == selectedColor.toArgb()
                 Box(
                     modifier = Modifier
