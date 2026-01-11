@@ -79,6 +79,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.LineString
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Calendar
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -188,8 +189,7 @@ fun MapScreen(
     var showManualEntry by rememberSaveable { mutableStateOf(false) }
     var manualDistanceKm by rememberSaveable { mutableStateOf("") }
     var manualDurationMin by rememberSaveable { mutableStateOf("") }
-    var showCaloriesDialog by rememberSaveable { mutableStateOf(false) }
-    var consumedCaloriesInput by rememberSaveable { mutableStateOf("") }
+    val mapCaloriesLoggingEnabled by viewModel.mapCaloriesLoggingEnabled.collectAsState()
 
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
@@ -531,6 +531,21 @@ fun MapScreen(
                         val pace = avgPaceSecPerKm(distanceMeters, durationSecManual)
                         val splits = estimateSplits(distanceMeters, durationSecManual)
 
+                        val calorieProfile = resolveCalorieProfile(
+                            weightKg = viewModel.currentUserWeightKgOrNull(),
+                            heightCm = viewModel.currentUserHeightCmOrNull(),
+                            ageYears = viewModel.currentUserAgeOrNull(),
+                            gender = viewModel.currentUserGenderOrNull(),
+                            source = "MapScreenManualEntry"
+                        )
+                        val caloriesBurned = calcCalories(
+                            met = selectedActivity.met,
+                            weightKg = calorieProfile.weightKg,
+                            heightCm = calorieProfile.heightCm,
+                            age = calorieProfile.ageYears,
+                            gender = calorieProfile.gender,
+                            durationSec = durationSecManual
+                        )
                         val session = SessionStats(
                             id = now.toString(),
                             activity = selectedActivity.label,
@@ -538,6 +553,7 @@ fun MapScreen(
                             endEpochMs = now,
                             durationSec = durationSecManual,
                             distanceMeters = distanceMeters,
+                            calories = caloriesBurned,
                             avgPaceSecPerKm = pace,
                             splitPaceSecPerKm = splits,
                             polyline = emptyList()
@@ -554,51 +570,6 @@ fun MapScreen(
             dismissButton = {
                 TextButton(onClick = { showManualEntry = false }) {
                     Text("Cancel")
-                }
-            }
-        )
-    }
-    if (showCaloriesDialog) {
-        val caloriesValue = consumedCaloriesInput.toIntOrNull()
-        val quickLogLabel = stringResource(R.string.calorie_tracker_quick_log_map)
-        AlertDialog(
-            onDismissRequest = { showCaloriesDialog = false },
-            title = { Text(text = stringResource(R.string.calorie_tracker_add_consumed_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = stringResource(R.string.calorie_tracker_add_consumed_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = ComposeColor.Gray
-                    )
-                    OutlinedTextField(
-                        value = consumedCaloriesInput,
-                        onValueChange = { consumedCaloriesInput = it },
-                        label = { Text(stringResource(R.string.calorie_tracker_add_consumed_label)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = caloriesValue != null && caloriesValue > 0,
-                    onClick = {
-                        val calories = caloriesValue ?: return@TextButton
-                        calorieTrackerViewModel.logCaloriesConsumed(
-                            calories = calories,
-                            label = quickLogLabel
-                        )
-                        consumedCaloriesInput = ""
-                        showCaloriesDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.calorie_tracker_add_consumed_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCaloriesDialog = false }) {
-                    Text(stringResource(R.string.calorie_tracker_add_consumed_cancel))
                 }
             }
         )
@@ -634,14 +605,35 @@ fun MapScreen(
                 }
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
-            Button(
-                onClick = { showCaloriesDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFF2E7D32))
-            ) {
-                Text(stringResource(R.string.calorie_tracker_add_consumed_action))
+            if (mapCaloriesLoggingEnabled) {
+                val quickLogLabel = stringResource(R.string.calorie_tracker_quick_log_map)
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val todayCalories = SessionStore.loadAllSessions(context)
+                                .filter { isSameDay(it.startEpochMs, System.currentTimeMillis()) }
+                                .sumOf { it.calories }
+                            if (todayCalories > 0.0) {
+                                calorieTrackerViewModel.logCaloriesConsumed(
+                                    calories = todayCalories.roundToInt(),
+                                    label = quickLogLabel
+                                )
+                            } else {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    context.getString(R.string.map_calories_log_empty_toast),
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFF2E7D32))
+                ) {
+                    Text(stringResource(R.string.calorie_tracker_add_consumed_action))
+                }
             }
 
             if (splitDurations.isNotEmpty()) {
@@ -911,6 +903,7 @@ fun MapScreen(
                                         endEpochMs = now,
                                         durationSec = durationSec,
                                         distanceMeters = distanceMeters,
+                                        calories = calories,
                                         avgPaceSecPerKm = pace,
                                         splitPaceSecPerKm = splitDurations,
                                         polyline = trailPoints
@@ -1176,6 +1169,15 @@ fun calcCalories(
     return (bmr / 24.0) * met * hours
 }
 
+private fun isSameDay(firstEpochMs: Long, secondEpochMs: Long): Boolean {
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = firstEpochMs
+    val year = calendar.get(Calendar.YEAR)
+    val dayOfYear = calendar.get(Calendar.DAY_OF_YEAR)
+    calendar.timeInMillis = secondEpochMs
+    return year == calendar.get(Calendar.YEAR) && dayOfYear == calendar.get(Calendar.DAY_OF_YEAR)
+}
+
 private fun haversineMeters(a: Point, b: Point): Double {
     val R = 6371000.0
     val lat1 = Math.toRadians(a.latitude())
@@ -1249,6 +1251,7 @@ fun decodeList(json: String): List<SessionStats> {
                 endEpochMs = grab("end").toLongOrNull() ?: 0L,
                 durationSec = grab("dur").toLongOrNull() ?: 0L,
                 distanceMeters = grab("dist").toDoubleOrNull() ?: 0.0,
+                calories = grab("calories").toDoubleOrNull() ?: 0.0,
                 avgPaceSecPerKm = grab("pace").toLongOrNull() ?: 0L,
                 splitPaceSecPerKm = splits,
                 polyline = pts
