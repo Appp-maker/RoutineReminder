@@ -63,6 +63,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material3.*
@@ -1002,35 +1003,75 @@ private fun EventSetToggleRow(
     onToggleSet: (Int) -> Boolean
 ) {
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
+    var expanded by remember { mutableStateOf(false) }
+    val selectedSetNames = remember(eventSetNames, availableSetIds, activeSetIds) {
+        availableSetIds.sorted().mapNotNull { setId ->
+            if (activeSetIds.contains(setId)) {
+                eventSetNames.getOrNull(setId - 1) ?: "Set $setId"
+            } else {
+                null
+            }
+        }
+    }
+    val buttonLabel = if (selectedSetNames.isEmpty()) {
+        stringResource(R.string.event_sets_select_label)
+    } else {
+        selectedSetNames.joinToString()
+    }
     Column {
         Text(
             text = stringResource(R.string.event_sets_active_today),
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(scrollState),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            availableSetIds.sorted().forEach { setId ->
-                val name = eventSetNames.getOrNull(setId - 1) ?: "Set $setId"
-                FilterChip(
-                    selected = activeSetIds.contains(setId),
-                    onClick = {
-                        val updated = onToggleSet(setId)
-                        if (!updated) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.event_sets_max_selected, SettingsRepository.MAX_ACTIVE_SETS_PER_DAY),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    },
-                    label = { Text(name) }
+        Box {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = buttonLabel,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                availableSetIds.sorted().forEach { setId ->
+                    val name = eventSetNames.getOrNull(setId - 1) ?: "Set $setId"
+                    val selected = activeSetIds.contains(setId)
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        leadingIcon = {
+                            Checkbox(
+                                checked = selected,
+                                onCheckedChange = null
+                            )
+                        },
+                        onClick = {
+                            val updated = onToggleSet(setId)
+                            if (!updated) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(
+                                        R.string.event_sets_max_selected,
+                                        SettingsRepository.MAX_ACTIVE_SETS_PER_DAY
+                                    ),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
+                }
             }
         }
     }
