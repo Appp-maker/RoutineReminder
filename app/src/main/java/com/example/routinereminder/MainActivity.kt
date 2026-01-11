@@ -876,7 +876,14 @@ private fun ScheduleItemListContent(
         showNowIndicator,
         nowIndicatorIndex
     ) {
-        if (!showNowIndicator || nowIndicatorIndex < 0) {
+        if (distinctItems.isEmpty()) {
+            buildList {
+                if (showNowIndicator) {
+                    add(DisplayScheduleItem.NowIndicator)
+                }
+                add(DisplayScheduleItem.EmptyState)
+            }
+        } else if (!showNowIndicator || nowIndicatorIndex < 0) {
             distinctItems.map { item: ScheduleItem ->
                 DisplayScheduleItem.Event(item)
             }
@@ -898,47 +905,46 @@ private fun ScheduleItemListContent(
         }
     }
 
-    if (distinctItems.isEmpty()) {
-        Text(
-            text = "No entries for this day. Tap + to create a new entry or swipe for another day.",
-            modifier = Modifier.padding(top = 16.dp)
-        )
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            state = listState,
-            verticalArrangement = Arrangement.Top,
-            contentPadding = PaddingValues(bottom = 72.dp)
-        ) {
-            items(
-                items = displayItems,
-                key = { displayItem: DisplayScheduleItem ->
-                    when (displayItem) {
-                        is DisplayScheduleItem.Event -> displayItem.item.id
-                        DisplayScheduleItem.NowIndicator -> "now-indicator"
-                    }
-                }
-            ) { displayItem: DisplayScheduleItem ->
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        state = listState,
+        verticalArrangement = Arrangement.Top,
+        contentPadding = PaddingValues(bottom = 72.dp)
+    ) {
+        items(
+            items = displayItems,
+            key = { displayItem: DisplayScheduleItem ->
                 when (displayItem) {
-                    is DisplayScheduleItem.Event -> {
-                        val item = displayItem.item
-                        val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
-                        val isDoneToday = doneStates[key] == true
-
-                        ScheduleItemView(
-                            item = item,
-                            currentDate = currentDate,
-                            isDoneToday = isDoneToday,
-                            eventSetColors = eventSetColors,
-                            onLongPress = onLongPress
-                        )
-                    }
-                    DisplayScheduleItem.NowIndicator -> {
-                        NowIndicatorRow()
-                    }
+                    is DisplayScheduleItem.Event -> displayItem.item.id
+                    DisplayScheduleItem.NowIndicator -> "now-indicator"
+                    DisplayScheduleItem.EmptyState -> "empty-state"
                 }
             }
+        ) { displayItem: DisplayScheduleItem ->
+            when (displayItem) {
+                is DisplayScheduleItem.Event -> {
+                    val item = displayItem.item
+                    val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
+                    val isDoneToday = doneStates[key] == true
 
+                    ScheduleItemView(
+                        item = item,
+                        currentDate = currentDate,
+                        isDoneToday = isDoneToday,
+                        eventSetColors = eventSetColors,
+                        onLongPress = onLongPress
+                    )
+                }
+                DisplayScheduleItem.NowIndicator -> {
+                    NowIndicatorRow()
+                }
+                DisplayScheduleItem.EmptyState -> {
+                    Text(
+                        text = "No entries for this day. Tap + to create a new entry or swipe for another day.",
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -970,6 +976,7 @@ private fun NowIndicatorRow() {
 private sealed class DisplayScheduleItem {
     data class Event(val item: ScheduleItem) : DisplayScheduleItem()
     data object NowIndicator : DisplayScheduleItem()
+    data object EmptyState : DisplayScheduleItem()
 }
 
 @Composable
