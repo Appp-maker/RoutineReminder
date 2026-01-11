@@ -493,6 +493,25 @@ fun MapScreen(
         val distanceKm = manualDistanceKm.toDoubleOrNull()
         val durationMin = manualDurationMin.toDoubleOrNull()
         val canSave = distanceKm != null && distanceKm > 0.0 && durationMin != null && durationMin > 0.0
+        val calorieProfile = resolveCalorieProfile(
+            weightKg = viewModel.currentUserWeightKgOrNull(),
+            heightCm = viewModel.currentUserHeightCmOrNull(),
+            ageYears = viewModel.currentUserAgeOrNull(),
+            gender = viewModel.currentUserGenderOrNull(),
+            source = "MapScreenManualEntryPreview"
+        )
+        val estimatedCalories = if (durationMin != null && durationMin > 0.0) {
+            calcCalories(
+                met = selectedActivity.met,
+                weightKg = calorieProfile.weightKg,
+                heightCm = calorieProfile.heightCm,
+                age = calorieProfile.ageYears,
+                gender = calorieProfile.gender,
+                durationSec = (durationMin * 60).roundToLong()
+            ).roundToInt()
+        } else {
+            null
+        }
 
         AlertDialog(
             onDismissRequest = { showManualEntry = false },
@@ -503,6 +522,15 @@ fun MapScreen(
                         text = "Enter your estimated distance and duration.",
                         style = MaterialTheme.typography.bodySmall,
                         color = ComposeColor.Gray
+                    )
+                    Text(
+                        text = "Activity",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    ActivitySelector(
+                        current = selectedActivity,
+                        onChange = { selectedActivity = it }
                     )
                     OutlinedTextField(
                         value = manualDistanceKm,
@@ -517,6 +545,11 @@ fun MapScreen(
                         label = { Text("Duration (minutes)") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    Text(
+                        text = "Estimated calories: ${estimatedCalories?.toString() ?: "--"} kcal",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ComposeColor.Gray
                     )
                 }
             },
