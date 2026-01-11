@@ -54,7 +54,8 @@ data class WorkoutUiState(
     val isGifDownloading: Boolean = false,
     val exerciseDbDownloadSizeMb: Int = EXERCISE_DB_DOWNLOAD_MB,
     val exerciseDbGifDownloadSizeMb: Int = EXERCISE_DB_GIF_DOWNLOAD_MB,
-    val exerciseDbTotalDownloadSizeMb: Int = EXERCISE_DB_TOTAL_DOWNLOAD_MB
+    val exerciseDbTotalDownloadSizeMb: Int = EXERCISE_DB_TOTAL_DOWNLOAD_MB,
+    val autoEditExerciseId: String? = null
 )
 
 @HiltViewModel
@@ -549,19 +550,36 @@ class WorkoutViewModel @Inject constructor(
     }
 
     fun addExerciseToPlan(planId: String, exercise: ExerciseDbExercise) {
+        var wasAdded = false
         val updatedPlans = _uiState.value.plans.map { plan ->
             if (plan.id == planId) {
                 if (plan.exercises.any { it.id == exercise.id }) {
                     plan
                 } else {
+                    wasAdded = true
                     plan.copy(exercises = plan.exercises + exercise.toPlanExercise())
                 }
             } else {
                 plan
             }
         }
-        _uiState.update { state -> state.copy(plans = updatedPlans) }
+        _uiState.update { state ->
+            state.copy(
+                plans = updatedPlans,
+                autoEditExerciseId = if (wasAdded) exercise.id else state.autoEditExerciseId
+            )
+        }
         persistPlans(updatedPlans, _uiState.value.selectedPlanId)
+    }
+
+    fun consumeAutoEditExercise(exerciseId: String) {
+        _uiState.update { state ->
+            if (state.autoEditExerciseId == exerciseId) {
+                state.copy(autoEditExerciseId = null)
+            } else {
+                state
+            }
+        }
     }
 
     fun removeExerciseFromPlan(planId: String, exerciseId: String) {
