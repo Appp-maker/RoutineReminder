@@ -1241,6 +1241,8 @@ private fun ExercisePreviewDialog(
     )
 }
 
+}
+
 @Composable
 private fun ExerciseGifUrlText(gifUrl: String?) {
     val text = if (!gifUrl.isNullOrBlank()) {
