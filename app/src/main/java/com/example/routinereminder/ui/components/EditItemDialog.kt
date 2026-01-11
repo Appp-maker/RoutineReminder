@@ -334,7 +334,6 @@ fun EditItemDialog(
                     }
                     val displayColorArgb = eventSetColorArgb ?: selectedColorArgb
 
-                    Text(stringResource(R.string.event_set_label), style = MaterialTheme.typography.labelMedium)
                     ExposedDropdownMenuBox(
                         expanded = setMenuExpanded,
                         onExpandedChange = { setMenuExpanded = !setMenuExpanded }
