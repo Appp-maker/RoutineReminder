@@ -43,6 +43,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -60,6 +61,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -907,11 +909,35 @@ fun WorkoutScreen(
                     alphabet.indexOf(letter).takeIf { it >= 0 }
                 }.sorted()
             }
+            val sliderRangeMax = alphabet.lastIndex.toFloat()
+            val edgeSnapThreshold = sliderRangeMax * 0.1f
+            fun sliderValueToIndex(value: Float): Int {
+                val clamped = value.coerceIn(0f, sliderRangeMax)
+                return when {
+                    clamped <= edgeSnapThreshold -> 0
+                    clamped >= sliderRangeMax - edgeSnapThreshold -> alphabet.lastIndex
+                    else -> {
+                        val normalized = (clamped - edgeSnapThreshold) / (sliderRangeMax - (edgeSnapThreshold * 2))
+                        (normalized * alphabet.lastIndex).roundToInt().coerceIn(0, alphabet.lastIndex)
+                    }
+                }
+            }
+            fun indexToSliderValue(index: Int): Float {
+                val clamped = index.coerceIn(0, alphabet.lastIndex)
+                return when (clamped) {
+                    0 -> 0f
+                    alphabet.lastIndex -> sliderRangeMax
+                    else -> {
+                        val normalized = clamped.toFloat() / alphabet.lastIndex.toFloat()
+                        edgeSnapThreshold + (normalized * (sliderRangeMax - (edgeSnapThreshold * 2)))
+                    }
+                }
+            }
             var sliderValue by remember { mutableStateOf(0f) }
             var isDragging by remember { mutableStateOf(false) }
             val sliderLetter by remember(sliderValue, availableLetterIndices) {
                 derivedStateOf {
-                    val targetIndex = sliderValue.roundToInt().coerceIn(0, alphabet.lastIndex)
+                    val targetIndex = sliderValueToIndex(sliderValue)
                     val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
                     nearestIndex?.let { alphabet[it] }
                 }
@@ -919,9 +945,11 @@ fun WorkoutScreen(
             LaunchedEffect(currentLetter, isDragging) {
                 if (!isDragging) {
                     val index = currentLetter?.let { alphabet.indexOf(it) } ?: 0
-                    sliderValue = index.toFloat().coerceIn(0f, alphabet.lastIndex.toFloat())
+                    sliderValue = indexToSliderValue(index)
                 }
             }
+            val showScrollIndicator = isDragging || exerciseListState.isScrollInProgress
+            val scrollIndicatorLetter = if (isDragging) sliderLetter else currentLetter
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
@@ -929,20 +957,8 @@ fun WorkoutScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                if (isDragging && sliderLetter != null) {
-                    Surface(
-                        tonalElevation = 2.dp,
-                        shape = MaterialTheme.shapes.small
-                    ) {
-                        Text(
-                            text = sliderLetter.toString(),
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
                 Box(
-                    modifier = Modifier.size(width = 28.dp, height = 140.dp),
+                    modifier = Modifier.size(width = 36.dp, height = 160.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Slider(
@@ -950,7 +966,7 @@ fun WorkoutScreen(
                         onValueChange = { value ->
                             sliderValue = value
                             isDragging = true
-                            val targetIndex = value.roundToInt().coerceIn(0, alphabet.lastIndex)
+                            val targetIndex = sliderValueToIndex(value)
                             val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
                             val targetLetter = nearestIndex?.let { alphabet[it] } ?: return@Slider
                             val listIndex = letterIndexMap[targetLetter] ?: return@Slider
@@ -961,11 +977,30 @@ fun WorkoutScreen(
                             }
                         },
                         onValueChangeFinished = { isDragging = false },
-                        valueRange = 0f..alphabet.lastIndex.toFloat(),
+                        valueRange = 0f..sliderRangeMax,
                         steps = alphabet.size - 2,
                         modifier = Modifier
                             .fillMaxWidth()
                             .rotate(-90f)
+                            .scale(1.2f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                            activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                        )
+                    )
+                }
+            }
+            if (showScrollIndicator && scrollIndicatorLetter != null) {
+                Surface(
+                    tonalElevation = 3.dp,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    Text(
+                        text = scrollIndicatorLetter.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
             }
