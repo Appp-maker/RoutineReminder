@@ -2,16 +2,12 @@ package com.example.routinereminder.ui
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DirectionsRun
 import com.example.routinereminder.data.model.SessionStats
-import androidx.compose.material.icons.filled.DirectionsWalk
-import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import android.app.ActivityManager
@@ -92,20 +88,25 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.example.routinereminder.R
 
 
-private enum class ActivityType(val label: String, val met: Double) {
-    WALKING("Walking", 3.8),
-    RUNNING("Running", 9.8),
+enum class ActivityType(val label: String, val met: Double) {
+    RUN_WALK("Run/Walk", 9.8),
     CYCLING("Cycling", 8.0)
     ;
 
     companion object {
         fun fromLabel(label: String?): ActivityType {
-            return values().firstOrNull { it.label.equals(label, ignoreCase = true) } ?: RUNNING
+            return when {
+                label.equals("walking", ignoreCase = true) -> RUN_WALK
+                label.equals("running", ignoreCase = true) -> RUN_WALK
+                label.equals("run/walk", ignoreCase = true) -> RUN_WALK
+                else -> values().firstOrNull { it.label.equals(label, ignoreCase = true) } ?: RUN_WALK
+            }
         }
     }
 }
 
 private const val RESTING_MET = 1.2
+private const val WALKING_MET = 3.8
 private const val INACTIVITY_TIMEOUT_MS = 60_000L
 
 enum class TrackingMode(val label: String, val value: String) {
@@ -184,7 +185,7 @@ fun MapScreen(
     var firstFix by remember { mutableStateOf(true) }
     var userZoom by remember { mutableStateOf(15.5) }
     var includeMapInShare by remember { mutableStateOf(true) }
-    var selectedActivity by remember { mutableStateOf(ActivityType.RUNNING) }
+    var selectedActivity by remember { mutableStateOf(ActivityType.RUN_WALK) }
     var permissionRequired by remember { mutableStateOf(false) }
     var showManualEntry by rememberSaveable { mutableStateOf(false) }
     var manualDistanceKm by rememberSaveable { mutableStateOf("") }
@@ -240,18 +241,16 @@ fun MapScreen(
                 val nextDuration = state.durationSec + 1
                 val now = System.currentTimeMillis()
                 val inactiveMs = lastMovementAt?.let { now - it } ?: 0L
-                val effectiveMet = if (state.distanceMeters <= 0.0 || inactiveMs >= INACTIVITY_TIMEOUT_MS) {
-                    RESTING_MET
-                } else {
-                    activity.met
-                }
-                val nextCalories = calcCalories(
-                    met = effectiveMet,
+                val isInactive = state.distanceMeters <= 0.0 || inactiveMs >= INACTIVITY_TIMEOUT_MS
+                val nextCalories = calcActivityCalories(
+                    activity = activity,
                     weightKg = calorieProfile.weightKg,
                     heightCm = calorieProfile.heightCm,
                     age = calorieProfile.ageYears,
                     gender = calorieProfile.gender,
-                    durationSec = nextDuration
+                    distanceMeters = state.distanceMeters,
+                    durationSec = nextDuration,
+                    isInactive = isInactive
                 )
                 viewModel.updateRunStats(state.distanceMeters, nextDuration, nextCalories)
             }
@@ -500,14 +499,16 @@ fun MapScreen(
             gender = viewModel.currentUserGenderOrNull(),
             source = "MapScreenManualEntryPreview"
         )
-        val estimatedCalories = if (durationMin != null && durationMin > 0.0) {
-            calcCalories(
-                met = selectedActivity.met,
+        val estimatedCalories = if (distanceKm != null && durationMin != null && durationMin > 0.0) {
+            val durationSecManual = (durationMin * 60).roundToLong()
+            calcActivityCalories(
+                activity = selectedActivity,
                 weightKg = calorieProfile.weightKg,
                 heightCm = calorieProfile.heightCm,
                 age = calorieProfile.ageYears,
                 gender = calorieProfile.gender,
-                durationSec = (durationMin * 60).roundToLong()
+                distanceMeters = distanceKm * 1000.0,
+                durationSec = durationSecManual
             ).roundToInt()
         } else {
             null
@@ -571,12 +572,13 @@ fun MapScreen(
                             gender = viewModel.currentUserGenderOrNull(),
                             source = "MapScreenManualEntry"
                         )
-                        val caloriesBurned = calcCalories(
-                            met = selectedActivity.met,
+                        val caloriesBurned = calcActivityCalories(
+                            activity = selectedActivity,
                             weightKg = calorieProfile.weightKg,
                             heightCm = calorieProfile.heightCm,
                             age = calorieProfile.ageYears,
                             gender = calorieProfile.gender,
+                            distanceMeters = distanceMeters,
                             durationSec = durationSecManual
                         )
                         val session = SessionStats(
@@ -1198,6 +1200,74 @@ fun calcCalories(
     return metCaloriesPerMinute * minutes
 }
 
+private fun calcRunWalkCalories(
+    weightKg: Double,
+    heightCm: Double,
+    age: Int,
+    gender: String,
+    distanceMeters: Double,
+    durationSec: Long
+): Double {
+    val distanceKm = distanceMeters / 1000.0
+    val hours = durationSec / 3600.0
+    val speedKmh = if (hours > 0.0) distanceKm / hours else 0.0
+
+    return when {
+        speedKmh < 6.0 -> calcCalories(
+            met = WALKING_MET,
+            weightKg = weightKg,
+            heightCm = heightCm,
+            age = age,
+            gender = gender,
+            durationSec = durationSec
+        )
+        speedKmh <= 8.0 -> 0.7 * weightKg * distanceKm
+        else -> 1.0 * weightKg * distanceKm
+    }
+}
+
+fun calcActivityCalories(
+    activity: ActivityType,
+    weightKg: Double,
+    heightCm: Double,
+    age: Int,
+    gender: String,
+    distanceMeters: Double,
+    durationSec: Long,
+    isInactive: Boolean = false
+): Double {
+    if (durationSec <= 0L) return 0.0
+    if (isInactive || distanceMeters <= 0.0) {
+        return calcCalories(
+            met = RESTING_MET,
+            weightKg = weightKg,
+            heightCm = heightCm,
+            age = age,
+            gender = gender,
+            durationSec = durationSec
+        )
+    }
+
+    return when (activity) {
+        ActivityType.RUN_WALK -> calcRunWalkCalories(
+            weightKg = weightKg,
+            heightCm = heightCm,
+            age = age,
+            gender = gender,
+            distanceMeters = distanceMeters,
+            durationSec = durationSec
+        )
+        ActivityType.CYCLING -> calcCalories(
+            met = activity.met,
+            weightKg = weightKg,
+            heightCm = heightCm,
+            age = age,
+            gender = gender,
+            durationSec = durationSec
+        )
+    }
+}
+
 private fun isSameDay(firstEpochMs: Long, secondEpochMs: Long): Boolean {
     val calendar = Calendar.getInstance()
     calendar.timeInMillis = firstEpochMs
@@ -1433,20 +1503,14 @@ fun shareSessionImage(
         val distanceText = "%.2f km".format(session.distanceMeters / 1000.0)
         val durationText = formatHMS(session.durationSec)
 
-        // Calories using calcCalories with default values
-        val activityMet = when (session.activity.lowercase()) {
-            "walking" -> ActivityType.WALKING.met
-            "running" -> ActivityType.RUNNING.met
-            "cycling" -> ActivityType.CYCLING.met
-            else -> ActivityType.RUNNING.met
-        }
-        val met = if (session.distanceMeters <= 0.0) RESTING_MET else activityMet
-        val caloriesVal = calcCalories(
-            met = met,
+        // Calories using activity-specific logic
+        val caloriesVal = calcActivityCalories(
+            activity = ActivityType.fromLabel(session.activity),
             weightKg = calorieProfile.weightKg,
             heightCm = calorieProfile.heightCm,
             age = calorieProfile.ageYears,
             gender = calorieProfile.gender,
+            distanceMeters = session.distanceMeters,
             durationSec = session.durationSec
         ).roundToInt()
 
@@ -1573,19 +1637,11 @@ private fun ActivitySelector(current: ActivityType, onChange: (ActivityType) -> 
         verticalAlignment = Alignment.CenterVertically
     ) {
         ModeChip(
-            icon = Icons.AutoMirrored.Filled.DirectionsWalk,
-            label = "Walk",
-            selected = current == ActivityType.WALKING
-        ) {
-            onChange(ActivityType.WALKING)
-        }
-        Spacer(Modifier.width(8.dp))
-        ModeChip(
             icon = Icons.AutoMirrored.Filled.DirectionsRun,
-            label = "Run",
-            selected = current == ActivityType.RUNNING
+            label = "Run/Walk",
+            selected = current == ActivityType.RUN_WALK
         ) {
-            onChange(ActivityType.RUNNING)
+            onChange(ActivityType.RUN_WALK)
         }
         Spacer(Modifier.width(8.dp))
         ModeChip(

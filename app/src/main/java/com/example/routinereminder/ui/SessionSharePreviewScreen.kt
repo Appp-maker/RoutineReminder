@@ -727,19 +727,13 @@ private suspend fun generatePreviewBitmap(
 
         // 🔥 Calories
         // ------- REAL USER DATA CALORIES -------
-        val met = when (session.activity.lowercase()) {
-            "walking" -> 3.8
-            "running" -> 9.8
-            "cycling" -> 8.0
-            else -> 9.8
-        }
-
-        val caloriesBurned = calcCalories(
-            met = met,
+        val caloriesBurned = calcActivityCalories(
+            activity = ActivityType.fromLabel(session.activity),
             weightKg = weight.toDouble(),
             heightCm = height.toDouble(),
             age = age,
             gender = gender,
+            distanceMeters = session.distanceMeters,
             durationSec = session.durationSec
         ).roundToInt()
 
