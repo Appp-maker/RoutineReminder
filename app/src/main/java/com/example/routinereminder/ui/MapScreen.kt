@@ -189,8 +189,6 @@ fun MapScreen(
     var showManualEntry by rememberSaveable { mutableStateOf(false) }
     var manualDistanceKm by rememberSaveable { mutableStateOf("") }
     var manualDurationMin by rememberSaveable { mutableStateOf("") }
-    val mapCaloriesLoggingEnabled by viewModel.mapCaloriesLoggingEnabled.collectAsState()
-
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
     val trailPoints by viewModel.trailPoints.collectAsState()
@@ -638,37 +636,6 @@ fun MapScreen(
                 }
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
-            if (mapCaloriesLoggingEnabled) {
-                val quickLogLabel = stringResource(R.string.calorie_tracker_quick_log_map)
-                Button(
-                    onClick = {
-                        scope.launch {
-                            val todayCalories = SessionStore.loadAllSessions(context)
-                                .filter { isSameDay(it.startEpochMs, System.currentTimeMillis()) }
-                                .sumOf { it.calories }
-                            if (todayCalories > 0.0) {
-                                calorieTrackerViewModel.logCaloriesConsumed(
-                                    calories = todayCalories.roundToInt(),
-                                    label = quickLogLabel
-                                )
-                            } else {
-                                android.widget.Toast.makeText(
-                                    context,
-                                    context.getString(R.string.map_calories_log_empty_toast),
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFF2E7D32))
-                ) {
-                    Text(stringResource(R.string.calorie_tracker_add_consumed_action))
-                }
-            }
-
             if (splitDurations.isNotEmpty()) {
                 Card(
                     modifier = Modifier
