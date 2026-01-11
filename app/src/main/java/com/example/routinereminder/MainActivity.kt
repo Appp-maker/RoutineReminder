@@ -101,6 +101,7 @@ import com.example.routinereminder.ui.bundle.BundleDetailScreen
 import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 
 import com.example.routinereminder.ui.components.EditItemDialog
+import com.example.routinereminder.ui.components.SeriesColorDot
 import com.example.routinereminder.ui.components.SettingsIconButton
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
 
@@ -1133,6 +1134,7 @@ fun ScheduleItemView(
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
     val rowBackgroundColor = if (isEffectivelyActiveNow) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent
     // ❗ This value must be passed in from MainScreenContent
+    val seriesColor = Color(item.colorArgb)
 
 
 // Base text color logic
@@ -1186,6 +1188,13 @@ fun ScheduleItemView(
             verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth()
         ) {
+            SeriesColorDot(
+                color = seriesColor.copy(alpha = doneAlpha),
+                modifier = Modifier.padding(top = 6.dp)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             // LEFT COLUMN: start time + ONE TIME / REPEATS under it
             Column(
                 horizontalAlignment = Alignment.Start

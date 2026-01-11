@@ -52,6 +52,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.platform.LocalConfiguration
 import com.example.routinereminder.ui.components.ProductResultCard
 import com.example.routinereminder.ui.components.NutritionPreview
+import com.example.routinereminder.ui.components.SeriesColorDot
 import com.example.routinereminder.ui.components.formatChecklistText
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -200,7 +201,7 @@ fun CalorieTrackerScreen(
             foodProduct = food,
             onDismiss = { viewModel.clearScannedProduct() },
             // IMPORTANT: call addFood(...) with the scheduling values from the dialog
-            onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate ->
+            onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate, colorArgb ->
                 if (isBundlePreview) {
                     viewModel.addBundleToTracker(
                         bundleId = pendingBundleId!!,
@@ -209,7 +210,8 @@ fun CalorieTrackerScreen(
                         isOneTime = isOneTime,
                         repeatDays = repeatDays,
                         repeatEveryWeeks = repeatEveryWeeks,
-                        startDate = anchorDate
+                        startDate = anchorDate,
+                        colorArgb = colorArgb
                     )
                 } else {
                     viewModel.addFood(
@@ -220,7 +222,8 @@ fun CalorieTrackerScreen(
                         isOneTime = isOneTime,
                         repeatDays = repeatDays,
                         repeatEveryWeeks = repeatEveryWeeks,
-                        startDate = anchorDate
+                        startDate = anchorDate,
+                        colorArgb = colorArgb
                     )
                 }
 
@@ -260,7 +263,7 @@ fun CalorieTrackerScreen(
             initialPortion = food.portionSizeG,
             existingLoggedFood = food,
             onDismiss = { editingFood = null },
-            onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate ->
+            onConfirm = { portion, finalFood, time, mealSlot, isOneTime, repeatDays, repeatEveryWeeks, anchorDate, colorArgb ->
                 if (isOneTime || repeatDays.isEmpty()) {
                     // Convert to one-time or update existing one-time
                     viewModel.updateLoggedFood(
@@ -271,7 +274,8 @@ fun CalorieTrackerScreen(
                         repeatDays = emptySet(),
                         repeatEveryWeeks = 1,
                         startDate = anchorDate,
-                        updatedFoodProduct = finalFood
+                        updatedFoodProduct = finalFood,
+                        colorArgb = colorArgb
                     )
                 } else {
                     // Remove old recurring pattern (if any)
@@ -286,7 +290,8 @@ fun CalorieTrackerScreen(
                         isOneTime = false,
                         repeatDays = repeatDays,
                         repeatEveryWeeks = repeatEveryWeeks,
-                        startDate = anchorDate
+                        startDate = anchorDate,
+                        colorArgb = colorArgb
                     )
 
                     // Optionally remove the original edited entry if it was one-time before
@@ -805,6 +810,10 @@ fun MealSlotDetail(
                             .padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        SeriesColorDot(
+                            color = Color(food.colorArgb),
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(food.foodProduct.name, color = Color.White)
                             Text(
@@ -897,6 +906,10 @@ fun AllFoodsList(
                                 .padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            SeriesColorDot(
+                                color = Color(food.colorArgb),
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(food.foodProduct.name, color = Color.White)
                                 Text(
@@ -964,6 +977,10 @@ fun ExpandableRecipeRow(
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
+            SeriesColorDot(
+                color = Color(food.colorArgb),
+                modifier = Modifier.padding(end = 8.dp)
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Text(recipeName, color = Color.White, fontSize = 16.sp)
                 Text(
@@ -1147,6 +1164,10 @@ fun LoggedFoodsList(
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                SeriesColorDot(
+                    color = Color(food.colorArgb),
+                    modifier = Modifier.padding(end = 8.dp)
+                )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(food.foodProduct.name, color = Color.White)
                     Text("${food.calories.toInt()} cal, ${food.portionSizeG.toInt()}g", color = Color.Gray, fontSize = 12.sp)
