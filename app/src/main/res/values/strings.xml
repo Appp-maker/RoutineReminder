@@ -40,6 +40,8 @@
     <!-- Calendar Sync Settings -->
     <string name="settings_calendar_sync_title">Calendar Sync</string>
     <string name="settings_calendar_sync_background_sync_interval">Background Sync Interval</string>
+    <string name="settings_calendar_sync_direction_app_to_calendar">Sync app changes to calendar</string>
+    <string name="settings_calendar_sync_direction_calendar_to_app">Sync calendar changes to app</string>
     <string name="settings_label_hours_short">H</string>
     <string name="settings_label_minutes_short">M</string>
     <string name="settings_calendar_sync_import_gcal_events_auto">Import Google Calendar events automatically</string>
@@ -47,6 +49,7 @@
     <string name="settings_calendar_sync_import_from_local">Local Device Calendar</string>
     <string name="settings_calendar_sync_import_from_google">Selected Google Account\'s Primary Calendar</string>
     <string name="settings_calendar_sync_import_from_both">Both (Local &amp; Google)</string>
+    <string name="settings_calendar_sync_select_google_calendar">Select Google calendar</string>
     <string name="settings_calendar_sync_on_app_delete_imported_title">When deleting an imported event from this app:</string>
     <string name="settings_calendar_sync_on_app_delete_keep">Keep the original calendar event</string>
     <string name="settings_calendar_sync_on_app_delete_delete">Delete the original calendar event</string>
