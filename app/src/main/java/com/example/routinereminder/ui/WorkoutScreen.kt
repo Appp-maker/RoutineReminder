@@ -42,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -59,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -80,6 +82,8 @@ import com.example.routinereminder.ui.components.SettingsIconButton
 import kotlinx.coroutines.launch
 import java.io.File
 import androidx.navigation.NavController
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -898,49 +902,71 @@ fun WorkoutScreen(
                 }
             }
             val alphabet = remember { ('A'..'Z').toList() }
+            val availableLetterIndices = remember(letterIndexMap) {
+                letterIndexMap.keys.mapNotNull { letter ->
+                    alphabet.indexOf(letter).takeIf { it >= 0 }
+                }.sorted()
+            }
+            var sliderValue by remember { mutableStateOf(0f) }
+            var isDragging by remember { mutableStateOf(false) }
+            val sliderLetter by remember(sliderValue, availableLetterIndices) {
+                derivedStateOf {
+                    val targetIndex = sliderValue.roundToInt().coerceIn(0, alphabet.lastIndex)
+                    val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
+                    nearestIndex?.let { alphabet[it] }
+                }
+            }
+            LaunchedEffect(currentLetter, isDragging) {
+                if (!isDragging) {
+                    val index = currentLetter?.let { alphabet.indexOf(it) } ?: 0
+                    sliderValue = index.toFloat().coerceIn(0f, alphabet.lastIndex.toFloat())
+                }
+            }
             Column(
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 4.dp),
+                    .align(Alignment.CenterStart)
+                    .padding(start = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                if (currentLetter != null) {
+                if (isDragging && sliderLetter != null) {
                     Surface(
                         tonalElevation = 2.dp,
                         shape = MaterialTheme.shapes.small
                     ) {
                         Text(
-                            text = currentLetter.toString(),
+                            text = sliderLetter.toString(),
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    alphabet.forEach { letter ->
-                        val enabled = letterIndexMap.containsKey(letter)
-                        Text(
-                            text = letter.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (enabled) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                            },
-                            modifier = Modifier
-                                .clickable(enabled = enabled) {
-                                    letterIndexMap[letter]?.let { targetIndex ->
-                                        coroutineScope.launch {
-                                            exerciseListState.animateScrollToItem(
-                                                index = exerciseStartIndex + targetIndex
-                                            )
-                                        }
-                                    }
-                                }
-                                .padding(horizontal = 2.dp)
-                        )
-                    }
+                Box(
+                    modifier = Modifier.size(width = 28.dp, height = 140.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Slider(
+                        value = sliderValue,
+                        onValueChange = { value ->
+                            sliderValue = value
+                            isDragging = true
+                            val targetIndex = value.roundToInt().coerceIn(0, alphabet.lastIndex)
+                            val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
+                            val targetLetter = nearestIndex?.let { alphabet[it] } ?: return@Slider
+                            val listIndex = letterIndexMap[targetLetter] ?: return@Slider
+                            coroutineScope.launch {
+                                exerciseListState.scrollToItem(
+                                    index = exerciseStartIndex + listIndex
+                                )
+                            }
+                        },
+                        onValueChangeFinished = { isDragging = false },
+                        valueRange = 0f..alphabet.lastIndex.toFloat(),
+                        steps = alphabet.size - 2,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .rotate(-90f)
+                    )
                 }
             }
         }
