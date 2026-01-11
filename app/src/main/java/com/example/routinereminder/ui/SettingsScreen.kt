@@ -120,6 +120,7 @@ fun SettingsScreen(
     val currentCalendarSyncAppToCalendarEnabled by viewModel.calendarSyncAppToCalendarEnabled.collectAsState()
     val currentCalendarSyncCalendarToAppEnabled by viewModel.calendarSyncCalendarToAppEnabled.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
+    val currentMapCaloriesLoggingEnabled by viewModel.mapCaloriesLoggingEnabled.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
     val selectedGoogleAccountName by viewModel.selectedGoogleAccountName.collectAsState()
@@ -153,6 +154,7 @@ fun SettingsScreen(
     var showAllEventsChecked by remember(showAllEvents) { mutableStateOf(showAllEvents) }
     var calendarSyncAppToCalendarEnabled by remember(currentCalendarSyncAppToCalendarEnabled) { mutableStateOf(currentCalendarSyncAppToCalendarEnabled) }
     var calendarSyncCalendarToAppEnabled by remember(currentCalendarSyncCalendarToAppEnabled) { mutableStateOf(currentCalendarSyncCalendarToAppEnabled) }
+    var mapCaloriesLoggingEnabledChecked by remember(currentMapCaloriesLoggingEnabled) { mutableStateOf(currentMapCaloriesLoggingEnabled) }
 
 
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
@@ -186,7 +188,8 @@ fun SettingsScreen(
         currentImportTargetCalendarIdForBothMode,
         showAllEvents,
         currentCalendarSyncAppToCalendarEnabled,
-        currentCalendarSyncCalendarToAppEnabled
+        currentCalendarSyncCalendarToAppEnabled,
+        currentMapCaloriesLoggingEnabled
     ) {
         defaultEventHourState = currentDefaultEventSettings.hour
         defaultEventMinuteState = currentDefaultEventSettings.minute
@@ -206,6 +209,7 @@ fun SettingsScreen(
         showAllEventsChecked = showAllEvents
         calendarSyncAppToCalendarEnabled = currentCalendarSyncAppToCalendarEnabled
         calendarSyncCalendarToAppEnabled = currentCalendarSyncCalendarToAppEnabled
+        mapCaloriesLoggingEnabledChecked = currentMapCaloriesLoggingEnabled
         justSavedSuccessfully = false
     }
 
@@ -272,6 +276,7 @@ fun SettingsScreen(
         currentDefaultEventSettings,
         selectedGoogleAccountName, // Added to dependency list
         showAllEventsChecked, showAllEvents,
+        mapCaloriesLoggingEnabledChecked, currentMapCaloriesLoggingEnabled,
         selectedTabs, enabledTabs
     ) {
         derivedStateOf {
@@ -305,6 +310,7 @@ fun SettingsScreen(
             if (calendarSyncAppToCalendarEnabled != currentCalendarSyncAppToCalendarEnabled) return@derivedStateOf true
             if (calendarSyncCalendarToAppEnabled != currentCalendarSyncCalendarToAppEnabled) return@derivedStateOf true
             if (showAllEventsChecked != showAllEvents) return@derivedStateOf true
+            if (mapCaloriesLoggingEnabledChecked != currentMapCaloriesLoggingEnabled) return@derivedStateOf true
             if (selectedTabs != enabledTabs) return@derivedStateOf true
             // We don't directly compare selectedGoogleAccountName to a stored value for unsaved changes,
             // as its change directly triggers other settings to change, which are covered above.
@@ -415,6 +421,7 @@ fun SettingsScreen(
                         viewModel.updateCalendarSyncAppToCalendar(calendarSyncAppToCalendarEnabled)
                         viewModel.updateCalendarSyncCalendarToApp(calendarSyncCalendarToAppEnabled)
                         viewModel.updateShowAllEvents(showAllEventsChecked)
+                        viewModel.saveMapCaloriesLoggingEnabled(mapCaloriesLoggingEnabledChecked)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
                         } else {
@@ -630,6 +637,8 @@ fun SettingsScreen(
                             showDataManagementDialog = source
                         },
                         calendarEventCounts = calendarEventCounts,
+                        mapCaloriesLoggingEnabled = mapCaloriesLoggingEnabledChecked,
+                        onMapCaloriesLoggingEnabledChange = { mapCaloriesLoggingEnabledChecked = it; justSavedSuccessfully = false },
                         trackingMode = TrackingMode.fromValue(mapTrackingMode),
                         onTrackingModeChange = { mode ->
                             viewModel.saveMapTrackingMode(mode.value)
@@ -1250,6 +1259,8 @@ private fun AppSettingsSection(
     onShowAllEventsChange: (Boolean) -> Unit,
     onDataManagementClick: (String, String?) -> Unit,
     calendarEventCounts: CalendarEventCounts,
+    mapCaloriesLoggingEnabled: Boolean,
+    onMapCaloriesLoggingEnabledChange: (Boolean) -> Unit,
     trackingMode: TrackingMode,
     onTrackingModeChange: (TrackingMode) -> Unit
 ) {
@@ -1335,6 +1346,17 @@ private fun AppSettingsSection(
             }
         }
     }
+    SettingSwitchItem(
+        text = stringResource(R.string.settings_map_log_daily_calories),
+        checked = mapCaloriesLoggingEnabled,
+        onCheckedChange = onMapCaloriesLoggingEnabledChange
+    )
+    Text(
+        text = stringResource(R.string.settings_map_log_daily_calories_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
     Spacer(modifier = Modifier.height(16.dp))
     Text(stringResource(R.string.settings_tabs_title), style = MaterialTheme.typography.titleMedium)
     Text(

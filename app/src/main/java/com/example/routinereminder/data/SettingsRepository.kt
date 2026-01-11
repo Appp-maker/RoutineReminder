@@ -46,6 +46,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EXERCISE_DB_CACHE_COMPLETE = booleanPreferencesKey("exercise_db_cache_complete")
     val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
     val MAP_TRACKING_MODE = stringPreferencesKey("map_tracking_mode")
+    val MAP_CONSUMED_CALORIES_LOGGING_ENABLED = booleanPreferencesKey("map_consumed_calories_logging_enabled")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -134,6 +135,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         return dataStore.data.map { preferences ->
             preferences[MAP_TRACKING_MODE] ?: TrackingService.MODE_BALANCED
         }
+    }
+
+    suspend fun saveMapConsumedCaloriesLoggingEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[MAP_CONSUMED_CALORIES_LOGGING_ENABLED] = enabled
+        }
+    }
+
+    fun getMapConsumedCaloriesLoggingEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[MAP_CONSUMED_CALORIES_LOGGING_ENABLED] ?: false
+        }.distinctUntilChanged()
     }
 
     suspend fun saveDefaultEventSettings(settings: DefaultEventSettings) {

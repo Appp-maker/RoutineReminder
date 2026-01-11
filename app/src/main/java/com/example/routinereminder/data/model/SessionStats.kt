@@ -9,6 +9,7 @@ data class SessionStats(
     val endEpochMs: Long,            // end timestamp in ms
     val durationSec: Long,           // total seconds
     val distanceMeters: Double,      // total meters
+    val calories: Double,            // calories burned
     val avgPaceSecPerKm: Long,       // average pace in seconds per km
     val splitPaceSecPerKm: List<Long>? = emptyList(),
     val polyline: List<Point> = emptyList(), // map trail
