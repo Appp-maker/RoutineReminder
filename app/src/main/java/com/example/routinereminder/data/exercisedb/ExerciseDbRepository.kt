@@ -33,6 +33,7 @@ data class ExerciseDbExercise(
     val target: String,
     val equipment: String,
     val gifUrl: String? = null,
+    val imageUrls: List<String> = emptyList(),
     val videoUrl: String? = null,
     val instructions: List<String> = emptyList()
 )
@@ -242,13 +243,13 @@ class ExerciseDbRepository @Inject constructor(
         val equipment = obj.readString("equipment") ?: "Unknown equipment"
         val id = obj.readString("id", "_id", "uuid", "exerciseId")
             ?: "${name}-${bodyPart}-${target}-${equipment}-${index}"
+        val imageUrls = obj.readStringList("images", "image", "imageUrl", "image_url")
+            .mapNotNull { normalizeFallbackImageUrl(it) }
         val gifUrl = normalizeGifUrl(
             obj.readString("gifUrl", "gif_url")
                 ?: obj.readNestedString("gif", "url", "gifUrl", "gif_url", "image")
-        ) ?: normalizeFallbackImageUrl(
-            obj.readStringList("images", "image", "imageUrl", "image_url")
-                .firstOrNull()
-        )
+        ) ?: imageUrls.firstOrNull { it.endsWith(".gif", ignoreCase = true) }
+            ?: imageUrls.firstOrNull()
         val instructions = obj.readInstructionList("instructions", "instruction", "steps")
         val videoUrl = normalizeUrl(
             obj.readString("videoUrl", "video_url", "youtube", "youtubeUrl")
@@ -262,6 +263,7 @@ class ExerciseDbRepository @Inject constructor(
             target = target,
             equipment = equipment,
             gifUrl = gifUrl,
+            imageUrls = imageUrls,
             videoUrl = videoUrl,
             instructions = instructions
         )

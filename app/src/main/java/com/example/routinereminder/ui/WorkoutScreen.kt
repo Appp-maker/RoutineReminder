@@ -563,6 +563,7 @@ fun WorkoutScreen(
                                                 subtitle = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                                                 gifFile = viewModel.getExerciseGifFile(exercise.id, exercise.gifUrl),
                                                 gifUrl = exercise.gifUrl,
+                                                imageUrls = exercise.imageUrls,
                                                 videoUrl = exercise.videoUrl,
                                                 instructions = exercise.instructions
                                             )
@@ -765,6 +766,7 @@ fun WorkoutScreen(
                                     subtitle = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
                                     gifFile = viewModel.getExerciseGifFile(exercise.id, exercise.gifUrl),
                                     gifUrl = exercise.gifUrl,
+                                    imageUrls = exercise.imageUrls,
                                     videoUrl = exercise.videoUrl,
                                     instructions = exercise.instructions
                                 )
@@ -997,6 +999,7 @@ private data class ExercisePreview(
     val subtitle: String,
     val gifFile: File?,
     val gifUrl: String?,
+    val imageUrls: List<String>,
     val videoUrl: String?,
     val instructions: List<String>
 )
@@ -1007,7 +1010,13 @@ private fun ExercisePreviewDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val model = preview.gifFile ?: preview.gifUrl
+    val allImageUrls = remember(preview.gifUrl, preview.imageUrls) {
+        preview.imageUrls.takeIf { it.isNotEmpty() } ?: deriveFallbackImageUrls(preview.gifUrl)
+    }
+    val model = preview.gifFile ?: preview.gifUrl ?: allImageUrls.firstOrNull()
+    val supplementalImageUrls = remember(model, allImageUrls) {
+        allImageUrls.filterNot { it == model }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(preview.title) },
@@ -1029,6 +1038,19 @@ private fun ExercisePreviewDialog(
                             .height(220.dp),
                         contentScale = ContentScale.Fit
                     )
+                    supplementalImageUrls.forEach { imageUrl ->
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(imageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = stringResource(R.string.workout_exercise_gif_preview),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
                 } else {
                     Text(
                         text = stringResource(R.string.workout_exercise_gif_unavailable),
@@ -1076,4 +1098,15 @@ private fun ExerciseGifUrlText(gifUrl: String?) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
+}
+
+private fun deriveFallbackImageUrls(gifUrl: String?): List<String> {
+    val url = gifUrl ?: return emptyList()
+    return when {
+        url.endsWith("/0.jpg") -> listOf(url, url.replace("/0.jpg", "/1.jpg"))
+        url.endsWith("/1.jpg") -> listOf(url.replace("/1.jpg", "/0.jpg"), url)
+        url.endsWith("/0.png") -> listOf(url, url.replace("/0.png", "/1.png"))
+        url.endsWith("/1.png") -> listOf(url.replace("/1.png", "/0.png"), url)
+        else -> emptyList()
+    }
 }
