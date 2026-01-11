@@ -845,12 +845,18 @@ private fun ScheduleItemListContent(
             }
         }
     }
-    val displayItems = remember(distinctItems, showNowIndicator, nowIndicatorIndex) {
+    val displayItems: List<DisplayScheduleItem> = remember(
+        distinctItems,
+        showNowIndicator,
+        nowIndicatorIndex
+    ) {
         if (!showNowIndicator || nowIndicatorIndex < 0) {
-            distinctItems.map<DisplayScheduleItem> { DisplayScheduleItem.Event(it) }
+            distinctItems.map { item: ScheduleItem ->
+                DisplayScheduleItem.Event(item)
+            }
         } else {
-            buildList<DisplayScheduleItem> {
-                distinctItems.forEachIndexed { index, item ->
+            buildList {
+                distinctItems.forEachIndexed { index: Int, item: ScheduleItem ->
                     if (index == nowIndicatorIndex) {
                         add(DisplayScheduleItem.NowIndicator)
                     }
@@ -880,13 +886,13 @@ private fun ScheduleItemListContent(
         ) {
             items(
                 items = displayItems,
-                key = { displayItem ->
+                key = { displayItem: DisplayScheduleItem ->
                     when (displayItem) {
                         is DisplayScheduleItem.Event -> displayItem.item.id
                         DisplayScheduleItem.NowIndicator -> "now-indicator"
                     }
                 }
-            ) { displayItem ->
+            ) { displayItem: DisplayScheduleItem ->
                 when (displayItem) {
                     is DisplayScheduleItem.Event -> {
                         val item = displayItem.item
