@@ -53,7 +53,6 @@ import org.maplibre.geojson.Point
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 enum class ShareMode { SATELLITE, STATIC }
 
@@ -64,7 +63,7 @@ fun SessionSharePreviewScreen(
     onShare: (Bitmap) -> Unit,
     onCancel: () -> Unit
         ) {
-    val viewModel: MainViewModel = viewModel()
+    val viewModel: MainViewModel = hiltViewModel()
     // --- REAL USER DATA FROM VIEWMODEL ---
     val weight = viewModel.userWeightKg ?: 70.0
     val height = viewModel.userHeightCm ?: 175.0
