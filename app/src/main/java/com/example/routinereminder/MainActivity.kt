@@ -113,6 +113,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -828,6 +829,41 @@ private fun ScheduleItemListContent(
 )
  {
     val distinctItems = remember(items) { items.distinctBy { it.id } }
+    val listState = rememberLazyListState()
+    val today = remember(currentDate) { LocalDate.now() }
+    val showNowIndicator = currentDate == today
+    val nowIndicatorIndex = remember(distinctItems, currentDate) {
+        if (!showNowIndicator) {
+            -1
+        } else {
+            val nowTime = LocalTime.now()
+            distinctItems.indexOfFirst { item ->
+                val start = LocalTime.of(item.hour, item.minute)
+                val end = start.plusMinutes(item.durationMinutes.toLong())
+                nowTime.isBefore(end)
+            }
+        }
+    }
+    val displayItems = remember(distinctItems, showNowIndicator, nowIndicatorIndex) {
+        if (!showNowIndicator || nowIndicatorIndex < 0) {
+            distinctItems.map { DisplayScheduleItem.Event(it) }
+        } else {
+            buildList {
+                distinctItems.forEachIndexed { index, item ->
+                    if (index == nowIndicatorIndex) {
+                        add(DisplayScheduleItem.NowIndicator)
+                    }
+                    add(DisplayScheduleItem.Event(item))
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(showNowIndicator, nowIndicatorIndex, displayItems.size) {
+        if (showNowIndicator && nowIndicatorIndex >= 0) {
+            listState.scrollToItem(nowIndicatorIndex)
+        }
+    }
 
     if (distinctItems.isEmpty()) {
         Text(
@@ -837,33 +873,69 @@ private fun ScheduleItemListContent(
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            state = listState,
             verticalArrangement = Arrangement.Top,
             contentPadding = PaddingValues(bottom = 72.dp)
         ) {
             items(
-                items = distinctItems,
-                key = { it.id }
-            ) { item: ScheduleItem ->
+                items = displayItems,
+                key = { displayItem ->
+                    when (displayItem) {
+                        is DisplayScheduleItem.Event -> displayItem.item.id
+                        DisplayScheduleItem.NowIndicator -> "now-indicator"
+                    }
+                }
+            ) { displayItem ->
+                when (displayItem) {
+                    is DisplayScheduleItem.Event -> {
+                        val item = displayItem.item
+                        val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
+                        val isDoneToday = doneStates[key] == true
 
-
-                val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
-                val isDoneToday = doneStates[key] == true
-
-
-
-
-                ScheduleItemView(
-                    item = item,
-                    currentDate = currentDate,
-                    isDoneToday = isDoneToday,
-                    onLongPress = onLongPress
-                )
+                        ScheduleItemView(
+                            item = item,
+                            currentDate = currentDate,
+                            isDoneToday = isDoneToday,
+                            onLongPress = onLongPress
+                        )
+                    }
+                    DisplayScheduleItem.NowIndicator -> {
+                        NowIndicatorRow()
+                    }
+                }
             }
-
-
 
         }
     }
+}
+
+@Composable
+private fun NowIndicatorRow() {
+    val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Now",
+            style = MaterialTheme.typography.labelSmall,
+            color = lineColor,
+            modifier = Modifier.padding(end = 8.dp)
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(lineColor)
+        )
+    }
+}
+
+private sealed class DisplayScheduleItem {
+    data class Event(val item: ScheduleItem) : DisplayScheduleItem()
+    data object NowIndicator : DisplayScheduleItem()
 }
 
 @Composable
