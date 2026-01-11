@@ -21,6 +21,10 @@ class NotificationScheduler(private val context: Context) {
             .toInstant()
             .toEpochMilli()
 
+        if (triggerMillis <= System.currentTimeMillis()) {
+            return
+        }
+
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra("title", item.name)
             putExtra("notes", item.notes ?: "")
