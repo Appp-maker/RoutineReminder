@@ -644,8 +644,12 @@ fun CalorieTrackerScreen(
                             viewModel = viewModel,
                             onFoodClick = { editingFood = it },
                             onDelete = {
-                                foodToDelete = it
-                                showDeleteDialog = true
+                                if (it.isOneTime || it.repeatOnDays.isNullOrEmpty()) {
+                                    viewModel.deleteLoggedFood(it)
+                                } else {
+                                    foodToDelete = it
+                                    showDeleteDialog = true
+                                }
                             },
                             modifier = Modifier.fillMaxSize()
                         )
@@ -705,8 +709,12 @@ fun CalorieTrackerScreen(
                             viewModel = viewModel,
                             onFoodClick = { editingFood = it },
                             onDelete = {
-                                foodToDelete = it
-                                showDeleteDialog = true
+                                if (it.isOneTime || it.repeatOnDays.isNullOrEmpty()) {
+                                    viewModel.deleteLoggedFood(it)
+                                } else {
+                                    foodToDelete = it
+                                    showDeleteDialog = true
+                                }
                             },
                             onBackToGrid = { activeMealSlot = null },
                             modifier = Modifier.fillMaxSize()     // ⭐ use all Box space
