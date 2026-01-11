@@ -952,7 +952,7 @@ fun WorkoutScreen(
             if (sliderVisible) {
                 Column(
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
+                        .align(Alignment.TopStart)
                         .padding(start = 0.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
