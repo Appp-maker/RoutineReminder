@@ -34,6 +34,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import com.example.routinereminder.data.entities.RecipeIngredient
 import com.example.routinereminder.data.entities.PORTION_TYPE_CUSTOM
 import com.example.routinereminder.data.entities.PORTION_TYPE_GRAMS
+import com.example.routinereminder.ui.components.formatChecklistText
 import kotlinx.coroutines.launch
 
 
@@ -242,7 +243,7 @@ fun BundleDetailScreen(
                     )
                 } else if (data.bundle.description.isNotBlank()) {
                     Text(
-                        text = data.bundle.description,
+                        text = formatChecklistText(data.bundle.description),
                         color = Color.Gray
                     )
                 }
