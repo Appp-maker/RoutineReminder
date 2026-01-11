@@ -98,6 +98,7 @@
     <string name="settings_event_sets_title">Event Sets</string>
     <string name="settings_event_sets_description">Name up to 20 sets to organize alternative plans.</string>
     <string name="settings_event_set_name_label">Set %1$c name</string>
+    <string name="settings_event_set_color_label">Set %1$c color</string>
     <string name="settings_event_sets_defaults_title">Default active sets by weekday</string>
     <string name="settings_event_sets_defaults_hint">Choose up to %1$d sets that are active by default for each weekday.</string>
     <string name="settings_event_sets_limit_reached">You can select up to %1$d sets per day.</string>

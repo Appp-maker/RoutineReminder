@@ -48,6 +48,7 @@ fun EditItemDialog(
     defaultEventSettings: DefaultEventSettings,
     useGoogleBackupMode: Boolean, // Added parameter
     eventSetNames: List<String>,
+    eventSetColors: List<Int>,
     onDismissRequest: () -> Unit,
     onSave: (ScheduleItem) -> Unit
 ) {
@@ -327,12 +328,11 @@ fun EditItemDialog(
                     }
                     Spacer(Modifier.height(16.dp))
 
-                    SeriesColorPicker(
-                        label = "Event color",
-                        selectedColor = Color(selectedColorArgb),
-                        onColorSelected = { selectedColorArgb = it.toArgb() }
-                    )
-                    Spacer(Modifier.height(16.dp))
+                    val isUsingSetColor = selectedSetId != null
+                    val eventSetColorArgb = selectedSetId?.let { id ->
+                        eventSetColors.getOrNull(id - 1)
+                    }
+                    val displayColorArgb = eventSetColorArgb ?: selectedColorArgb
 
                     Text(stringResource(R.string.event_set_label), style = MaterialTheme.typography.labelMedium)
                     ExposedDropdownMenuBox(
@@ -375,6 +375,14 @@ fun EditItemDialog(
                             }
                         }
                     }
+                    Spacer(Modifier.height(16.dp))
+
+                    SeriesColorPicker(
+                        label = "Event color",
+                        selectedColor = Color(displayColorArgb),
+                        onColorSelected = { selectedColorArgb = it.toArgb() },
+                        enabled = !isUsingSetColor
+                    )
                     Spacer(Modifier.height(16.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { isOneTime = !isOneTime }) {

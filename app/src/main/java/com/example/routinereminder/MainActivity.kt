@@ -359,6 +359,7 @@ fun MainAppUI(
         val defaultEventSettings by viewModel.defaultEventSettings.collectAsState()
         val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
         val eventSetNames by viewModel.eventSetNames.collectAsState()
+        val eventSetColors by viewModel.eventSetColors.collectAsState()
         val activeSetIds by viewModel.activeSetIds.collectAsState()
         val availableSetIds by viewModel.availableSetIds.collectAsState()
 
@@ -456,6 +457,7 @@ fun MainAppUI(
                                 items = scheduleItems,
                                 currentDate = selectedDate,
                                 eventSetNames = eventSetNames,
+                                eventSetColors = eventSetColors,
                                 activeSetIds = activeSetIds,
                                 availableSetIds = availableSetIds,
                                 onPreviousDay = { viewModel.selectPreviousDay() },
@@ -652,6 +654,7 @@ fun MainAppUI(
                             defaultEventSettings = defaultEventSettings,
                             useGoogleBackupMode = useGoogleBackupMode,
                             eventSetNames = eventSetNames,
+                            eventSetColors = eventSetColors,
                             onDismissRequest = { showEditDialog = false },
                             onSave = {
                                 viewModel.upsertScheduleItem(it)
@@ -834,6 +837,7 @@ private fun ScheduleItemListContent(
     items: List<ScheduleItem>,
     currentDate: LocalDate,
     doneStates: Map<Pair<Long, Long>, Boolean>,
+    eventSetColors: List<Int>,
     onLongPress: (ScheduleItem) -> Unit,
     viewModel: MainViewModel
 )
@@ -912,6 +916,7 @@ private fun ScheduleItemListContent(
                             item = item,
                             currentDate = currentDate,
                             isDoneToday = isDoneToday,
+                            eventSetColors = eventSetColors,
                             onLongPress = onLongPress
                         )
                     }
@@ -1042,6 +1047,7 @@ fun MainScreenContent(
     items: List<ScheduleItem>,
     currentDate: LocalDate,
     eventSetNames: List<String>,
+    eventSetColors: List<Int>,
     activeSetIds: Set<Int>,
     availableSetIds: Set<Int>,
     onPreviousDay: () -> Unit,
@@ -1115,6 +1121,7 @@ fun MainScreenContent(
                 items = items,
                 currentDate = currentDate,
                 doneStates = viewModel.doneItemsForDay.collectAsState().value,
+                eventSetColors = eventSetColors,
                 onLongPress = { item ->
                     selectedItemForAction = item
                     coroutineScope.launch {
@@ -1188,6 +1195,7 @@ fun ScheduleItemView(
     item: ScheduleItem,
     currentDate: LocalDate,
     isDoneToday: Boolean,
+    eventSetColors: List<Int>,
     onLongPress: (ScheduleItem) -> Unit
 ) {
     var isExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
@@ -1203,8 +1211,10 @@ fun ScheduleItemView(
             realNowDateTime.isBefore(itemAbsoluteEndDateTime)
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
     val rowBackgroundColor = if (isEffectivelyActiveNow) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent
-    // ❗ This value must be passed in from MainScreenContent
-    val seriesColor = Color(item.colorArgb)
+    val resolvedColorArgb = item.setId?.let { setId ->
+        eventSetColors.getOrNull(setId - 1)
+    } ?: item.colorArgb
+    val seriesColor = Color(resolvedColorArgb)
 
 
 // Base text color logic
