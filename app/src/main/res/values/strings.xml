@@ -26,6 +26,7 @@
     <!-- Settings Categories -->
     <string name="settings_category_default_events">Defaults</string>
     <string name="settings_category_sync">Sync</string>
+    <string name="settings_category_map">Map</string>
     <string name="settings_category_app">App</string>
 
     <!-- Data Sync Settings -->
