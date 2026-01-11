@@ -117,6 +117,8 @@ class MainViewModel @Inject constructor(
 
     private val _mapCaloriesLoggingEnabled = MutableStateFlow(false)
     val mapCaloriesLoggingEnabled: StateFlow<Boolean> = _mapCaloriesLoggingEnabled.asStateFlow()
+    private val _foodConsumedTrackingEnabled = MutableStateFlow(false)
+    val foodConsumedTrackingEnabled: StateFlow<Boolean> = _foodConsumedTrackingEnabled.asStateFlow()
 
     val showGoogleCalendarChooser = Channel<Unit>()
 
@@ -240,6 +242,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getMapConsumedCaloriesLoggingEnabled().collectLatest { enabled ->
                 _mapCaloriesLoggingEnabled.value = enabled
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getFoodConsumedTrackingEnabled().collectLatest { enabled ->
+                _foodConsumedTrackingEnabled.value = enabled
             }
         }
 
@@ -381,6 +388,12 @@ class MainViewModel @Inject constructor(
     fun saveMapCaloriesLoggingEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.saveMapConsumedCaloriesLoggingEnabled(enabled)
+        }
+    }
+
+    fun saveFoodConsumedTrackingEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveFoodConsumedTrackingEnabled(enabled)
         }
     }
 

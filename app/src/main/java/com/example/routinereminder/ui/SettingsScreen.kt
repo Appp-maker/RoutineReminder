@@ -122,6 +122,7 @@ fun SettingsScreen(
     val currentCalendarSyncCalendarToAppEnabled by viewModel.calendarSyncCalendarToAppEnabled.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     val currentMapCaloriesLoggingEnabled by viewModel.mapCaloriesLoggingEnabled.collectAsState()
+    val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
     val selectedGoogleAccountName by viewModel.selectedGoogleAccountName.collectAsState()
@@ -156,6 +157,7 @@ fun SettingsScreen(
     var calendarSyncAppToCalendarEnabled by remember(currentCalendarSyncAppToCalendarEnabled) { mutableStateOf(currentCalendarSyncAppToCalendarEnabled) }
     var calendarSyncCalendarToAppEnabled by remember(currentCalendarSyncCalendarToAppEnabled) { mutableStateOf(currentCalendarSyncCalendarToAppEnabled) }
     var mapCaloriesLoggingEnabledChecked by remember(currentMapCaloriesLoggingEnabled) { mutableStateOf(currentMapCaloriesLoggingEnabled) }
+    var foodConsumedTrackingEnabledChecked by remember(currentFoodConsumedTrackingEnabled) { mutableStateOf(currentFoodConsumedTrackingEnabled) }
 
 
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
@@ -312,6 +314,7 @@ fun SettingsScreen(
             if (calendarSyncCalendarToAppEnabled != currentCalendarSyncCalendarToAppEnabled) return@derivedStateOf true
             if (showAllEventsChecked != showAllEvents) return@derivedStateOf true
             if (mapCaloriesLoggingEnabledChecked != currentMapCaloriesLoggingEnabled) return@derivedStateOf true
+            if (foodConsumedTrackingEnabledChecked != currentFoodConsumedTrackingEnabled) return@derivedStateOf true
             if (selectedTabs != enabledTabs) return@derivedStateOf true
             // We don't directly compare selectedGoogleAccountName to a stored value for unsaved changes,
             // as its change directly triggers other settings to change, which are covered above.
@@ -423,6 +426,7 @@ fun SettingsScreen(
                         viewModel.updateCalendarSyncCalendarToApp(calendarSyncCalendarToAppEnabled)
                         viewModel.updateShowAllEvents(showAllEventsChecked)
                         viewModel.saveMapCaloriesLoggingEnabled(mapCaloriesLoggingEnabledChecked)
+                        viewModel.saveFoodConsumedTrackingEnabled(foodConsumedTrackingEnabledChecked)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
                         } else {
@@ -540,7 +544,9 @@ fun SettingsScreen(
                         activityLevel = selectedActivityLevel,
                         onActivityLevelChange = { selectedActivityLevel = it },
                         calorieGoal = selectedCalorieGoal,
-                        onCalorieGoalChange = { selectedCalorieGoal = it }
+                        onCalorieGoalChange = { selectedCalorieGoal = it },
+                        foodConsumedTrackingEnabled = foodConsumedTrackingEnabledChecked,
+                        onFoodConsumedTrackingEnabledChange = { foodConsumedTrackingEnabledChecked = it; justSavedSuccessfully = false }
                     )
                     SettingsCategory.DEFAULT_EVENTS -> DefaultEventsSettingsSection(
                         startTimeOption = startTimeOption,
@@ -778,7 +784,9 @@ fun ProfileSettingsSection(
     activityLevel: ActivityLevel,
     onActivityLevelChange: (ActivityLevel) -> Unit,
     calorieGoal: CalorieGoal,
-    onCalorieGoalChange: (CalorieGoal) -> Unit
+    onCalorieGoalChange: (CalorieGoal) -> Unit,
+    foodConsumedTrackingEnabled: Boolean,
+    onFoodConsumedTrackingEnabledChange: (Boolean) -> Unit
 ) {
     Column {
         Text("Profile", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
@@ -869,6 +877,18 @@ fun ProfileSettingsSection(
                 }
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        SettingSwitchItem(
+            text = stringResource(R.string.settings_calorie_track_consumed),
+            checked = foodConsumedTrackingEnabled,
+            onCheckedChange = onFoodConsumedTrackingEnabledChange
+        )
+        Text(
+            text = stringResource(R.string.settings_calorie_track_consumed_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
     }
 }
 
