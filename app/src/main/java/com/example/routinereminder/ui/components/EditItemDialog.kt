@@ -377,11 +377,31 @@ fun EditItemDialog(
                     }
                     Spacer(Modifier.height(16.dp))
 
+                    if (isUsingSetColor) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.event_color_label),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Text(
+                                stringResource(R.string.event_set_color_predefined_helper),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                    }
+
                     SeriesColorPicker(
-                        label = "Event color",
+                        label = stringResource(R.string.event_color_label),
                         selectedColor = Color(displayColorArgb),
                         onColorSelected = { selectedColorArgb = it.toArgb() },
-                        enabled = !isUsingSetColor
+                        enabled = !isUsingSetColor,
+                        colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else SeriesColorOptions,
+                        showLabel = !isUsingSetColor
                     )
                     Spacer(Modifier.height(16.dp))
 
