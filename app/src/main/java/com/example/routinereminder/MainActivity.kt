@@ -57,6 +57,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -1063,20 +1064,26 @@ private fun EventSetToggleRow(
     Column(modifier = Modifier.fillMaxWidth()) {
         OutlinedButton(
             onClick = { showDialog = true },
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            modifier = Modifier
+                .width(90.dp)
+                .height(28.dp),
+            shape = RoundedCornerShape(50),
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
         ) {
             Text(
                 text = buttonLabel,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f, fill = false)
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                modifier = Modifier.weight(1f, fill = false),
+                textAlign = TextAlign.Center
             )
             Icon(
                 imageVector = Icons.Filled.ArrowDropDown,
                 contentDescription = null,
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier
+                    .padding(start = 4.dp)
+                    .size(12.dp)
             )
         }
         if (hasManualSetsForDate) {
