@@ -265,6 +265,48 @@ class CalorieTrackerViewModel @Inject constructor(
         }
     }
 
+    fun logCaloriesConsumed(
+        calories: Int,
+        label: String,
+        date: LocalDate = LocalDate.now(),
+        mealSlot: String = "unspecified"
+    ) {
+        if (calories <= 0) return
+        viewModelScope.launch {
+            val foodProduct = FoodProduct(
+                name = label,
+                caloriesPer100g = calories.toDouble(),
+                proteinPer100g = 0.0,
+                carbsPer100g = 0.0,
+                fatPer100g = 0.0,
+                fiberPer100g = 0.0,
+                saturatedFatPer100g = 0.0,
+                addedSugarsPer100g = 0.0,
+                sodiumPer100g = 0.0
+            )
+            val loggedFood = LoggedFood(
+                date = date.toString(),
+                foodProduct = foodProduct,
+                portionSizeG = 100.0,
+                calories = calories.toDouble(),
+                proteinG = 0.0,
+                carbsG = 0.0,
+                fatG = 0.0,
+                fiberG = 0.0,
+                saturatedFatG = 0.0,
+                addedSugarsG = 0.0,
+                sodiumMg = 0.0,
+                mealSlot = mealSlot,
+                isOneTime = true,
+                dateEpochDay = date.toEpochDay()
+            )
+            appDatabase.loggedFoodDao().upsert(loggedFood)
+            if (date == selectedDate.value) {
+                refreshForSelectedDate()
+            }
+        }
+    }
+
 
 
     fun addCustomFood(

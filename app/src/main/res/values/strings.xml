@@ -96,6 +96,14 @@
     <string name="tab_calories">Calories</string>
     <string name="tab_running">Running</string>
     <string name="tab_workout">Workout</string>
+    <string name="calorie_tracker_add_consumed_action">Add consumed calories</string>
+    <string name="calorie_tracker_add_consumed_title">Log consumed calories</string>
+    <string name="calorie_tracker_add_consumed_hint">Add calories you ate so they count toward today\u2019s total.</string>
+    <string name="calorie_tracker_add_consumed_label">Calories</string>
+    <string name="calorie_tracker_add_consumed_confirm">Add to calorie tracker</string>
+    <string name="calorie_tracker_add_consumed_cancel">Cancel</string>
+    <string name="calorie_tracker_quick_log_map">Map session calories</string>
+    <string name="calorie_tracker_quick_log_workout">Workout session calories</string>
     <string name="workout_tab_placeholder_title">Workout tracking</string>
     <string name="workout_tab_placeholder_body">This tab will be available in a future update.</string>
     <string name="workout_title">Workout programs</string>
