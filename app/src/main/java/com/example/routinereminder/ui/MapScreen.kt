@@ -27,6 +27,7 @@ import android.location.Location
 import android.net.Uri
 import com.example.routinereminder.MainActivity
 import com.example.routinereminder.data.SnapshotStorage
+import com.example.routinereminder.data.model.ActiveRunState
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -433,9 +434,7 @@ fun MapScreen(
 
     DisposableEffect(lifecycleOwner, isRecording, trackingMode) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && isRecording) {
-                stopTracking(context)
-            } else if (event == Lifecycle.Event.ON_START && isRecording) {
+            if (event == Lifecycle.Event.ON_START && isRecording) {
                 if (!startTrackingIfPermitted()) {
                     stopRecording.value.invoke()
                 }
@@ -456,6 +455,18 @@ fun MapScreen(
                 stopRecording.value.invoke()
             }
         }
+    }
+
+    LaunchedEffect(
+        runState?.sessionId,
+        runState?.distanceMeters,
+        runState?.durationSec,
+        runState?.calories,
+        runState?.isRecording
+    ) {
+        val state = runState ?: return@LaunchedEffect
+        if (!state.isRecording) return@LaunchedEffect
+        updateTrackingNotification(context, state)
     }
 
     LaunchedEffect(map, trailPoints) {
@@ -1435,6 +1446,17 @@ fun shareSessionImage(
 private fun startTracking(context: Context, trackingMode: TrackingMode) {
     val intent = Intent(context, TrackingService::class.java).apply {
         putExtra(TrackingService.EXTRA_TRACKING_MODE, trackingMode.value)
+    }
+    context.startForegroundService(intent)
+}
+
+private fun updateTrackingNotification(context: Context, state: ActiveRunState) {
+    val intent = Intent(context, TrackingService::class.java).apply {
+        action = TrackingService.ACTION_UPDATE_NOTIFICATION
+        putExtra(TrackingService.EXTRA_DISTANCE_METERS, state.distanceMeters)
+        putExtra(TrackingService.EXTRA_DURATION_SEC, state.durationSec)
+        putExtra(TrackingService.EXTRA_CALORIES, state.calories)
+        putExtra(TrackingService.EXTRA_ACTIVITY_LABEL, state.activity)
     }
     context.startForegroundService(intent)
 }

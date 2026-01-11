@@ -1,6 +1,10 @@
 package com.example.routinereminder.location
 
-import android.app.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,7 +13,9 @@ import android.os.IBinder
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.example.routinereminder.R
+import com.example.routinereminder.MainActivity
 import com.google.android.gms.location.*
+import kotlin.math.roundToInt
 
 class TrackingService : Service() {
 
@@ -20,6 +26,10 @@ class TrackingService : Service() {
     private var lastMovementTimeMs = 0L
     private var lastLocation: Location? = null
     private var lastRequestSignature: String? = null
+    private var lastDistanceMeters = 0.0
+    private var lastDurationSec = 0L
+    private var lastCalories = 0.0
+    private var lastActivityLabel = "Run"
 
     override fun onCreate() {
         super.onCreate()
@@ -29,6 +39,10 @@ class TrackingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_UPDATE_NOTIFICATION) {
+            updateNotificationFromIntent(intent)
+            return START_STICKY
+        }
         if (!hasLocationPermission()) {
             handleMissingPermissions()
             return START_NOT_STICKY
@@ -48,7 +62,21 @@ class TrackingService : Service() {
 
     private fun startForegroundService() {
         val channelId = "tracking_channel"
+        ensureNotificationChannel(channelId)
+        startForeground(NOTIFICATION_ID, buildNotification(channelId))
+    }
 
+    private fun updateNotificationFromIntent(intent: Intent) {
+        lastDistanceMeters = intent.getDoubleExtra(EXTRA_DISTANCE_METERS, lastDistanceMeters)
+        lastDurationSec = intent.getLongExtra(EXTRA_DURATION_SEC, lastDurationSec)
+        lastCalories = intent.getDoubleExtra(EXTRA_CALORIES, lastCalories)
+        lastActivityLabel = intent.getStringExtra(EXTRA_ACTIVITY_LABEL) ?: lastActivityLabel
+        val channelId = "tracking_channel"
+        ensureNotificationChannel(channelId)
+        startForeground(NOTIFICATION_ID, buildNotification(channelId))
+    }
+
+    private fun ensureNotificationChannel(channelId: String) {
         val chan = NotificationChannel(
             channelId,
             "Running Tracker",
@@ -56,15 +84,57 @@ class TrackingService : Service() {
         )
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(chan)
+    }
 
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Running active")
-            .setContentText("Tracking your run in background")
+    private fun buildNotification(channelId: String): Notification {
+        val distanceKm = lastDistanceMeters / 1000.0
+        val distanceText = if (distanceKm > 0) "%.2f km".format(distanceKm) else "0.00 km"
+        val durationText = formatDuration(lastDurationSec)
+        val paceText = formatPace(lastDistanceMeters, lastDurationSec)
+        val caloriesText = lastCalories.roundToInt().toString()
+        val contentText = "Time $durationText • $distanceText • $paceText • $caloriesText cal"
+        val bigText = "Time $durationText\nDistance $distanceText\nPace $paceText\nCalories $caloriesText cal"
+
+        val openMapIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_MAP_TAB, true)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openMapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(this, channelId)
+            .setContentTitle("$lastActivityLabel active")
+            .setContentText(contentText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(pendingIntent)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
+    }
 
-        startForeground(1, notification)
+    private fun formatDuration(durationSec: Long): String {
+        val hours = durationSec / 3600
+        val minutes = (durationSec % 3600) / 60
+        val seconds = durationSec % 60
+        return if (hours > 0) {
+            "%d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
+        }
+    }
+
+    private fun formatPace(distanceMeters: Double, durationSec: Long): String {
+        if (distanceMeters <= 0.0 || durationSec <= 0L) return "-- /km"
+        val paceSecPerKm = (durationSec / (distanceMeters / 1000.0)).roundToInt()
+        val minutes = paceSecPerKm / 60
+        val seconds = paceSecPerKm % 60
+        return "%d:%02d /km".format(minutes, seconds)
     }
 
     private fun startLocationUpdates() {
@@ -184,6 +254,12 @@ class TrackingService : Service() {
         const val MODE_HIGH_ACCURACY = "high_accuracy"
         const val MODE_BALANCED = "balanced"
         const val ACTION_PERMISSION_REQUIRED = "TRACKING_PERMISSION_REQUIRED"
+        const val ACTION_UPDATE_NOTIFICATION = "TRACKING_UPDATE_NOTIFICATION"
+        const val EXTRA_DISTANCE_METERS = "tracking_distance_meters"
+        const val EXTRA_DURATION_SEC = "tracking_duration_sec"
+        const val EXTRA_CALORIES = "tracking_calories"
+        const val EXTRA_ACTIVITY_LABEL = "tracking_activity_label"
+        const val NOTIFICATION_ID = 1
 
         private const val HIGH_ACCURACY_INTERVAL_MS = 2000L
         private const val HIGH_ACCURACY_MIN_DISTANCE_M = 2f
