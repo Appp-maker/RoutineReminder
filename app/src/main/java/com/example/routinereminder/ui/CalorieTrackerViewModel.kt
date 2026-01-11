@@ -13,6 +13,7 @@ import com.example.routinereminder.data.Gender
 import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.data.entities.LoggedFood
 import com.example.routinereminder.data.entities.FoodBundleWithItems
+import com.example.routinereminder.data.entities.CalorieEntry
 import com.example.routinereminder.data.OpenFoodFactsApiClient
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.data.UserSettings
@@ -98,6 +99,7 @@ class CalorieTrackerViewModel @Inject constructor(
                 _loggedFoods.value = appDatabase.loggedFoodDao().getFoodsForDate(date = it.toString())
 
                 calculateDailyTotals()
+                calculateDailyTargets()
             }
         }
     }
@@ -307,6 +309,25 @@ class CalorieTrackerViewModel @Inject constructor(
         }
     }
 
+    fun logWorkoutCaloriesRequired(
+        calories: Int,
+        label: String,
+        date: LocalDate = LocalDate.now()
+    ) {
+        if (calories <= 0) return
+        viewModelScope.launch {
+            val entry = CalorieEntry(
+                dateEpochDay = date.toEpochDay(),
+                calories = calories,
+                label = label
+            )
+            appDatabase.calorieEntryDao().insert(entry)
+            if (date == selectedDate.value) {
+                calculateDailyTargets()
+            }
+        }
+    }
+
 
 
     fun addCustomFood(
@@ -425,6 +446,7 @@ class CalorieTrackerViewModel @Inject constructor(
                 .getFoodsForDate(selectedDate.value.toString())
 
         calculateDailyTotals()
+        calculateDailyTargets()
     }
 
     fun addBundleToTracker(
@@ -725,7 +747,7 @@ class CalorieTrackerViewModel @Inject constructor(
 
         }
     }
-    private fun calculateDailyTargets() {
+    private suspend fun calculateDailyTargets() {
         val userSettings = _userSettings.value
         if (userSettings == null || userSettings.weightKg <= 0 || userSettings.heightCm <= 0 || userSettings.age <= 0) {
             _dailyTargets.value = DailyTargets(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) // Default/empty state
@@ -733,7 +755,7 @@ class CalorieTrackerViewModel @Inject constructor(
         }
 
 
-        val calories = if (userSettings.customCaloriesTarget > 0) {
+        val baseCalories = if (userSettings.customCaloriesTarget > 0) {
             userSettings.customCaloriesTarget
         } else {
             val genderConstant = if (userSettings.gender == Gender.MALE) 5 else -161
@@ -753,6 +775,10 @@ class CalorieTrackerViewModel @Inject constructor(
             }
             (tdee + goalAdjustment).coerceAtLeast(0.0)
         }
+        val workoutCalories = appDatabase
+            .calorieEntryDao()
+            .totalCaloriesForDate(selectedDate.value.toEpochDay())
+        val calories = (baseCalories + workoutCalories).coerceAtLeast(0.0)
         val protein = 1.6 * userSettings.weightKg
         val carbs = (calories * 0.5) / 4
         val fat = (calories * 0.25) / 9

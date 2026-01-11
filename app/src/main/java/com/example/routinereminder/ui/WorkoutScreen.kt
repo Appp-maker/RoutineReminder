@@ -108,7 +108,7 @@ fun WorkoutScreen(
     var customExerciseVideoUrl by remember { mutableStateOf("") }
     var customExerciseInstructions by remember { mutableStateOf("") }
     var showCaloriesDialog by remember { mutableStateOf(false) }
-    var consumedCaloriesInput by remember { mutableStateOf("") }
+    var workoutCaloriesInput by remember { mutableStateOf("") }
 
     val selectedPlan = uiState.plans.firstOrNull { it.id == uiState.selectedPlanId }
 
@@ -140,21 +140,23 @@ fun WorkoutScreen(
         )
     }
     if (showCaloriesDialog) {
-        val caloriesValue = consumedCaloriesInput.toIntOrNull()
+        val caloriesValue = workoutCaloriesInput.toIntOrNull()
         val quickLogLabel = stringResource(R.string.calorie_tracker_quick_log_workout)
         AlertDialog(
             onDismissRequest = { showCaloriesDialog = false },
-            title = { Text(text = stringResource(R.string.calorie_tracker_add_consumed_title)) },
+            title = { Text(text = stringResource(R.string.workout_calorie_adjustment_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = stringResource(R.string.calorie_tracker_add_consumed_hint),
+                        text = stringResource(R.string.workout_calorie_adjustment_hint),
                         style = MaterialTheme.typography.bodySmall
                     )
                     TextField(
-                        value = consumedCaloriesInput,
-                        onValueChange = { consumedCaloriesInput = it },
-                        label = { Text(stringResource(R.string.calorie_tracker_add_consumed_label)) },
+                        value = workoutCaloriesInput,
+                        onValueChange = { value ->
+                            workoutCaloriesInput = value.filter { it.isDigit() }
+                        },
+                        label = { Text(stringResource(R.string.workout_calorie_adjustment_label)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = TextFieldDefaults.textFieldColors()
@@ -166,20 +168,25 @@ fun WorkoutScreen(
                     enabled = caloriesValue != null && caloriesValue > 0,
                     onClick = {
                         val calories = caloriesValue ?: return@TextButton
-                        calorieTrackerViewModel.logCaloriesConsumed(
+                        selectedPlan?.let { plan ->
+                            if (plan.caloriesPerWorkout != calories) {
+                                viewModel.updatePlanCalories(plan.id, calories)
+                            }
+                        }
+                        calorieTrackerViewModel.logWorkoutCaloriesRequired(
                             calories = calories,
-                            label = quickLogLabel
+                            label = selectedPlan?.name ?: quickLogLabel
                         )
-                        consumedCaloriesInput = ""
+                        workoutCaloriesInput = ""
                         showCaloriesDialog = false
                     }
                 ) {
-                    Text(stringResource(R.string.calorie_tracker_add_consumed_confirm))
+                    Text(stringResource(R.string.workout_calorie_adjustment_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCaloriesDialog = false }) {
-                    Text(stringResource(R.string.calorie_tracker_add_consumed_cancel))
+                    Text(stringResource(R.string.alert_action_cancel))
                 }
             }
         )
@@ -488,16 +495,22 @@ fun WorkoutScreen(
                     }
                     Button(
                         onClick = {
-                            if (consumedCaloriesInput.isBlank()) {
-                                selectedPlan?.caloriesPerWorkout?.takeIf { it > 0 }?.let { calories ->
-                                    consumedCaloriesInput = calories.toString()
+                            if (selectedPlan == null) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(message = selectPlanMessage)
+                                }
+                                return@Button
+                            }
+                            if (workoutCaloriesInput.isBlank()) {
+                                selectedPlan.caloriesPerWorkout?.takeIf { it > 0 }?.let { calories ->
+                                    workoutCaloriesInput = calories.toString()
                                 }
                             }
                             showCaloriesDialog = true
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(stringResource(R.string.calorie_tracker_add_consumed_action))
+                        Text(stringResource(R.string.workout_calorie_adjustment_action))
                     }
 
                 }

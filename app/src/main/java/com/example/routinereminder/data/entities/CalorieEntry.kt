@@ -7,5 +7,7 @@ import androidx.room.PrimaryKey
 data class CalorieEntry(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val calories: Int
+    val dateEpochDay: Long,
+    val calories: Int,
+    val label: String
 )
