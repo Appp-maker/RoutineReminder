@@ -364,7 +364,7 @@ object CalendarSyncManager {
                 val interval = item.repeatEveryWeeks.coerceAtLeast(1)
                 put(CalendarContract.Events.RRULE, "FREQ=WEEKLY;INTERVAL=$interval;BYDAY=$byDayPart")
             } else {
-                put(CalendarContract.Events.RRULE, null)
+                putNull(CalendarContract.Events.RRULE)
             }
         }
     }
