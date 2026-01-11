@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,6 +41,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -48,6 +51,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -94,6 +98,7 @@ fun WorkoutScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val selectPlanMessage = stringResource(R.string.workout_snackbar_select_plan)
+    val exerciseListState = rememberLazyListState()
 
     var newPlanName by remember { mutableStateOf("") }
     var planMenuExpanded by remember { mutableStateOf(false) }
@@ -496,14 +501,16 @@ fun WorkoutScreen(
             end = padding.calculateEndPadding(layoutDirection),
             bottom = padding.calculateBottomPadding()
         )
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPadding)
-                .padding(horizontal = 16.dp)
-                .padding(top = 0.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                state = exerciseListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding)
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 0.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
@@ -857,6 +864,78 @@ fun WorkoutScreen(
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 12.dp)
                 )
+            }
+
+            if (uiState.isExerciseDbReady && uiState.exercises.isNotEmpty()) {
+                val exerciseStartIndex = 4
+                val letterIndexMap = remember(uiState.exercises) {
+                    buildMap {
+                        uiState.exercises.forEachIndexed { index, exercise ->
+                            val letter = exercise.name.firstOrNull()?.uppercaseChar() ?: return@forEachIndexed
+                            if (!containsKey(letter)) {
+                                put(letter, index)
+                            }
+                        }
+                    }
+                }
+                val currentLetter by remember(uiState.exercises, exerciseListState) {
+                    derivedStateOf {
+                        val firstExerciseIndex = exerciseListState.layoutInfo.visibleItemsInfo
+                            .firstOrNull { it.index >= exerciseStartIndex }
+                            ?.index
+                        val exerciseIndex = firstExerciseIndex?.minus(exerciseStartIndex) ?: return@derivedStateOf null
+                        uiState.exercises.getOrNull(exerciseIndex)
+                            ?.name
+                            ?.firstOrNull()
+                            ?.uppercaseChar()
+                    }
+                }
+                val alphabet = remember { ('A'..'Z').toList() }
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (currentLetter != null) {
+                        Surface(
+                            tonalElevation = 2.dp,
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = currentLetter.toString(),
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        alphabet.forEach { letter ->
+                            val enabled = letterIndexMap.containsKey(letter)
+                            Text(
+                                text = letter.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (enabled) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                },
+                                modifier = Modifier
+                                    .clickable(enabled = enabled) {
+                                        letterIndexMap[letter]?.let { targetIndex ->
+                                            coroutineScope.launch {
+                                                exerciseListState.animateScrollToItem(
+                                                    index = exerciseStartIndex + targetIndex
+                                                )
+                                            }
+                                        }
+                                    }
+                                    .padding(horizontal = 2.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
