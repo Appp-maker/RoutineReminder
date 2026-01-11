@@ -961,7 +961,7 @@ fun WorkoutScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(width = 36.dp, height = sliderHeight),
+                    modifier = Modifier.size(width = sliderHeight, height = 36.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Slider(
