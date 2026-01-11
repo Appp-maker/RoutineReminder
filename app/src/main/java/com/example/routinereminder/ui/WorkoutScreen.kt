@@ -822,6 +822,7 @@ private fun WorkoutPlanExerciseRow(
         if (isEditing) {
             val hasReps = (exercise.repetitions ?: 0) > 0
             val hasDuration = (exercise.durationMinutes ?: 0) > 0
+            val setsCount = exercise.sets ?: 0
             Spacer(modifier = Modifier.height(6.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextField(
@@ -899,6 +900,7 @@ private fun WorkoutPlanExerciseRow(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = TextFieldDefaults.MinHeight),
+                    enabled = setsCount > 1,
                     label = { Text(stringResource(R.string.workout_exercise_rest_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
