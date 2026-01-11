@@ -595,7 +595,7 @@ fun SettingsScreen(
                         onShowDetailsInNotificationChange = { showDetailsInNotificationChecked = it; justSavedSuccessfully = false },
                         selectedGoogleAccountName = selectedGoogleAccountName
                     )
-                    EventSetsSettingsSection(
+                    SettingsCategory.EVENT_SETS -> EventSetsSettingsSection(
                         eventSetNames = eventSetNameInputs,
                         defaultActiveSetsByWeekday = defaultActiveSetSelections,
                         onEventSetNameChange = { index, name ->
