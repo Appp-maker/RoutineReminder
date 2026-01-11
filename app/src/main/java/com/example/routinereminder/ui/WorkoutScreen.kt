@@ -870,81 +870,79 @@ fun WorkoutScreen(
                 )
             }
 
-            if (uiState.isExerciseDbReady && uiState.exercises.isNotEmpty()) {
-                val exerciseStartIndex = 4
-                val letterIndexMap = remember(uiState.exercises) {
-                    buildMap {
-                        uiState.exercises.forEachIndexed { index, exercise ->
-                            val letter = exercise.name.firstOrNull()?.uppercaseChar() ?: return@forEachIndexed
-                            if (!containsKey(letter)) {
-                                put(letter, index)
-                            }
+        }
+        if (uiState.isExerciseDbReady && uiState.exercises.isNotEmpty()) {
+            val exerciseStartIndex = 4
+            val letterIndexMap = remember(uiState.exercises) {
+                buildMap {
+                    uiState.exercises.forEachIndexed { index, exercise ->
+                        val letter = exercise.name.firstOrNull()?.uppercaseChar() ?: return@forEachIndexed
+                        if (!containsKey(letter)) {
+                            put(letter, index)
                         }
                     }
                 }
-                val currentLetter by remember(uiState.exercises, exerciseListState) {
-                    derivedStateOf {
-                        val firstExerciseIndex = exerciseListState.layoutInfo.visibleItemsInfo
-                            .firstOrNull { it.index >= exerciseStartIndex }
-                            ?.index
-                        val exerciseIndex = firstExerciseIndex?.minus(exerciseStartIndex) ?: return@derivedStateOf null
-                        uiState.exercises.getOrNull(exerciseIndex)
-                            ?.name
-                            ?.firstOrNull()
-                            ?.uppercaseChar()
+            }
+            val currentLetter by remember(uiState.exercises, exerciseListState) {
+                derivedStateOf {
+                    val firstExerciseIndex = exerciseListState.layoutInfo.visibleItemsInfo
+                        .firstOrNull { it.index >= exerciseStartIndex }
+                        ?.index
+                    val exerciseIndex = firstExerciseIndex?.minus(exerciseStartIndex) ?: return@derivedStateOf null
+                    uiState.exercises.getOrNull(exerciseIndex)
+                        ?.name
+                        ?.firstOrNull()
+                        ?.uppercaseChar()
+                }
+            }
+            val alphabet = remember { ('A'..'Z').toList() }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (currentLetter != null) {
+                    Surface(
+                        tonalElevation = 2.dp,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text(
+                            text = currentLetter.toString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
                     }
                 }
-                val alphabet = remember { ('A'..'Z').toList() }
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (currentLetter != null) {
-                        Surface(
-                            tonalElevation = 2.dp,
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Text(
-                                text = currentLetter.toString(),
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        alphabet.forEach { letter ->
-                            val enabled = letterIndexMap.containsKey(letter)
-                            Text(
-                                text = letter.toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (enabled) {
-                                    MaterialTheme.colorScheme.onSurface
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                },
-                                modifier = Modifier
-                                    .clickable(enabled = enabled) {
-                                        letterIndexMap[letter]?.let { targetIndex ->
-                                            coroutineScope.launch {
-                                                exerciseListState.animateScrollToItem(
-                                                    index = exerciseStartIndex + targetIndex
-                                                )
-                                            }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    alphabet.forEach { letter ->
+                        val enabled = letterIndexMap.containsKey(letter)
+                        Text(
+                            text = letter.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (enabled) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            },
+                            modifier = Modifier
+                                .clickable(enabled = enabled) {
+                                    letterIndexMap[letter]?.let { targetIndex ->
+                                        coroutineScope.launch {
+                                            exerciseListState.animateScrollToItem(
+                                                index = exerciseStartIndex + targetIndex
+                                            )
                                         }
                                     }
-                                    .padding(horizontal = 2.dp)
-                            )
-                        }
+                                }
+                                .padding(horizontal = 2.dp)
+                        )
                     }
                 }
             }
         }
     }
-}
-
 }
 
 @Composable
