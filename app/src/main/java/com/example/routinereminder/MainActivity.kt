@@ -124,6 +124,7 @@ import com.example.routinereminder.ui.bundle.CreateBundleScreen
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private var openMapOnLaunch by mutableStateOf(false)
 
 
 
@@ -186,6 +187,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        openMapOnLaunch = intent?.getBooleanExtra(EXTRA_OPEN_MAP_TAB, false) == true
 
         // --- Google Account Picker launcher ---
         val accountPickerLauncher =
@@ -227,9 +229,26 @@ class MainActivity : ComponentActivity() {
         setContent {
             MainAppUI(
                 viewModel = viewModel,
-                lifecycleScope = lifecycleScope
+                lifecycleScope = lifecycleScope,
+                openMapOnLaunch = openMapOnLaunch,
+                onMapLaunchConsumed = {
+                    openMapOnLaunch = false
+                    intent?.removeExtra(EXTRA_OPEN_MAP_TAB)
+                }
             )
         }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (intent?.getBooleanExtra(EXTRA_OPEN_MAP_TAB, false) == true) {
+            openMapOnLaunch = true
+        }
+        intent?.let { setIntent(it) }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_MAP_TAB = "extra_open_map_tab"
     }
 }
 
@@ -238,7 +257,12 @@ class MainActivity : ComponentActivity() {
     // ... (The rest of your MainActivity.kt file remains unchanged) ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope) {
+fun MainAppUI(
+    viewModel: MainViewModel,
+    lifecycleScope: LifecycleCoroutineScope,
+    openMapOnLaunch: Boolean,
+    onMapLaunchConsumed: () -> Unit
+) {
     RoutineReminderTheme {
         val context = LocalContext.current
         var showExactAlarmPermissionDialogState by remember { mutableStateOf(false) }
@@ -305,6 +329,19 @@ fun MainAppUI(viewModel: MainViewModel, lifecycleScope: LifecycleCoroutineScope)
                     launchSingleTop = true
                     restoreState = true
                 }
+            }
+        }
+
+        LaunchedEffect(openMapOnLaunch, enabledTabRoutes) {
+            if (openMapOnLaunch && enabledTabRoutes.contains(Screen.Map.route)) {
+                navController.navigate(Screen.Map.route) {
+                    popUpTo(navController.graph.startDestinationId) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+                onMapLaunchConsumed()
             }
         }
 
