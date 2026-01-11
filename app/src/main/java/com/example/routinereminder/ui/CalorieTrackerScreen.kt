@@ -627,7 +627,7 @@ fun CalorieTrackerScreen(
                         },
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
                     ) {
-                        Text("By meal")
+                        Text("Group by meal")
                     }
                     SegmentedButton(
                         selected = showAllFoods,
@@ -637,7 +637,7 @@ fun CalorieTrackerScreen(
                         },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                     ) {
-                        Text("All foods")
+                        Text("List all food")
                     }
                 }
 
@@ -873,7 +873,7 @@ fun AllFoodsList(
             .padding(16.dp)
     ) {
         Text(
-            text = "All foods",
+            text = "List all food",
             color = Color.White,
             fontSize = 20.sp,
             modifier = Modifier.padding(bottom = 12.dp)
