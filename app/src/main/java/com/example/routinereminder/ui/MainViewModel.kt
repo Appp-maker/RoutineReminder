@@ -142,6 +142,8 @@ class MainViewModel @Inject constructor(
 
     private val _activeSetIds = MutableStateFlow<Set<Int>>(emptySet())
     val activeSetIds: StateFlow<Set<Int>> = _activeSetIds.asStateFlow()
+    private val _hasManualActiveSetsForDate = MutableStateFlow(false)
+    val hasManualActiveSetsForDate: StateFlow<Boolean> = _hasManualActiveSetsForDate.asStateFlow()
 
     private val _defaultActiveSetsByWeekday = MutableStateFlow<Map<DayOfWeek, Set<Int>>>(emptyMap())
     val defaultActiveSetsByWeekday: StateFlow<Map<DayOfWeek, Set<Int>>> = _defaultActiveSetsByWeekday.asStateFlow()
@@ -517,6 +519,7 @@ class MainViewModel @Inject constructor(
             current
         }
         _activeSetIds.value = updated
+        _hasManualActiveSetsForDate.value = true
         persistActiveSetsForDate()
         return true
     }
@@ -544,6 +547,7 @@ class MainViewModel @Inject constructor(
     private fun applyActiveSetsForDate(date: LocalDate) {
         viewModelScope.launch {
             val saved = settingsRepository.getActiveSetsForDate(date).first()
+            _hasManualActiveSetsForDate.value = saved != null
             _activeSetIds.value = saved
                 ?: settingsRepository.getDefaultActiveSetsForWeekday(date.dayOfWeek).first()
         }
@@ -857,7 +861,9 @@ class MainViewModel @Inject constructor(
                 }
                 if (_activeSetIds.value != effectiveActiveSetIds) {
                     _activeSetIds.value = effectiveActiveSetIds
-                    settingsRepository.saveActiveSetsForDate(_selectedDate.value, effectiveActiveSetIds)
+                    if (_hasManualActiveSetsForDate.value) {
+                        settingsRepository.saveActiveSetsForDate(_selectedDate.value, effectiveActiveSetIds)
+                    }
                 }
 
                 updateNotificationsForSetSelection(itemsForDate, effectiveActiveSetIds, _selectedDate.value)
