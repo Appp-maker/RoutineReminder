@@ -88,6 +88,9 @@ fun WorkoutScreen(
     val uiState by viewModel.uiState.collectAsState()
     val defaultEventSettings by mainViewModel.defaultEventSettings.collectAsState()
     val useGoogleBackupMode by mainViewModel.useGoogleBackupMode.collectAsState()
+    val enabledTabsState by mainViewModel.enabledTabs.collectAsState()
+    val enabledTabs = enabledTabsState ?: AppTab.defaultTabs
+    val caloriesEnabled = enabledTabs.contains(AppTab.Calories)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val selectPlanMessage = stringResource(R.string.workout_snackbar_select_plan)
@@ -574,24 +577,26 @@ fun WorkoutScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     } else {
-                        TextField(
-                            value = selectedPlan.caloriesPerWorkout?.toString().orEmpty(),
-                            onValueChange = { value ->
-                                val cleaned = value.filter { it.isDigit() }
-                                val calories = cleaned.toIntOrNull()
-                                viewModel.updatePlanCalories(selectedPlan.id, calories)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = TextFieldDefaults.MinHeight),
-                            label = { Text(stringResource(R.string.workout_plan_calories_label)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
-                        Text(
-                            text = stringResource(R.string.workout_plan_calories_hint),
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        if (caloriesEnabled) {
+                            TextField(
+                                value = selectedPlan.caloriesPerWorkout?.toString().orEmpty(),
+                                onValueChange = { value ->
+                                    val cleaned = value.filter { it.isDigit() }
+                                    val calories = cleaned.toIntOrNull()
+                                    viewModel.updatePlanCalories(selectedPlan.id, calories)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = TextFieldDefaults.MinHeight),
+                                label = { Text(stringResource(R.string.workout_plan_calories_label)) },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                            Text(
+                                text = stringResource(R.string.workout_plan_calories_hint),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                         if (selectedPlan.exercises.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.workout_plan_empty_body),
