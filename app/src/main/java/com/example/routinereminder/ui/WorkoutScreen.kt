@@ -1234,7 +1234,7 @@ private fun ExercisePreviewDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val safeImageUrls = preview.imageUrls.orEmpty()
+    val safeImageUrls = preview.imageUrls.orEmpty().distinct()
     val allImageUrls = remember(preview.gifUrl, safeImageUrls) {
         safeImageUrls.takeIf { it.isNotEmpty() } ?: deriveFallbackImageUrls(preview.gifUrl)
     }
