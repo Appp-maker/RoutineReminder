@@ -76,6 +76,7 @@ enum class SettingsCategory {
     PROFILE,
     SYNC,
     DEFAULT_EVENTS,
+    EVENT_SETS,
     MAP,
     APP
 }
@@ -477,6 +478,7 @@ fun SettingsScreen(
                 val allowedCategories = when (from) {
                     "routine" -> listOfNotNull(
                         if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else null,
+                        if (routineEnabled) SettingsCategory.EVENT_SETS else null,
                         SettingsCategory.SYNC,
                         if (includeMapTab) SettingsCategory.MAP else null,
                         SettingsCategory.APP
@@ -525,6 +527,7 @@ fun SettingsScreen(
                                 SettingsCategory.SYNC -> stringResource(R.string.settings_category_sync)
                                 SettingsCategory.MAP -> stringResource(R.string.settings_category_map)
                                 SettingsCategory.APP -> stringResource(R.string.settings_category_app)
+                                SettingsCategory.EVENT_SETS -> stringResource(R.string.settings_event_sets_title)
                             }
 
                             Text(

@@ -92,6 +92,7 @@ fun WorkoutScreen(
     val uiState by viewModel.uiState.collectAsState()
     val defaultEventSettings by mainViewModel.defaultEventSettings.collectAsState()
     val useGoogleBackupMode by mainViewModel.useGoogleBackupMode.collectAsState()
+    val eventSetNames by mainViewModel.eventSetNames.collectAsState()
     val enabledTabsState by mainViewModel.enabledTabs.collectAsState()
     val enabledTabs = enabledTabsState ?: AppTab.defaultTabs
     val caloriesEnabled = enabledTabs.contains(AppTab.Calories)
@@ -483,6 +484,7 @@ fun WorkoutScreen(
             initialItem = draftItem,
             defaultEventSettings = defaultEventSettings,
             useGoogleBackupMode = useGoogleBackupMode,
+            eventSetNames = eventSetNames,
             onDismissRequest = { planToSchedule = null },
             onSave = { item ->
                 mainViewModel.upsertScheduleItem(item)
@@ -941,7 +943,6 @@ fun WorkoutScreen(
             }
         }
     }
-}
 }
 
 @Composable
