@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -236,6 +235,7 @@ fun WorkoutSessionScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         WorkoutTimerChip(
+                            modifier = Modifier.weight(1f),
                             title = stringResource(R.string.workout_timer_total_label),
                             time = formatDuration(totalElapsedSeconds),
                             isActive = workoutStarted && !workoutCompleted,
@@ -243,6 +243,7 @@ fun WorkoutSessionScreen(
                             inactiveColor = timerInactiveColor
                         )
                         WorkoutTimerChip(
+                            modifier = Modifier.weight(1f),
                             title = stringResource(R.string.workout_timer_set_label),
                             time = setRemainingSeconds?.let(::formatDuration)
                                 ?: stringResource(R.string.workout_timer_idle),
@@ -251,6 +252,7 @@ fun WorkoutSessionScreen(
                             inactiveColor = timerInactiveColor
                         )
                         WorkoutTimerChip(
+                            modifier = Modifier.weight(1f),
                             title = stringResource(R.string.workout_timer_rest_label),
                             time = restRemainingSeconds?.let(::formatDuration)
                                 ?: stringResource(R.string.workout_timer_idle),
@@ -333,6 +335,7 @@ fun WorkoutSessionScreen(
 
 @Composable
 private fun WorkoutTimerChip(
+    modifier: Modifier = Modifier,
     title: String,
     time: String,
     isActive: Boolean,
@@ -340,7 +343,7 @@ private fun WorkoutTimerChip(
     inactiveColor: androidx.compose.ui.graphics.Color
 ) {
     Surface(
-        modifier = Modifier.weight(1f),
+        modifier = modifier,
         color = if (isActive) activeColor else inactiveColor,
         shape = MaterialTheme.shapes.medium
     ) {
