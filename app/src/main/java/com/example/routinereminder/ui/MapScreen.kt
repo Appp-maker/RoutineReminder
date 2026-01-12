@@ -1580,7 +1580,8 @@ private fun StatBlock(title: String, value: String) {
         Text(
             value,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = ComposeColor(0xFFE6E6E6)
         )
         Text(title, style = MaterialTheme.typography.bodySmall, color = ComposeColor.Gray)
     }
