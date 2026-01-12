@@ -990,16 +990,16 @@ fun WorkoutScreen(
             val showScrollIndicator = isDragging || exerciseListState.isScrollInProgress
             val scrollIndicatorLetter = if (isDragging) sliderLetter else currentLetter
             val configuration = LocalConfiguration.current
-            val sliderHeight = maxOf(240.dp, (configuration.screenHeightDp * 0.65f).dp)
+            val sliderHeight = maxOf(200.dp, (configuration.screenHeightDp * 0.6f).dp)
             Column(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 0.dp),
+                    .padding(start = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(width = sliderHeight, height = 36.dp),
+                    modifier = Modifier.size(width = 36.dp, height = sliderHeight),
                     contentAlignment = Alignment.Center
                 ) {
                     Slider(
@@ -1021,9 +1021,8 @@ fun WorkoutScreen(
                         valueRange = 0f..sliderRangeMax,
                         steps = alphabet.size - 2,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .rotate(-90f)
-                            .scale(1.2f),
+                            .requiredWidth(sliderHeight)
+                            .rotate(-90f),
                         colors = SliderDefaults.colors(
                             thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
                             activeTrackColor = Color.Transparent,
