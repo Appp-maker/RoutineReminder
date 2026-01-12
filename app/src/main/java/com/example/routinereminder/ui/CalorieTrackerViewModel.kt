@@ -807,7 +807,23 @@ class CalorieTrackerViewModel @Inject constructor(
             .calorieEntryDao()
             .totalCaloriesForDate(selectedDate.value.toEpochDay())
         val calories = (baseCalories + workoutCalories).coerceAtLeast(0.0)
-        val protein = 1.6 * userSettings.weightKg
+        val proteinBase = when (userSettings.gender) {
+            Gender.MALE -> 1.6
+            Gender.FEMALE -> 1.4
+        }
+        val proteinActivityFactor = when (userSettings.activityLevel) {
+            ActivityLevel.SEDENTARY -> 0.0
+            ActivityLevel.LIGHT -> 0.2
+            ActivityLevel.MODERATE -> 0.4
+            ActivityLevel.ACTIVE -> 0.6
+        }
+        val proteinGoalFactor = when (userSettings.calorieGoal) {
+            CalorieGoal.MAINTAIN -> 0.0
+            CalorieGoal.LOSE_WEIGHT -> 0.2
+            CalorieGoal.GAIN_WEIGHT -> 0.3
+        }
+        val proteinPerKg = (proteinBase + proteinActivityFactor + proteinGoalFactor).coerceAtMost(2.2)
+        val protein = proteinPerKg * userSettings.weightKg
         val carbs = (calories * 0.5) / 4
         val fat = (calories * 0.25) / 9
         val fiber = 14.0 * (calories / 1000)
