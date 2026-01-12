@@ -666,6 +666,18 @@ fun MainAppUI(
                                 mainViewModel = viewModel
                             )
                         }
+                        composable(
+                            route = Screen.WorkoutSession.route,
+                            arguments = listOf(navArgument("planId") { defaultValue = "" })
+                        ) { backStackEntry ->
+                            val planId = backStackEntry.arguments?.getString("planId").orEmpty()
+                            if (planId.isNotBlank()) {
+                                WorkoutSessionScreen(
+                                    navController = navController,
+                                    planId = planId
+                                )
+                            }
+                        }
 
                         composable("share_preview/{sessionId}") { backStackEntry ->
                             val context = LocalContext.current
