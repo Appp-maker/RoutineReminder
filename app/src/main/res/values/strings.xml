@@ -215,6 +215,7 @@
     <string name="workout_exercise_weight_label">Weight (optional)</string>
     <string name="workout_plan_edit_exercise">Edit exercise</string>
     <string name="workout_exercise_gif_preview">Exercise gif preview</string>
+    <string name="workout_exercise_image_paused">Exercise image paused</string>
     <string name="workout_exercise_gif_url">%1$s</string>
     <string name="workout_exercise_gif_url_unavailable">Unavailable</string>
     <string name="workout_exercise_gif_unavailable">This exercise does not have a gif yet.</string>
