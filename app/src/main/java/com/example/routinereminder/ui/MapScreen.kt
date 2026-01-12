@@ -1403,6 +1403,15 @@ fun shareSessionImage(
         canvas.drawPath(path, trail)
     }
 
+    fun overlayColor(baseColor: Int, alpha: Int): Int {
+        return Color.argb(
+            alpha,
+            Color.red(baseColor),
+            Color.green(baseColor),
+            Color.blue(baseColor)
+        )
+    }
+
     fun finalizeAndShare(bmpBase: Bitmap?) {
         val width = 1080
         val height = 1920
@@ -1430,11 +1439,12 @@ fun shareSessionImage(
         drawTrailCentered(canvas, session.polyline, mapRect)
 
         // bottom overlay
+        val baseOverlayColor = AppPalette.MapBackground.toArgb()
         val overlayPaint = Paint().apply {
             shader = LinearGradient(
                 0f, overlayTop, 0f, height.toFloat(),
-                Color.argb(180, 0, 0, 0),
-                Color.argb(255, 0, 0, 0),
+                overlayColor(baseOverlayColor, 180),
+                overlayColor(baseOverlayColor, 255),
                 Shader.TileMode.CLAMP
             )
         }

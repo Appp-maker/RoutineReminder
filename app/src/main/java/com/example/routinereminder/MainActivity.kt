@@ -106,6 +106,7 @@ import com.example.routinereminder.ui.MainViewModel
 import com.example.routinereminder.ui.SettingsCategory
 import com.example.routinereminder.ui.SettingsScreen
 import com.example.routinereminder.ui.WorkoutScreen
+import com.example.routinereminder.ui.WorkoutSessionScreen
 import com.example.routinereminder.ui.bundle.BundleDetailScreen
 import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 

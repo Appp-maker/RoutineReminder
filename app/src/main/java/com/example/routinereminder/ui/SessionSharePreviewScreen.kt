@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
@@ -556,6 +557,15 @@ private fun hueToColor(hue: Float): ComposeColor {
     }
 }
 
+private fun overlayColor(baseColor: Int, alpha: Int): Int {
+    return Color.argb(
+        alpha,
+        Color.red(baseColor),
+        Color.green(baseColor),
+        Color.blue(baseColor)
+    )
+}
+
 private suspend fun generatePreviewBitmap(
     context: Context,
     session: SessionStats,
@@ -699,11 +709,12 @@ private suspend fun generatePreviewBitmap(
 
     if (includeStats) {
         // ---- Bottom Overlay ----
+        val baseOverlayColor = AppPalette.MapBackground.toArgb()
         val overlayPaint = Paint().apply {
             shader = LinearGradient(
                 0f, overlayTop, 0f, height.toFloat(),
-                Color.argb(180, 0, 0, 0),
-                Color.argb(255, 0, 0, 0),
+                overlayColor(baseOverlayColor, 180),
+                overlayColor(baseOverlayColor, 255),
                 Shader.TileMode.CLAMP
             )
         }
@@ -711,16 +722,16 @@ private suspend fun generatePreviewBitmap(
 
         // ---- Text ----
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+            color = AppPalette.TextInverse.toArgb()
             textSize = 90f
             typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
         }
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+            color = AppPalette.TextInverse.toArgb()
             textSize = 48f
         }
         val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.LTGRAY
+            color = AppPalette.TextSubtle.toArgb()
             textSize = 36f
         }
 
