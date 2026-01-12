@@ -777,7 +777,20 @@ class CalorieTrackerViewModel @Inject constructor(
     }
     private suspend fun calculateDailyTargets() {
         val userSettings = _userSettings.value
-        if (userSettings == null || userSettings.weightKg <= 0 || userSettings.heightCm <= 0 || userSettings.age <= 0) {
+        if (userSettings == null) {
+            _dailyTargets.value = DailyTargets(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) // Default/empty state
+            return
+        }
+
+        val hasAllOverrides = userSettings.customCaloriesTarget > 0 &&
+            userSettings.customProteinTargetG > 0 &&
+            userSettings.customCarbsTargetG > 0 &&
+            userSettings.customFatTargetG > 0 &&
+            userSettings.customFiberTargetG > 0 &&
+            userSettings.customSaturatedFatTargetG > 0 &&
+            userSettings.customAddedSugarsTargetG > 0 &&
+            userSettings.customSodiumTargetMg > 0
+        if (!hasAllOverrides && (userSettings.weightKg <= 0 || userSettings.heightCm <= 0 || userSettings.age <= 0)) {
             _dailyTargets.value = DailyTargets(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0) // Default/empty state
             return
         }
@@ -845,13 +858,13 @@ class CalorieTrackerViewModel @Inject constructor(
 
         _dailyTargets.value = DailyTargets(
             calories = calories,
-            proteinG = protein,
-            carbsG = carbs,
-            fatG = fat,
-            fiberG = fiber,
-            saturatedFatG = saturatedFat,
-            addedSugarsG = addedSugars,
-            sodiumMg = sodium
+            proteinG = if (userSettings.customProteinTargetG > 0) userSettings.customProteinTargetG else protein,
+            carbsG = if (userSettings.customCarbsTargetG > 0) userSettings.customCarbsTargetG else carbs,
+            fatG = if (userSettings.customFatTargetG > 0) userSettings.customFatTargetG else fat,
+            fiberG = if (userSettings.customFiberTargetG > 0) userSettings.customFiberTargetG else fiber,
+            saturatedFatG = if (userSettings.customSaturatedFatTargetG > 0) userSettings.customSaturatedFatTargetG else saturatedFat,
+            addedSugarsG = if (userSettings.customAddedSugarsTargetG > 0) userSettings.customAddedSugarsTargetG else addedSugars,
+            sodiumMg = if (userSettings.customSodiumTargetMg > 0) userSettings.customSodiumTargetMg else sodium
         )
     }
 

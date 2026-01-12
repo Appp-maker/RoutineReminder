@@ -8,7 +8,7 @@ import java.io.OutputStream
 
 object UserSettingsSerializer : Serializer<UserSettings> {
     override val defaultValue: UserSettings
-        get() = UserSettings(0.0, 0.0, 0, Gender.MALE, ActivityLevel.SEDENTARY, 0.0, CalorieGoal.MAINTAIN)
+        get() = UserSettings(0.0, 0.0, 0, Gender.MALE, ActivityLevel.SEDENTARY, 0.0, calorieGoal = CalorieGoal.MAINTAIN)
 
     override suspend fun readFrom(input: InputStream): UserSettings {
         try {

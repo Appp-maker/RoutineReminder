@@ -20,6 +20,13 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val USER_GENDER = stringPreferencesKey("user_gender")
     val USER_ACTIVITY_LEVEL = stringPreferencesKey("user_activity_level")
     val USER_CUSTOM_CALORIES_TARGET = doublePreferencesKey("user_custom_calories_target")
+    val USER_CUSTOM_PROTEIN_TARGET = doublePreferencesKey("user_custom_protein_target_g")
+    val USER_CUSTOM_CARBS_TARGET = doublePreferencesKey("user_custom_carbs_target_g")
+    val USER_CUSTOM_FAT_TARGET = doublePreferencesKey("user_custom_fat_target_g")
+    val USER_CUSTOM_FIBER_TARGET = doublePreferencesKey("user_custom_fiber_target_g")
+    val USER_CUSTOM_SATURATED_FAT_TARGET = doublePreferencesKey("user_custom_saturated_fat_target_g")
+    val USER_CUSTOM_ADDED_SUGARS_TARGET = doublePreferencesKey("user_custom_added_sugars_target_g")
+    val USER_CUSTOM_SODIUM_TARGET = doublePreferencesKey("user_custom_sodium_target_mg")
     val USER_CALORIE_GOAL = stringPreferencesKey("user_calorie_goal")
 
     val SYNC_INTERVAL_MINUTES = longPreferencesKey("sync_interval_minutes")
@@ -81,6 +88,13 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             preferences[USER_GENDER] = userSettings.gender.name
             preferences[USER_ACTIVITY_LEVEL] = userSettings.activityLevel.name
             preferences[USER_CUSTOM_CALORIES_TARGET] = userSettings.customCaloriesTarget
+            preferences[USER_CUSTOM_PROTEIN_TARGET] = userSettings.customProteinTargetG
+            preferences[USER_CUSTOM_CARBS_TARGET] = userSettings.customCarbsTargetG
+            preferences[USER_CUSTOM_FAT_TARGET] = userSettings.customFatTargetG
+            preferences[USER_CUSTOM_FIBER_TARGET] = userSettings.customFiberTargetG
+            preferences[USER_CUSTOM_SATURATED_FAT_TARGET] = userSettings.customSaturatedFatTargetG
+            preferences[USER_CUSTOM_ADDED_SUGARS_TARGET] = userSettings.customAddedSugarsTargetG
+            preferences[USER_CUSTOM_SODIUM_TARGET] = userSettings.customSodiumTargetMg
             preferences[USER_CALORIE_GOAL] = userSettings.calorieGoal.name
         }
     }
@@ -93,6 +107,13 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             val gender = preferences[USER_GENDER]?.let { Gender.valueOf(it) }
             val activityLevel = preferences[USER_ACTIVITY_LEVEL]?.let { ActivityLevel.valueOf(it) }
             val customCaloriesTarget = preferences[USER_CUSTOM_CALORIES_TARGET] ?: 0.0
+            val customProteinTarget = preferences[USER_CUSTOM_PROTEIN_TARGET] ?: 0.0
+            val customCarbsTarget = preferences[USER_CUSTOM_CARBS_TARGET] ?: 0.0
+            val customFatTarget = preferences[USER_CUSTOM_FAT_TARGET] ?: 0.0
+            val customFiberTarget = preferences[USER_CUSTOM_FIBER_TARGET] ?: 0.0
+            val customSaturatedFatTarget = preferences[USER_CUSTOM_SATURATED_FAT_TARGET] ?: 0.0
+            val customAddedSugarsTarget = preferences[USER_CUSTOM_ADDED_SUGARS_TARGET] ?: 0.0
+            val customSodiumTarget = preferences[USER_CUSTOM_SODIUM_TARGET] ?: 0.0
             val calorieGoal = preferences[USER_CALORIE_GOAL]?.let { CalorieGoal.valueOf(it) } ?: CalorieGoal.MAINTAIN
 
             if (weightKg != null && heightCm != null && age != null && gender != null && activityLevel != null) {
@@ -103,6 +124,13 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
                     gender = gender,
                     activityLevel = activityLevel,
                     customCaloriesTarget = customCaloriesTarget,
+                    customProteinTargetG = customProteinTarget,
+                    customCarbsTargetG = customCarbsTarget,
+                    customFatTargetG = customFatTarget,
+                    customFiberTargetG = customFiberTarget,
+                    customSaturatedFatTargetG = customSaturatedFatTarget,
+                    customAddedSugarsTargetG = customAddedSugarsTarget,
+                    customSodiumTargetMg = customSodiumTarget,
                     calorieGoal = calorieGoal
                 )
             } else {
