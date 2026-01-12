@@ -813,7 +813,19 @@ class CalorieTrackerViewModel @Inject constructor(
         val fiber = 14.0 * (calories / 1000)
         val saturatedFat = (calories * 0.1) / 9
         val addedSugars = (calories * 0.1) / 4
-        val sodium = 2000.0
+        val sodiumBase = 1500.0
+        val activitySodium = when (userSettings.activityLevel) {
+            ActivityLevel.SEDENTARY -> 0.0
+            ActivityLevel.LIGHT -> 300.0
+            ActivityLevel.MODERATE -> 600.0
+            ActivityLevel.ACTIVE -> 900.0
+        }
+        val goalSodium = when (userSettings.calorieGoal) {
+            CalorieGoal.MAINTAIN -> 0.0
+            CalorieGoal.LOSE_WEIGHT -> 200.0
+            CalorieGoal.GAIN_WEIGHT -> 0.0
+        }
+        val sodium = (sodiumBase + activitySodium + goalSodium).coerceAtMost(3500.0)
 
         _dailyTargets.value = DailyTargets(
             calories = calories,
