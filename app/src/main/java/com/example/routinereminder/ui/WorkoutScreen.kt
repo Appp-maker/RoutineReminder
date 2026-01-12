@@ -113,6 +113,7 @@ fun WorkoutScreen(
     var newPlanName by remember { mutableStateOf("") }
     var planMenuExpanded by remember { mutableStateOf(false) }
     var bodyPartMenuExpanded by remember { mutableStateOf(false) }
+    var customBodyPartMenuExpanded by remember { mutableStateOf(false) }
     var showNewPlanDialog by remember { mutableStateOf(false) }
     var showCustomExerciseDialog by remember { mutableStateOf(false) }
     var planToSchedule by remember { mutableStateOf<WorkoutPlan?>(null) }
@@ -363,13 +364,36 @@ fun WorkoutScreen(
                         label = { Text(stringResource(R.string.workout_custom_exercise_name_label)) },
                         singleLine = true
                     )
-                    TextField(
-                        value = customExerciseBodyPart,
-                        onValueChange = { customExerciseBodyPart = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.workout_custom_exercise_body_part_label)) },
-                        singleLine = true
+                    Text(
+                        text = stringResource(R.string.workout_custom_exercise_body_part_label),
+                        style = MaterialTheme.typography.labelMedium
                     )
+                    OutlinedButton(
+                        onClick = { customBodyPartMenuExpanded = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = customExerciseBodyPart.ifBlank {
+                                stringResource(R.string.workout_custom_exercise_body_part_prompt)
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Filled.ExpandMore, contentDescription = null)
+                    }
+                    DropdownMenu(
+                        expanded = customBodyPartMenuExpanded,
+                        onDismissRequest = { customBodyPartMenuExpanded = false }
+                    ) {
+                        uiState.customBodyParts.forEach { bodyPart ->
+                            DropdownMenuItem(
+                                text = { Text(bodyPart) },
+                                onClick = {
+                                    customExerciseBodyPart = bodyPart
+                                    customBodyPartMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
                     TextField(
                         value = customExerciseTarget,
                         onValueChange = { customExerciseTarget = it },
@@ -776,7 +800,11 @@ fun WorkoutScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(onClick = {
                                 customExerciseName = ""
-                                customExerciseBodyPart = uiState.selectedBodyPart.orEmpty()
+                                customExerciseBodyPart = uiState.selectedBodyPart
+                                    ?.takeIf { selected ->
+                                        uiState.customBodyParts.any { it.equals(selected, ignoreCase = true) }
+                                    }
+                                    ?: uiState.customBodyParts.firstOrNull().orEmpty()
                                 customExerciseTarget = ""
                                 customExerciseEquipment = ""
                                 customExerciseGifUrl = ""
