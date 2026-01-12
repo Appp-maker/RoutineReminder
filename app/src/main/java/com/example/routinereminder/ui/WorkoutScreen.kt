@@ -57,6 +57,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -126,7 +127,7 @@ fun WorkoutScreen(
     var customExerciseTarget by remember { mutableStateOf("") }
     var customExerciseEquipment by remember { mutableStateOf("") }
     var customExerciseGifUrl by remember { mutableStateOf("") }
-    var customExerciseVideoUrl by remember { mutableStateOf("") }
+    val customExerciseImageUrls = remember { mutableStateListOf("", "") }
     var customExerciseInstructions by remember { mutableStateOf("") }
     var showCaloriesDialog by remember { mutableStateOf(false) }
     var workoutCaloriesInput by remember { mutableStateOf("") }
@@ -394,18 +395,60 @@ fun WorkoutScreen(
                     )
                     TextField(
                         value = customExerciseGifUrl,
-                        onValueChange = { customExerciseGifUrl = it },
+                        onValueChange = { newValue ->
+                            customExerciseGifUrl = newValue
+                            if (newValue.isNotBlank()) {
+                                customExerciseImageUrls.clear()
+                                repeat(2) { customExerciseImageUrls.add("") }
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.workout_custom_exercise_gif_label)) },
                         singleLine = true
                     )
-                    TextField(
-                        value = customExerciseVideoUrl,
-                        onValueChange = { customExerciseVideoUrl = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.workout_custom_exercise_video_label)) },
-                        singleLine = true
-                    )
+                    val isGifProvided = customExerciseGifUrl.isNotBlank()
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.workout_custom_exercise_images_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = {
+                                if (customExerciseImageUrls.size < 5) {
+                                    customExerciseImageUrls.add("")
+                                }
+                            },
+                            enabled = !isGifProvided && customExerciseImageUrls.size < 5
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = stringResource(R.string.workout_custom_exercise_add_image_action)
+                            )
+                        }
+                    }
+                    customExerciseImageUrls.forEachIndexed { index, imageUrl ->
+                        TextField(
+                            value = imageUrl,
+                            onValueChange = { updatedValue ->
+                                customExerciseImageUrls[index] = updatedValue
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = {
+                                Text(
+                                    stringResource(
+                                        R.string.workout_custom_exercise_image_label,
+                                        index + 1
+                                    )
+                                )
+                            },
+                            singleLine = true,
+                            enabled = !isGifProvided
+                        )
+                    }
                     TextField(
                         value = customExerciseInstructions,
                         onValueChange = { customExerciseInstructions = it },
@@ -420,38 +463,34 @@ fun WorkoutScreen(
                     .map { it.trim() }
                     .filter { it.isNotBlank() }
                 val selectedPlanId = selectedPlan?.id
+                val imageUrls = if (customExerciseGifUrl.isNotBlank()) {
+                    emptyList()
+                } else {
+                    customExerciseImageUrls
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = {
-                        viewModel.addCustomExercise(
-                            name = customExerciseName,
-                            bodyPart = customExerciseBodyPart,
-                            target = customExerciseTarget,
-                            equipment = customExerciseEquipment,
-                            gifUrl = customExerciseGifUrl,
-                            videoUrl = customExerciseVideoUrl,
-                            instructions = instructions,
-                            addToPlanId = null
-                        )
-                        showCustomExerciseDialog = false
-                    }) {
-                        Text(stringResource(R.string.workout_custom_exercise_save_action))
-                    }
-                    if (selectedPlanId != null) {
-                        TextButton(onClick = {
-                            viewModel.addCustomExercise(
-                                name = customExerciseName,
-                                bodyPart = customExerciseBodyPart,
-                                target = customExerciseTarget,
-                                equipment = customExerciseEquipment,
-                                gifUrl = customExerciseGifUrl,
-                                videoUrl = customExerciseVideoUrl,
-                                instructions = instructions,
-                                addToPlanId = selectedPlanId
-                            )
-                            showCustomExerciseDialog = false
-                        }) {
-                            Text(stringResource(R.string.workout_custom_exercise_save_add_action))
-                        }
+                    TextButton(
+                        onClick = {
+                            selectedPlanId?.let { planId ->
+                                viewModel.addCustomExercise(
+                                    name = customExerciseName,
+                                    bodyPart = customExerciseBodyPart,
+                                    target = customExerciseTarget,
+                                    equipment = customExerciseEquipment,
+                                    gifUrl = customExerciseGifUrl,
+                                    imageUrls = imageUrls,
+                                    instructions = instructions,
+                                    addToPlanId = planId
+                                )
+                                showCustomExerciseDialog = false
+                            }
+                        },
+                        enabled = selectedPlanId != null
+                    ) {
+                        Text(stringResource(R.string.workout_custom_exercise_save_add_action))
                     }
                 }
             },
@@ -808,7 +847,8 @@ fun WorkoutScreen(
                                 customExerciseTarget = ""
                                 customExerciseEquipment = ""
                                 customExerciseGifUrl = ""
-                                customExerciseVideoUrl = ""
+                                customExerciseImageUrls.clear()
+                                repeat(2) { customExerciseImageUrls.add("") }
                                 customExerciseInstructions = ""
                                 showCustomExerciseDialog = true
                             }) {
