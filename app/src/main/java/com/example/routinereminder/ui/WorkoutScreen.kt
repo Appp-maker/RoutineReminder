@@ -643,11 +643,37 @@ fun WorkoutScreen(
 
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(R.string.workout_plan_details_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stringResource(R.string.workout_plan_details_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedButton(
+                            onClick = { planToSchedule = selectedPlan },
+                            enabled = selectedPlan != null,
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 12.dp,
+                                vertical = 6.dp
+                            )
+                        ) {
+                            Icon(
+                                Icons.Filled.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.workout_plan_schedule_action),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                    }
                     if (selectedPlan == null) {
                         Text(
                             text = stringResource(R.string.workout_plan_select_prompt),
@@ -694,14 +720,16 @@ fun WorkoutScreen(
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(
-                            onClick = { planToSchedule = selectedPlan },
+                        Button(
+                            onClick = {
+                                selectedPlan?.let { plan ->
+                                    navController.navigate(Screen.WorkoutSession.route(plan.id))
+                                }
+                            },
                             enabled = selectedPlan != null,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Filled.CalendarMonth, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.workout_plan_schedule_action))
+                            Text(stringResource(R.string.workout_plan_start_action))
                         }
                     }
                 }

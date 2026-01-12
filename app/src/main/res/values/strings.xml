@@ -162,6 +162,8 @@
     <string name="workout_plan_select_prompt">Choose a plan to see its exercises.</string>
     <string name="workout_plan_empty_body">No exercises added yet.</string>
     <string name="workout_plan_schedule_action">Add plan to calendar</string>
+    <string name="workout_plan_start_action">Start workout</string>
+    <string name="workout_plan_missing_title">Workout plan not found.</string>
     <string name="workout_plan_delete_action">Delete plan</string>
     <string name="workout_plan_delete_title">Delete workout plan?</string>
     <string name="workout_plan_delete_body">Delete “%1$s”? This cannot be undone.</string>
@@ -218,6 +220,18 @@
     <string name="workout_exercise_image_paused">Exercise image paused</string>
     <string name="workout_exercise_gif_url">%1$s</string>
     <string name="workout_exercise_gif_url_unavailable">Unavailable</string>
+    <string name="workout_session_close_action">Close workout</string>
+    <string name="workout_timer_total_label">Total</string>
+    <string name="workout_timer_set_label">Set</string>
+    <string name="workout_timer_rest_label">Rest</string>
+    <string name="workout_timer_idle">--:--</string>
+    <string name="workout_session_set_counter">Set %1$d of %2$d</string>
+    <string name="workout_session_reps_label">Reps: %1$d</string>
+    <string name="workout_session_tap_start">Tap the right side to start the workout.</string>
+    <string name="workout_session_tap_set">Tap the right side to start the set.</string>
+    <string name="workout_session_tap_rest">Tap the right side to start rest.</string>
+    <string name="workout_session_tap_next">Tap the right side for the next set.</string>
+    <string name="workout_session_complete_message">Workout complete.</string>
     <string name="workout_exercise_gif_unavailable">This exercise does not have a gif yet.</string>
     <string name="workout_exercise_video_link">View video</string>
     <string name="workout_exercise_instructions_title">Instructions</string>

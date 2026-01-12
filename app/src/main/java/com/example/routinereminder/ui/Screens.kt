@@ -39,6 +39,9 @@ sealed class Screen(
         title = "Workout",
         icon = { Icon(Icons.Filled.FitnessCenter, contentDescription = "Workout") }
     )
+    object WorkoutSession : Screen("workout/session/{planId}") {
+        fun route(planId: String) = "workout/session/$planId"
+    }
 
     // Other routes
     object BarcodeScanner : Screen("barcode_scanner")
@@ -74,6 +77,7 @@ sealed class Screen(
             CalorieTracker,
             Map,
             Workout,
+            WorkoutSession,
             BarcodeScanner,
             FoodSearch,
             CustomFood,
