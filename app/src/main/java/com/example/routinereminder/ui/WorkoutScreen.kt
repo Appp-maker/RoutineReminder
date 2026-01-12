@@ -83,7 +83,6 @@ import com.example.routinereminder.data.workout.WorkoutPlan
 import com.example.routinereminder.data.workout.WorkoutPlanExercise
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.SettingsIconButton
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import androidx.navigation.NavController
@@ -930,7 +929,6 @@ fun WorkoutScreen(
             }
             var sliderValue by remember { mutableStateOf(0f) }
             var isDragging by remember { mutableStateOf(false) }
-            var sliderVisible by remember { mutableStateOf(true) }
             val sliderLetter by remember(sliderValue, availableLetterIndices) {
                 derivedStateOf {
                     val targetIndex = sliderValueToIndex(sliderValue)
@@ -944,66 +942,58 @@ fun WorkoutScreen(
                     sliderValue = indexToSliderValue(index)
                 }
             }
-            LaunchedEffect(isDragging, exerciseListState.isScrollInProgress) {
-                if (isDragging || exerciseListState.isScrollInProgress) {
-                    sliderVisible = true
-                } else {
-                    delay(2000)
-                    sliderVisible = false
-                }
-            }
             val showScrollIndicator = isDragging || exerciseListState.isScrollInProgress
             val scrollIndicatorLetter = if (isDragging) sliderLetter else currentLetter
             val configuration = LocalConfiguration.current
             val sliderHeight = maxOf(240.dp, (configuration.screenHeightDp * 0.65f).dp)
-            if (sliderVisible) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 0.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 0.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier.size(width = sliderHeight, height = 36.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier.size(width = sliderHeight, height = 36.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Slider(
-                            value = sliderValue,
-                            onValueChange = { value ->
-                                sliderValue = value
-                                isDragging = true
-                                val targetIndex = sliderValueToIndex(value)
-                                val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
-                                val targetLetter = nearestIndex?.let { alphabet[it] } ?: return@Slider
-                                val listIndex = letterIndexMap[targetLetter] ?: return@Slider
-                                coroutineScope.launch {
-                                    exerciseListState.scrollToItem(
-                                        index = exerciseStartIndex + listIndex
-                                    )
-                                }
-                            },
-                            onValueChangeFinished = { isDragging = false },
-                            valueRange = 0f..sliderRangeMax,
-                            steps = alphabet.size - 2,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .rotate(-90f)
-                                .scale(1.2f),
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
-                                activeTrackColor = Color.Transparent,
-                                inactiveTrackColor = Color.Transparent
-                            )
+                    Slider(
+                        value = sliderValue,
+                        onValueChange = { value ->
+                            sliderValue = value
+                            isDragging = true
+                            val targetIndex = sliderValueToIndex(value)
+                            val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
+                            val targetLetter = nearestIndex?.let { alphabet[it] } ?: return@Slider
+                            val listIndex = letterIndexMap[targetLetter] ?: return@Slider
+                            coroutineScope.launch {
+                                exerciseListState.scrollToItem(
+                                    index = exerciseStartIndex + listIndex
+                                )
+                            }
+                        },
+                        onValueChangeFinished = { isDragging = false },
+                        valueRange = 0f..sliderRangeMax,
+                        steps = alphabet.size - 2,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .rotate(-90f)
+                            .scale(1.2f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                            activeTrackColor = Color.Transparent,
+                            inactiveTrackColor = Color.Transparent
                         )
-                    }
+                    )
                 }
             }
             if (showScrollIndicator && scrollIndicatorLetter != null) {
                 Surface(
                     tonalElevation = 3.dp,
                     shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 16.dp)
                 ) {
                     Text(
                         text = scrollIndicatorLetter.toString(),
