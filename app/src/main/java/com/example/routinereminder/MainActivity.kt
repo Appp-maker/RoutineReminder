@@ -98,7 +98,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.routinereminder.data.DefaultEventSettings
 import com.example.routinereminder.data.ScheduleItem
-import com.example.routinereminder.data.ThemeMode
 
 import com.example.routinereminder.ui.CalorieTrackerScreen
 import com.example.routinereminder.ui.AppTab
@@ -115,7 +114,6 @@ import com.example.routinereminder.ui.components.SeriesColorDot
 import com.example.routinereminder.ui.components.SettingsIconButton
 import com.example.routinereminder.ui.theme.AppPalette
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
-import androidx.compose.foundation.isSystemInDarkTheme
 
 
 
@@ -278,14 +276,7 @@ fun MainAppUI(
     openMapOnLaunch: Boolean,
     onMapLaunchConsumed: () -> Unit
 ) {
-    val themeMode by viewModel.themeMode.collectAsState()
-    val darkTheme = when (themeMode) {
-        ThemeMode.DARK -> true
-        ThemeMode.LIGHT -> false
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-    }
-
-    RoutineReminderTheme(darkTheme = darkTheme, dynamicColor = false) {
+    RoutineReminderTheme {
         val context = LocalContext.current
         var showExactAlarmPermissionDialogState by remember { mutableStateOf(false) }
         var showSettingsScreen by remember { mutableStateOf(false) }
