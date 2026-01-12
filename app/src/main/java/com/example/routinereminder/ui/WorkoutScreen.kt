@@ -1242,8 +1242,13 @@ private fun ExercisePreviewDialog(
         safeImageUrls.takeIf { it.isNotEmpty() } ?: deriveFallbackImageUrls(preview.gifUrl)
     }
     val model = preview.gifFile ?: preview.gifUrl ?: allImageUrls.firstOrNull()
-    val supplementalImageUrls = remember(model, allImageUrls) {
-        allImageUrls.filterNot { it == model }
+    val supplementalImageUrls = remember(model, allImageUrls, preview.gifUrl) {
+        val primaryUrl = when (model) {
+            is String -> model
+            is File -> preview.gifUrl
+            else -> null
+        }
+        allImageUrls.filterNot { it == primaryUrl }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
