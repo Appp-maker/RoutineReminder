@@ -627,18 +627,6 @@ class WorkoutViewModel @Inject constructor(
         persistPlans(updatedPlans, _uiState.value.selectedPlanId)
     }
 
-    fun updatePlanCalories(planId: String, caloriesPerWorkout: Int?) {
-        val updatedPlans = _uiState.value.plans.map { plan ->
-            if (plan.id == planId) {
-                plan.copy(caloriesPerWorkout = caloriesPerWorkout)
-            } else {
-                plan
-            }
-        }
-        _uiState.update { state -> state.copy(plans = updatedPlans) }
-        persistPlans(updatedPlans, _uiState.value.selectedPlanId)
-    }
-
     private fun filterExercises(
         exercises: List<ExerciseDbExercise>,
         query: String,
