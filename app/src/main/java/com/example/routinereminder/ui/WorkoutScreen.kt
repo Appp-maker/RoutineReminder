@@ -731,6 +731,13 @@ fun WorkoutScreen(
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = viewModel::pauseExerciseDbDownload,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.workout_download_pause_action))
+                            }
                         } else {
                             Text(
                                 text = stringResource(R.string.workout_download_pending_title),
