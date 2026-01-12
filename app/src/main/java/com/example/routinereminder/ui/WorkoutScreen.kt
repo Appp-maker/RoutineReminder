@@ -1234,13 +1234,14 @@ private fun ExercisePreviewDialog(
     val allImageUrls = remember(preview.gifUrl, safeImageUrls) {
         safeImageUrls.takeIf { it.isNotEmpty() } ?: deriveFallbackImageUrls(preview.gifUrl)
     }
-    val imageModels = remember(preview.gifFile, preview.gifUrl, allImageUrls) {
-        val primaryImages = allImageUrls.takeIf { it.isNotEmpty() }.orEmpty()
-        if (primaryImages.isNotEmpty()) {
-            primaryImages
-        } else {
-            listOfNotNull(preview.gifFile ?: preview.gifUrl)
+    val model = preview.gifFile ?: preview.gifUrl ?: allImageUrls.firstOrNull()
+    val supplementalImageUrls = remember(model, allImageUrls, preview.gifUrl) {
+        val primaryUrl = when (model) {
+            is String -> model
+            is File -> preview.gifUrl
+            else -> null
         }
+        allImageUrls.filterNot { it == primaryUrl }
     }
     var currentImageIndex by remember(imageModels) { mutableStateOf(0) }
     var isPaused by remember(imageModels) { mutableStateOf(false) }
