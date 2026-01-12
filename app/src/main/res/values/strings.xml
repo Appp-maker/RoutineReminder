@@ -81,11 +81,6 @@
     <string name="settings_app_title">Application</string>
     <string name="settings_app_import_export">Import / Export Data</string>
     <string name="settings_app_language">Language</string>
-    <string name="settings_theme_title">Theme</string>
-    <string name="settings_theme_description">Choose between your system setting or a fixed light/dark theme.</string>
-    <string name="settings_theme_system">System default</string>
-    <string name="settings_theme_light">Light</string>
-    <string name="settings_theme_dark">Dark</string>
     <string name="settings_tabs_title">Visible tabs</string>
     <string name="settings_tabs_description">Choose which tabs to show in the app. This can be changed later.</string>
     <string name="settings_tabs_disabled_notice">Disabled tabs are hidden and their features won\u2019t run.</string>

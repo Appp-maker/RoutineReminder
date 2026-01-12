@@ -36,7 +36,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.R
 import com.example.routinereminder.data.*
-import com.example.routinereminder.data.ThemeMode
 import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -141,7 +140,6 @@ fun SettingsScreen(
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     val currentMapCaloriesLoggingEnabled by viewModel.mapCaloriesLoggingEnabled.collectAsState()
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
-    val currentThemeMode by viewModel.themeMode.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
     val eventSetColors by viewModel.eventSetColors.collectAsState()
     val defaultActiveSetsByWeekday by viewModel.defaultActiveSetsByWeekday.collectAsState()
@@ -180,7 +178,6 @@ fun SettingsScreen(
     var calendarSyncCalendarToAppEnabled by remember(currentCalendarSyncCalendarToAppEnabled) { mutableStateOf(currentCalendarSyncCalendarToAppEnabled) }
     var mapCaloriesLoggingEnabledChecked by remember(currentMapCaloriesLoggingEnabled) { mutableStateOf(currentMapCaloriesLoggingEnabled) }
     var foodConsumedTrackingEnabledChecked by remember(currentFoodConsumedTrackingEnabled) { mutableStateOf(currentFoodConsumedTrackingEnabled) }
-    var selectedThemeMode by remember(currentThemeMode) { mutableStateOf(currentThemeMode) }
     val eventSetNameInputs = remember { mutableStateListOf<String>() }
     val eventSetColorInputs = remember { mutableStateListOf<Int>() }
     var defaultActiveSetSelections by remember { mutableStateOf<Map<DayOfWeek, Set<Int>>>(emptyMap()) }
@@ -492,7 +489,6 @@ fun SettingsScreen(
                         viewModel.saveEventSetNames(eventSetNameInputs.toList())
                         viewModel.saveEventSetColors(eventSetColorInputs.toList())
                         viewModel.saveDefaultActiveSetsByWeekday(defaultActiveSetSelections)
-                        viewModel.saveThemeMode(selectedThemeMode)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
                         } else {
@@ -770,12 +766,7 @@ fun SettingsScreen(
                             accountNameToManage = account
                             showDataManagementDialog = source
                         },
-                        calendarEventCounts = calendarEventCounts,
-                        themeMode = selectedThemeMode,
-                        onThemeModeChange = { mode ->
-                            selectedThemeMode = mode
-                            justSavedSuccessfully = false
-                        }
+                        calendarEventCounts = calendarEventCounts
                     )
                 }
             }
@@ -1790,9 +1781,7 @@ private fun AppSettingsSection(
     onTabSelectionChange: (Set<AppTab>) -> Unit,
     selectedGoogleAccountName: String?,
     onDataManagementClick: (String, String?) -> Unit,
-    calendarEventCounts: CalendarEventCounts,
-    themeMode: ThemeMode,
-    onThemeModeChange: (ThemeMode) -> Unit
+    calendarEventCounts: CalendarEventCounts
 ) {
     var backupSyncHoursInputText by remember { mutableStateOf("1") }
     var backupSyncMinutesInputText by remember { mutableStateOf("0") }
@@ -1842,47 +1831,6 @@ private fun AppSettingsSection(
 
     Text(stringResource(R.string.settings_app_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Text("General", style = MaterialTheme.typography.titleMedium)
-    Text(stringResource(R.string.settings_theme_title), style = MaterialTheme.typography.titleMedium)
-    Text(
-        text = stringResource(R.string.settings_theme_description),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-    val themeOptions = listOf(
-        ThemeMode.SYSTEM to stringResource(R.string.settings_theme_system),
-        ThemeMode.LIGHT to stringResource(R.string.settings_theme_light),
-        ThemeMode.DARK to stringResource(R.string.settings_theme_dark)
-    )
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectableGroup()
-            .padding(bottom = 12.dp)
-    ) {
-        themeOptions.forEach { (mode, label) ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
-                        selected = themeMode == mode,
-                        onClick = { onThemeModeChange(mode) }
-                    )
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = themeMode == mode,
-                    onClick = { onThemeModeChange(mode) }
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-        }
-    }
     Text(stringResource(R.string.settings_tabs_title), style = MaterialTheme.typography.titleMedium)
     Text(
         text = stringResource(R.string.settings_tabs_description),
