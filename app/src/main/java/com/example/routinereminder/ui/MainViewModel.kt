@@ -11,6 +11,7 @@ import com.example.routinereminder.data.Gender
 import com.example.routinereminder.data.RunSessionRepository
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
+import com.example.routinereminder.data.ThemeMode
 import com.example.routinereminder.data.UserSettings
 import com.example.routinereminder.data.defaultSeriesColorForIndex
 import com.example.routinereminder.data.model.ActiveRunState
@@ -114,6 +115,9 @@ class MainViewModel @Inject constructor(
 
     private val _enabledTabs = MutableStateFlow<Set<AppTab>?>(null)
     val enabledTabs: StateFlow<Set<AppTab>?> = _enabledTabs.asStateFlow()
+
+    private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
     private val _mapTrackingMode = MutableStateFlow(TrackingService.MODE_BALANCED)
     val mapTrackingMode: StateFlow<String> = _mapTrackingMode.asStateFlow()
@@ -240,6 +244,12 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEnabledTabs().collectLatest { tabIds ->
                 _enabledTabs.value = tabIds?.let { AppTab.fromIds(it) }
+            }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.getThemeMode().collectLatest { mode ->
+                _themeMode.value = mode
             }
         }
 
@@ -449,6 +459,12 @@ class MainViewModel @Inject constructor(
                 WorkManager.getInstance(getApplication())
                     .cancelUniqueWork(ExerciseDbDownloadWorker.UNIQUE_WORK_NAME)
             }
+        }
+    }
+
+    fun saveThemeMode(mode: ThemeMode) {
+        viewModelScope.launch {
+            settingsRepository.saveThemeMode(mode)
         }
     }
 

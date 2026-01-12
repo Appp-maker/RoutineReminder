@@ -10,6 +10,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import javax.inject.Inject
 import com.example.routinereminder.location.TrackingService
+import com.example.routinereminder.data.ThemeMode
 
 class SettingsRepository @Inject constructor(private val dataStore: DataStore<Preferences>) {
 
@@ -53,6 +54,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
     val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
     val EVENT_SET_COLORS = stringSetPreferencesKey("event_set_colors")
+    val THEME_MODE = stringPreferencesKey("theme_mode")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -167,6 +169,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         return dataStore.data.map { preferences ->
             preferences[FOOD_CONSUMED_TRACKING_ENABLED] ?: false
         }.distinctUntilChanged()
+    }
+
+    fun getThemeMode(): Flow<ThemeMode> {
+        return dataStore.data.map { preferences ->
+            ThemeMode.fromName(preferences[THEME_MODE])
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveThemeMode(mode: ThemeMode) {
+        dataStore.edit { preferences ->
+            preferences[THEME_MODE] = mode.name
+        }
     }
 
     fun getEventSetNames(): Flow<List<String>> {
