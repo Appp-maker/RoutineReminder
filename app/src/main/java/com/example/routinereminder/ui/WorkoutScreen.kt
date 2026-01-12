@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
@@ -84,6 +86,7 @@ import com.example.routinereminder.data.workout.WorkoutPlanExercise
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.SettingsIconButton
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.io.File
 import androidx.navigation.NavController
 import kotlin.math.abs
@@ -1231,10 +1234,27 @@ private fun ExercisePreviewDialog(
     val allImageUrls = remember(preview.gifUrl, safeImageUrls) {
         safeImageUrls.takeIf { it.isNotEmpty() } ?: deriveFallbackImageUrls(preview.gifUrl)
     }
-    val model = preview.gifFile ?: preview.gifUrl ?: allImageUrls.firstOrNull()
-    val supplementalImageUrls = remember(model, allImageUrls) {
-        allImageUrls.filterNot { it == model }
+    val imageModels = remember(preview.gifFile, preview.gifUrl, allImageUrls) {
+        val primaryImages = allImageUrls.takeIf { it.isNotEmpty() }.orEmpty()
+        if (primaryImages.isNotEmpty()) {
+            primaryImages
+        } else {
+            listOfNotNull(preview.gifFile ?: preview.gifUrl)
+        }
     }
+    var currentImageIndex by remember(imageModels) { mutableStateOf(0) }
+    var isPaused by remember(imageModels) { mutableStateOf(false) }
+
+    LaunchedEffect(imageModels, isPaused) {
+        if (imageModels.size > 1 && !isPaused) {
+            while (true) {
+                delay(2000)
+                currentImageIndex = (currentImageIndex + 1) % imageModels.size
+            }
+        }
+    }
+
+    val currentImageModel = imageModels.getOrNull(currentImageIndex)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(preview.title) },
@@ -1244,30 +1264,39 @@ private fun ExercisePreviewDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 Text(text = preview.subtitle, style = MaterialTheme.typography.bodySmall)
-                if (model != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(model)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = stringResource(R.string.workout_exercise_gif_preview),
+                if (currentImageModel != null) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(220.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                    supplementalImageUrls.forEach { imageUrl ->
+                            .height(220.dp)
+                            .clickable(enabled = imageModels.size > 1) { isPaused = !isPaused }
+                    ) {
                         AsyncImage(
                             model = ImageRequest.Builder(context)
-                                .data(imageUrl)
+                                .data(currentImageModel)
                                 .crossfade(true)
                                 .build(),
                             contentDescription = stringResource(R.string.workout_exercise_gif_preview),
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(220.dp),
+                                .fillMaxSize(),
                             contentScale = ContentScale.Fit
                         )
+                        if (isPaused && imageModels.size > 1) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Pause,
+                                    contentDescription = stringResource(R.string.workout_exercise_image_paused),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(6.dp)
+                                )
+                            }
+                        }
                     }
                 } else {
                     Text(
