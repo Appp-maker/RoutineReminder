@@ -37,6 +37,7 @@ data class WorkoutUiState(
     val selectedPlanId: String? = null,
     val exercises: List<ExerciseDbExercise> = emptyList(),
     val bodyParts: List<String> = emptyList(),
+    val customBodyParts: List<String> = emptyList(),
     val searchQuery: String = "",
     val selectedBodyPart: String? = null,
     val isLoading: Boolean = false,
@@ -87,6 +88,7 @@ class WorkoutViewModel @Inject constructor(
         observeWorkoutPlans()
         initializeExerciseDatabase()
         checkRefreshPrompt()
+        _uiState.update { it.copy(customBodyParts = requiredBodyParts.sorted()) }
     }
 
     fun updateSearchQuery(query: String) {
@@ -467,12 +469,21 @@ class WorkoutViewModel @Inject constructor(
             return
         }
         val trimmedBodyPart = bodyPart.trim()
+        val resolvedBodyPart = requiredBodyParts.firstOrNull { it.equals(trimmedBodyPart, ignoreCase = true) }
+        if (resolvedBodyPart == null) {
+            _uiState.update {
+                it.copy(
+                    errorMessage = "Body part must be one of: ${requiredBodyParts.joinToString(", ")}."
+                )
+            }
+            return
+        }
         val trimmedTarget = target.trim()
         val trimmedEquipment = equipment.trim()
         val exercise = ExerciseDbExercise(
             id = "custom-${UUID.randomUUID()}",
             name = trimmedName,
-            bodyPart = trimmedBodyPart,
+            bodyPart = resolvedBodyPart,
             target = trimmedTarget,
             equipment = trimmedEquipment,
             gifUrl = gifUrl?.trim().orEmpty().ifBlank { null },

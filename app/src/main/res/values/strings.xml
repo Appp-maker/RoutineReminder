@@ -197,6 +197,7 @@
     <string name="workout_custom_exercise_title">Custom exercise</string>
     <string name="workout_custom_exercise_name_label">Exercise name</string>
     <string name="workout_custom_exercise_body_part_label">Body part</string>
+    <string name="workout_custom_exercise_body_part_prompt">Select a body part</string>
     <string name="workout_custom_exercise_target_label">Target muscle</string>
     <string name="workout_custom_exercise_equipment_label">Equipment</string>
     <string name="workout_custom_exercise_gif_label">Gif URL (optional)</string>
