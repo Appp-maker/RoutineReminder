@@ -1018,11 +1018,12 @@ fun WorkoutScreen(
             val showScrollIndicator = isDragging || exerciseListState.isScrollInProgress
             val scrollIndicatorLetter = if (isDragging) sliderLetter else currentLetter
             val configuration = LocalConfiguration.current
-            val sliderHeight = maxOf(200.dp, (configuration.screenHeightDp * 0.6f).dp)
+            val sliderHeight = (configuration.screenHeightDp * 0.6f).dp
+            val sliderTopPadding = (configuration.screenHeightDp * 0.2f).dp
             Column(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 12.dp),
+                    .padding(start = 12.dp, top = sliderTopPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
