@@ -850,6 +850,7 @@ fun ProfileSettingsSection(
     foodConsumedTrackingEnabled: Boolean,
     onFoodConsumedTrackingEnabledChange: (Boolean) -> Unit
 ) {
+    val hasCustomCalories = customCalories.isNotBlank()
     Column {
         Text("Profile", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
         OutlinedTextField(
@@ -880,6 +881,7 @@ fun ProfileSettingsSection(
             value = customCalories,
             onValueChange = onCustomCaloriesChange,
             label = { Text("Daily calories target (optional)") },
+            supportingText = { Text("Overrides your calculated calorie target.") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
@@ -907,11 +909,15 @@ fun ProfileSettingsSection(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .selectable(selected = (it == activityLevel), onClick = { onActivityLevelChange(it) })
+                        .selectable(
+                            selected = (it == activityLevel),
+                            enabled = !hasCustomCalories,
+                            onClick = { onActivityLevelChange(it) }
+                        )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RadioButton(selected = (it == activityLevel), onClick = null)
+                    RadioButton(selected = (it == activityLevel), onClick = null, enabled = !hasCustomCalories)
                     Text(text = it.name.lowercase(Locale.getDefault())
                         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                 }
@@ -924,11 +930,15 @@ fun ProfileSettingsSection(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .selectable(selected = (goal == calorieGoal), onClick = { onCalorieGoalChange(goal) })
+                        .selectable(
+                            selected = (goal == calorieGoal),
+                            enabled = !hasCustomCalories,
+                            onClick = { onCalorieGoalChange(goal) }
+                        )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RadioButton(selected = (goal == calorieGoal), onClick = null)
+                    RadioButton(selected = (goal == calorieGoal), onClick = null, enabled = !hasCustomCalories)
                     Text(
                         text = goal.name.lowercase(Locale.getDefault())
                             .replace('_', ' ')
