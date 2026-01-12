@@ -98,6 +98,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.routinereminder.data.DefaultEventSettings
 import com.example.routinereminder.data.ScheduleItem
+import com.example.routinereminder.data.ThemeMode
 
 import com.example.routinereminder.ui.CalorieTrackerScreen
 import com.example.routinereminder.ui.AppTab
@@ -112,6 +113,7 @@ import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.SeriesColorDot
 import com.example.routinereminder.ui.components.SettingsIconButton
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
+import androidx.compose.foundation.isSystemInDarkTheme
 
 
 
@@ -274,7 +276,14 @@ fun MainAppUI(
     openMapOnLaunch: Boolean,
     onMapLaunchConsumed: () -> Unit
 ) {
-    RoutineReminderTheme {
+    val themeMode by viewModel.themeMode.collectAsState()
+    val darkTheme = when (themeMode) {
+        ThemeMode.DARK -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+
+    RoutineReminderTheme(darkTheme = darkTheme, dynamicColor = false) {
         val context = LocalContext.current
         var showExactAlarmPermissionDialogState by remember { mutableStateOf(false) }
         var showSettingsScreen by remember { mutableStateOf(false) }
@@ -410,12 +419,22 @@ fun MainAppUI(
                     if (showBottomBar) {
                         val barScreens = enabledTabScreens
 
-                        NavigationBar {
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ) {
                             barScreens.forEach { s ->
                                 NavigationBarItem(
                                     icon = { s.icon?.invoke() },
                                     label = { Text(s.title) },
                                     selected = currentBaseRoute == s.route,
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    ),
                                     onClick = {
                                         val targetRoute =
                                             if (s == Screen.CalorieTracker) {

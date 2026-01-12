@@ -29,7 +29,7 @@ class SharePreviewActivity : ComponentActivity() {
         val mapView = MapView(this)
 
         setContent {
-            RoutineReminderTheme(darkTheme = true) {
+            RoutineReminderTheme(darkTheme = true, dynamicColor = false) {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
