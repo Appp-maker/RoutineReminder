@@ -9,9 +9,13 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 
 // Define your light and dark color schemes here.
@@ -105,9 +109,19 @@ fun RoutineReminderTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography, // Will create Typography.kt next
-        content = content
+    val configuration = LocalConfiguration.current
+    val baseDensity = LocalDensity.current
+    val screenScale = (configuration.screenWidthDp / 411f).coerceIn(0.75f, 1f)
+    val scaledDensity = Density(
+        density = baseDensity.density * screenScale,
+        fontScale = baseDensity.fontScale * screenScale
     )
+
+    CompositionLocalProvider(LocalDensity provides scaledDensity) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography, // Will create Typography.kt next
+            content = content
+        )
+    }
 }
