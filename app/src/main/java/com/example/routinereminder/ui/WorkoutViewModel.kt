@@ -459,7 +459,7 @@ class WorkoutViewModel @Inject constructor(
         target: String,
         equipment: String,
         gifUrl: String?,
-        videoUrl: String?,
+        imageUrls: List<String>,
         instructions: List<String>,
         addToPlanId: String?
     ) {
@@ -487,7 +487,7 @@ class WorkoutViewModel @Inject constructor(
             target = trimmedTarget,
             equipment = trimmedEquipment,
             gifUrl = gifUrl?.trim().orEmpty().ifBlank { null },
-            videoUrl = videoUrl?.trim().orEmpty().ifBlank { null },
+            imageUrls = imageUrls,
             instructions = instructions
         )
         viewModelScope.launch {
