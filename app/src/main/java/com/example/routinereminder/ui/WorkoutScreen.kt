@@ -105,9 +105,6 @@ fun WorkoutScreen(
     val useGoogleBackupMode by mainViewModel.useGoogleBackupMode.collectAsState()
     val eventSetNames by mainViewModel.eventSetNames.collectAsState()
     val eventSetColors by mainViewModel.eventSetColors.collectAsState()
-    val enabledTabsState by mainViewModel.enabledTabs.collectAsState()
-    val enabledTabs = enabledTabsState ?: AppTab.defaultTabs
-    val caloriesEnabled = enabledTabs.contains(AppTab.Calories)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val selectPlanMessage = stringResource(R.string.workout_snackbar_select_plan)
@@ -189,11 +186,6 @@ fun WorkoutScreen(
                     enabled = caloriesValue != null && caloriesValue > 0,
                     onClick = {
                         val calories = caloriesValue ?: return@TextButton
-                        selectedPlan?.let { plan ->
-                            if (plan.caloriesPerWorkout != calories) {
-                                viewModel.updatePlanCalories(plan.id, calories)
-                            }
-                        }
                         calorieTrackerViewModel.logWorkoutCaloriesRequired(
                             calories = calories,
                             label = selectedPlan?.name ?: quickLogLabel
@@ -599,26 +591,6 @@ fun WorkoutScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     } else {
-                        if (caloriesEnabled) {
-                            TextField(
-                                value = selectedPlan.caloriesPerWorkout?.toString().orEmpty(),
-                                onValueChange = { value ->
-                                    val cleaned = value.filter { it.isDigit() }
-                                    val calories = cleaned.toIntOrNull()
-                                    viewModel.updatePlanCalories(selectedPlan.id, calories)
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = TextFieldDefaults.MinHeight),
-                                label = { Text(stringResource(R.string.workout_plan_calories_label)) },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                            Text(
-                                text = stringResource(R.string.workout_plan_calories_hint),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
                         if (selectedPlan.exercises.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.workout_plan_empty_body),
