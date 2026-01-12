@@ -48,6 +48,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.maplibre.android.maps.MapView
 import com.example.routinereminder.ui.SessionStore
+import com.example.routinereminder.ui.theme.AppPalette
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.LineString
@@ -170,8 +171,8 @@ fun SessionSharePreviewScreen(
     Surface(
         modifier = Modifier
             .fillMaxSize()
-            .background(ComposeColor(0xFF0E0E0E)),
-        color = ComposeColor(0xFF0E0E0E)
+            .background(AppPalette.SurfaceDeep),
+        color = AppPalette.SurfaceDeep
     ) {
         Column(
             modifier = Modifier
@@ -180,13 +181,13 @@ fun SessionSharePreviewScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             CenterAlignedTopAppBar(
-                title = { Text("Share preview", color = ComposeColor.White) },
+                title = { Text("Share preview", color = AppPalette.TextInverse) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = ComposeColor.White
+                            tint = AppPalette.TextInverse
                         )
                     }
                 },
@@ -203,7 +204,7 @@ fun SessionSharePreviewScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(ComposeColor(0xFF1A1A1A))
+                    .background(AppPalette.SurfaceSubtle)
                     .padding(6.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -215,7 +216,7 @@ fun SessionSharePreviewScreen(
                             .fillMaxSize()
                             .clip(RoundedCornerShape(18.dp))
                     )
-                } ?: Text("Generating preview...", color = ComposeColor.Gray)
+                } ?: Text("Generating preview...", color = AppPalette.TextMuted)
             }
 
             Spacer(Modifier.height(20.dp))
@@ -248,13 +249,13 @@ fun SessionSharePreviewScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Show stats", color = ComposeColor.White)
+                Text("Show stats", color = AppPalette.TextInverse)
                 Switch(
                     checked = includeStats,
                     onCheckedChange = { includeStats = it },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = ComposeColor.White,
-                        checkedTrackColor = ComposeColor(0xFF00C853)
+                        checkedThumbColor = AppPalette.TextInverse,
+                        checkedTrackColor = AppPalette.Success
                     )
                 )
             }
@@ -266,12 +267,12 @@ fun SessionSharePreviewScreen(
 
                     if (bgUri == null) {
                         // Show color picker when no image is selected
-                        Text("Background Color", color = ComposeColor.LightGray)
+                        Text("Background Color", color = AppPalette.TextSecondary)
                         HueSlider(hue = backgroundHue, onHueChange = { backgroundHue = it })
                         Spacer(Modifier.height(12.dp))
                     }
 
-                    Text("Trail Color", color = ComposeColor.LightGray)
+                    Text("Trail Color", color = AppPalette.TextSecondary)
                     HueSlider(hue = trailHue, onHueChange = { trailHue = it })
                     Spacer(Modifier.height(12.dp))
 
@@ -281,7 +282,7 @@ fun SessionSharePreviewScreen(
                             OutlinedButton(
                                 onClick = { galleryPicker.launch("image/*") },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = ComposeColor.White)
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppPalette.TextInverse)
                             ) {
                                 Text("Pick from Gallery")
                             }
@@ -320,7 +321,7 @@ fun SessionSharePreviewScreen(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = ComposeColor.White)
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppPalette.TextInverse)
                             ) {
                                 Text("Take Picture")
                             }
@@ -330,8 +331,8 @@ fun SessionSharePreviewScreen(
                         // Remove image button
                         OutlinedButton(
                             onClick = { bgUri = null },
-                            border = BorderStroke(1.dp, ComposeColor(0xFFFF5252)),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = ComposeColor(0xFFFF5252)),
+                            border = BorderStroke(1.dp, AppPalette.DangerBright),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppPalette.DangerBright),
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Text("Remove Image")
@@ -351,9 +352,9 @@ fun SessionSharePreviewScreen(
             ) {
                 OutlinedButton(
                     onClick = onCancel,
-                    border = BorderStroke(1.dp, ComposeColor(0xFF9E9E9E)),
+                    border = BorderStroke(1.dp, AppPalette.BorderNeutral),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = ComposeColor(0xFF9E9E9E)
+                        contentColor = AppPalette.BorderNeutral
                     )
                 ) {
                     Text("Cancel")
@@ -361,14 +362,14 @@ fun SessionSharePreviewScreen(
                 Button(
                     onClick = { previewBitmap?.let(onShare) },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = ComposeColor(0xFF00C853)
+                        containerColor = AppPalette.Success
                     ),
                     modifier = Modifier
                         .height(50.dp)
                         .width(120.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Share", color = ComposeColor.Black, fontWeight = FontWeight.Bold)
+                    Text("Share", color = AppPalette.MapBackground, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -389,10 +390,10 @@ private fun ModeBox(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) ComposeColor(0xFF1F1F1F) else ComposeColor(0xFF151515))
+            .background(if (selected) AppPalette.Surface else AppPalette.SurfaceMuted)
             .border(
                 width = 2.dp,
-                color = if (selected) ComposeColor(0xFF00C853) else ComposeColor(0xFF333333),
+                color = if (selected) AppPalette.Success else AppPalette.BorderSubtle,
                 shape = RoundedCornerShape(16.dp)
             )
             .clickable { onClick() }
@@ -402,7 +403,7 @@ private fun ModeBox(
     ) {
         Text(
             label,
-            color = if (selected) ComposeColor.White else ComposeColor(0xFFBBBBBB),
+            color = if (selected) AppPalette.TextInverse else AppPalette.TextHint,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
     }
@@ -419,13 +420,13 @@ private fun HueSlider(hue: Float, onHueChange: (Float) -> Unit) {
             .fillMaxWidth()
             .height(4.dp), // thin like before
         colors = SliderDefaults.colors(
-            thumbColor = ComposeColor.White,
+            thumbColor = AppPalette.TextInverse,
             activeTrackColor = when {
-                adjustedHue <= 0f -> ComposeColor.Black
-                adjustedHue >= 360f -> ComposeColor.White
+                adjustedHue <= 0f -> AppPalette.MapBackground
+                adjustedHue >= 360f -> AppPalette.TextInverse
                 else -> ComposeColor.hsv(adjustedHue, 1f, 1f)
             },
-            inactiveTrackColor = ComposeColor.DarkGray
+            inactiveTrackColor = AppPalette.BorderStrong
         )
     )
 }
@@ -549,8 +550,8 @@ private suspend fun MapView.getMapAsyncBlocking(): org.maplibre.android.maps.Map
     }
 private fun hueToColor(hue: Float): ComposeColor {
     return when {
-        hue <= 0f -> ComposeColor.Black
-        hue >= 360f -> ComposeColor.White
+        hue <= 0f -> AppPalette.MapBackground
+        hue >= 360f -> AppPalette.TextInverse
         else -> ComposeColor.hsv(hue, 1f, 1f)
     }
 }

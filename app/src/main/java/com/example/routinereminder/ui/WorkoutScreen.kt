@@ -1243,6 +1243,12 @@ private fun ExercisePreviewDialog(
         }
         allImageUrls.filterNot { it == primaryUrl }
     }
+    val imageModels = remember(model, supplementalImageUrls) {
+        buildList {
+            model?.let { add(it) }
+            addAll(supplementalImageUrls)
+        }.distinct()
+    }
     var currentImageIndex by remember(imageModels) { mutableStateOf(0) }
     var isPaused by remember(imageModels) { mutableStateOf(false) }
 

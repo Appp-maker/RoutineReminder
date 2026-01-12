@@ -47,6 +47,7 @@ import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.data.entities.LoggedFood
 import com.example.routinereminder.ui.CalorieTrackerViewModel
 import com.example.routinereminder.ui.components.SeriesColorPicker
+import com.example.routinereminder.ui.theme.AppPalette
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -54,12 +55,12 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-private val Bg = Color(0xFF121212)
-private val Track = Color(0xFF3A3A3A)
-private val TextPrimary = Color.White
-private val TextSecondary = Color(0xFFBDBDBD)
-private val AccentBlue = Color(0xFF64B5F6)
-private val DangerRed = Color(0xFFE53935)
+private val Bg = AppPalette.SurfaceStrong
+private val Track = AppPalette.SurfaceTrack
+private val TextPrimary = AppPalette.TextInverse
+private val TextSecondary = AppPalette.TextSubtle
+private val AccentBlue = AppPalette.Info
+private val DangerRed = AppPalette.DangerAccent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -600,7 +601,7 @@ fun PortionDialog(
                         enabled = saveEnabled,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AccentBlue,
-                            disabledContainerColor = Color.Gray
+                            disabledContainerColor = AppPalette.TextMuted
                         )
                     ) {
                         Text(
@@ -609,7 +610,7 @@ fun PortionDialog(
                                 existingLoggedFood == null -> "Save"
                                 else -> "Update"
                             },
-                            color = Color.White
+                            color = AppPalette.TextInverse
                         )
 
                     }
@@ -634,7 +635,7 @@ private fun CaloriesOverview(current: Double, target: Double, delta: Double) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = Color(0xFF1C1C1C), shape = RoundedCornerShape(16.dp))
+            .background(color = AppPalette.Surface, shape = RoundedCornerShape(16.dp))
             .padding(14.dp)
     ) {
         Text("Calories", color = TextSecondary, fontSize = 13.sp)
@@ -680,7 +681,7 @@ private fun NutrientTile(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = Color(0xFF1C1C1C), shape = RoundedCornerShape(12.dp))
+            .background(color = AppPalette.Surface, shape = RoundedCornerShape(12.dp))
             .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
         Text(label, color = TextSecondary, fontSize = 12.sp)
@@ -824,7 +825,7 @@ private fun EditableNutrientRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF1C1C1C), RoundedCornerShape(12.dp))
+            .background(AppPalette.Surface, RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
 
