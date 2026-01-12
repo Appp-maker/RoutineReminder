@@ -116,6 +116,13 @@ fun SettingsScreen(
     var heightInput by remember { mutableStateOf("") }
     var ageInput by remember { mutableStateOf("") }
     var customCaloriesInput by remember { mutableStateOf("") }
+    var customProteinInput by remember { mutableStateOf("") }
+    var customCarbsInput by remember { mutableStateOf("") }
+    var customFatInput by remember { mutableStateOf("") }
+    var customFiberInput by remember { mutableStateOf("") }
+    var customSaturatedFatInput by remember { mutableStateOf("") }
+    var customAddedSugarsInput by remember { mutableStateOf("") }
+    var customSodiumInput by remember { mutableStateOf("") }
     var selectedGender by remember { mutableStateOf(Gender.MALE) }
     var selectedActivityLevel by remember { mutableStateOf(ActivityLevel.SEDENTARY) }
     var selectedCalorieGoal by remember { mutableStateOf(CalorieGoal.MAINTAIN) }
@@ -195,6 +202,13 @@ fun SettingsScreen(
             heightInput = it.heightCm.toString()
             ageInput = it.age.toString()
             customCaloriesInput = it.customCaloriesTarget.takeIf { value -> value > 0.0 }?.toString() ?: ""
+            customProteinInput = it.customProteinTargetG.takeIf { value -> value > 0.0 }?.toString() ?: ""
+            customCarbsInput = it.customCarbsTargetG.takeIf { value -> value > 0.0 }?.toString() ?: ""
+            customFatInput = it.customFatTargetG.takeIf { value -> value > 0.0 }?.toString() ?: ""
+            customFiberInput = it.customFiberTargetG.takeIf { value -> value > 0.0 }?.toString() ?: ""
+            customSaturatedFatInput = it.customSaturatedFatTargetG.takeIf { value -> value > 0.0 }?.toString() ?: ""
+            customAddedSugarsInput = it.customAddedSugarsTargetG.takeIf { value -> value > 0.0 }?.toString() ?: ""
+            customSodiumInput = it.customSodiumTargetMg.takeIf { value -> value > 0.0 }?.toString() ?: ""
             selectedGender = it.gender
             selectedActivityLevel = it.activityLevel
             selectedCalorieGoal = it.calorieGoal
@@ -296,7 +310,8 @@ fun SettingsScreen(
     }
 
     val hasUnsavedChanges by remember(
-        weightInput, heightInput, ageInput, customCaloriesInput, selectedGender, selectedActivityLevel, selectedCalorieGoal, userSettings,
+        weightInput, heightInput, ageInput, customCaloriesInput, customProteinInput, customCarbsInput, customFatInput, customFiberInput,
+        customSaturatedFatInput, customAddedSugarsInput, customSodiumInput, selectedGender, selectedActivityLevel, selectedCalorieGoal, userSettings,
         syncHoursInputText, syncMinutesInputText, currentSyncInterval,
         defaultEventHourState, defaultEventMinuteState, startTimeOption,
         defaultDurationHoursText, defaultDurationMinutesText,
@@ -320,6 +335,13 @@ fun SettingsScreen(
             if (heightInput.toDoubleOrNull() != userSettings?.heightCm) return@derivedStateOf true
             if (ageInput.toIntOrNull() != userSettings?.age) return@derivedStateOf true
             if ((customCaloriesInput.toDoubleOrNull() ?: 0.0) != userSettings?.customCaloriesTarget) return@derivedStateOf true
+            if ((customProteinInput.toDoubleOrNull() ?: 0.0) != userSettings?.customProteinTargetG) return@derivedStateOf true
+            if ((customCarbsInput.toDoubleOrNull() ?: 0.0) != userSettings?.customCarbsTargetG) return@derivedStateOf true
+            if ((customFatInput.toDoubleOrNull() ?: 0.0) != userSettings?.customFatTargetG) return@derivedStateOf true
+            if ((customFiberInput.toDoubleOrNull() ?: 0.0) != userSettings?.customFiberTargetG) return@derivedStateOf true
+            if ((customSaturatedFatInput.toDoubleOrNull() ?: 0.0) != userSettings?.customSaturatedFatTargetG) return@derivedStateOf true
+            if ((customAddedSugarsInput.toDoubleOrNull() ?: 0.0) != userSettings?.customAddedSugarsTargetG) return@derivedStateOf true
+            if ((customSodiumInput.toDoubleOrNull() ?: 0.0) != userSettings?.customSodiumTargetMg) return@derivedStateOf true
             if (selectedGender != userSettings?.gender) return@derivedStateOf true
             if (selectedActivityLevel != userSettings?.activityLevel) return@derivedStateOf true
             if (selectedCalorieGoal != userSettings?.calorieGoal) return@derivedStateOf true
@@ -405,6 +427,13 @@ fun SettingsScreen(
                             gender = selectedGender,
                             activityLevel = selectedActivityLevel,
                             customCaloriesTarget = customCaloriesInput.toDoubleOrNull() ?: 0.0,
+                            customProteinTargetG = customProteinInput.toDoubleOrNull() ?: 0.0,
+                            customCarbsTargetG = customCarbsInput.toDoubleOrNull() ?: 0.0,
+                            customFatTargetG = customFatInput.toDoubleOrNull() ?: 0.0,
+                            customFiberTargetG = customFiberInput.toDoubleOrNull() ?: 0.0,
+                            customSaturatedFatTargetG = customSaturatedFatInput.toDoubleOrNull() ?: 0.0,
+                            customAddedSugarsTargetG = customAddedSugarsInput.toDoubleOrNull() ?: 0.0,
+                            customSodiumTargetMg = customSodiumInput.toDoubleOrNull() ?: 0.0,
                             calorieGoal = selectedCalorieGoal
                         )
                         viewModel.saveUserSettings(newSettings)
@@ -579,6 +608,20 @@ fun SettingsScreen(
                         onAgeChange = { ageInput = it },
                         customCalories = customCaloriesInput,
                         onCustomCaloriesChange = { customCaloriesInput = it },
+                        customProtein = customProteinInput,
+                        onCustomProteinChange = { customProteinInput = it },
+                        customCarbs = customCarbsInput,
+                        onCustomCarbsChange = { customCarbsInput = it },
+                        customFat = customFatInput,
+                        onCustomFatChange = { customFatInput = it },
+                        customFiber = customFiberInput,
+                        onCustomFiberChange = { customFiberInput = it },
+                        customSaturatedFat = customSaturatedFatInput,
+                        onCustomSaturatedFatChange = { customSaturatedFatInput = it },
+                        customAddedSugars = customAddedSugarsInput,
+                        onCustomAddedSugarsChange = { customAddedSugarsInput = it },
+                        customSodium = customSodiumInput,
+                        onCustomSodiumChange = { customSodiumInput = it },
                         gender = selectedGender,
                         onGenderChange = { selectedGender = it },
                         activityLevel = selectedActivityLevel,
@@ -851,6 +894,20 @@ fun ProfileSettingsSection(
     onAgeChange: (String) -> Unit,
     customCalories: String,
     onCustomCaloriesChange: (String) -> Unit,
+    customProtein: String,
+    onCustomProteinChange: (String) -> Unit,
+    customCarbs: String,
+    onCustomCarbsChange: (String) -> Unit,
+    customFat: String,
+    onCustomFatChange: (String) -> Unit,
+    customFiber: String,
+    onCustomFiberChange: (String) -> Unit,
+    customSaturatedFat: String,
+    onCustomSaturatedFatChange: (String) -> Unit,
+    customAddedSugars: String,
+    onCustomAddedSugarsChange: (String) -> Unit,
+    customSodium: String,
+    onCustomSodiumChange: (String) -> Unit,
     gender: Gender,
     onGenderChange: (Gender) -> Unit,
     activityLevel: ActivityLevel,
@@ -860,7 +917,41 @@ fun ProfileSettingsSection(
     foodConsumedTrackingEnabled: Boolean,
     onFoodConsumedTrackingEnabledChange: (Boolean) -> Unit
 ) {
-    val hasCustomCalories = customCalories.isNotBlank()
+    val hasAllOverrides = listOf(
+        customCalories,
+        customProtein,
+        customCarbs,
+        customFat,
+        customFiber,
+        customSaturatedFat,
+        customAddedSugars,
+        customSodium
+    ).all { value -> value.toDoubleOrNull()?.let { it > 0 } == true }
+    val calculatedCalories = calculateCalorieTargetEstimate(
+        weightKg = weight.toDoubleOrNull(),
+        heightCm = height.toDoubleOrNull(),
+        age = age.toIntOrNull(),
+        gender = gender,
+        activityLevel = activityLevel,
+        calorieGoal = calorieGoal
+    )
+    val customCaloriesValue = customCalories.toDoubleOrNull()?.takeIf { it > 0 }
+    val hasAnyOverrides = listOf(
+        customCalories,
+        customProtein,
+        customCarbs,
+        customFat,
+        customFiber,
+        customSaturatedFat,
+        customAddedSugars,
+        customSodium
+    ).any { value -> value.toDoubleOrNull()?.let { it > 0 } == true }
+    var showOverrides by remember { mutableStateOf(false) }
+    LaunchedEffect(hasAnyOverrides) {
+        if (hasAnyOverrides) {
+            showOverrides = true
+        }
+    }
     Column {
         Text("Profile", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
         OutlinedTextField(
@@ -868,7 +959,8 @@ fun ProfileSettingsSection(
             onValueChange = onWeightChange,
             label = { Text("Weight (kg)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !hasAllOverrides
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -876,7 +968,8 @@ fun ProfileSettingsSection(
             onValueChange = onHeightChange,
             label = { Text("Height (cm)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !hasAllOverrides
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -884,17 +977,125 @@ fun ProfileSettingsSection(
             onValueChange = onAgeChange,
             label = { Text("Age") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !hasAllOverrides
         )
         Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = customCalories,
-            onValueChange = onCustomCaloriesChange,
-            label = { Text("Daily calories target (optional)") },
-            supportingText = { Text("Overrides your calculated calorie target.") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        OutlinedButton(
+            onClick = { showOverrides = !showOverrides },
             modifier = Modifier.fillMaxWidth()
-        )
+        ) {
+            Text("Overwrite daily required values")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        if (showOverrides) {
+            Surface(
+                tonalElevation = 2.dp,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Daily calorie target overview", style = MaterialTheme.typography.titleMedium)
+                    when {
+                        customCaloriesValue != null && calculatedCalories != null -> {
+                            Text(
+                                text = "Calculated target: ${calculatedCalories.toInt()} kcal",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "Overwritten target: ${customCaloriesValue.toInt()} kcal",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        customCaloriesValue != null -> {
+                            Text(
+                                text = "Overwritten target: ${customCaloriesValue.toInt()} kcal",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        calculatedCalories != null -> {
+                            Text(
+                                text = "Calculated target: ${calculatedCalories.toInt()} kcal",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        else -> {
+                            Text(
+                                text = "Complete your profile to see the calculated target.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = customCalories,
+                        onValueChange = onCustomCaloriesChange,
+                        label = { Text("Overwrite daily calories (kcal)") },
+                        supportingText = { Text("Leave blank to keep calculated calories.") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customProtein,
+                        onValueChange = onCustomProteinChange,
+                        label = { Text("Overwrite protein (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customCarbs,
+                        onValueChange = onCustomCarbsChange,
+                        label = { Text("Overwrite carbs (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customFat,
+                        onValueChange = onCustomFatChange,
+                        label = { Text("Overwrite fat (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customFiber,
+                        onValueChange = onCustomFiberChange,
+                        label = { Text("Overwrite fiber (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customSaturatedFat,
+                        onValueChange = onCustomSaturatedFatChange,
+                        label = { Text("Overwrite saturated fat (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customAddedSugars,
+                        onValueChange = onCustomAddedSugarsChange,
+                        label = { Text("Overwrite added sugars (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customSodium,
+                        onValueChange = onCustomSodiumChange,
+                        label = { Text("Overwrite sodium (mg)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Text("Gender", style = MaterialTheme.typography.titleMedium)
         Row(Modifier.selectableGroup()) {
@@ -902,11 +1103,15 @@ fun ProfileSettingsSection(
                 Row(
                     Modifier
                         .weight(1f)
-                        .selectable(selected = (it == gender), onClick = { onGenderChange(it) })
+                        .selectable(
+                            selected = (it == gender),
+                            enabled = !hasAllOverrides,
+                            onClick = { onGenderChange(it) }
+                        )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RadioButton(selected = (it == gender), onClick = null)
+                    RadioButton(selected = (it == gender), onClick = null, enabled = !hasAllOverrides)
                     Text(text = it.name.lowercase(Locale.getDefault())
                         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                 }
@@ -921,13 +1126,13 @@ fun ProfileSettingsSection(
                         .fillMaxWidth()
                         .selectable(
                             selected = (it == activityLevel),
-                            enabled = !hasCustomCalories,
+                            enabled = !hasAllOverrides,
                             onClick = { onActivityLevelChange(it) }
                         )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RadioButton(selected = (it == activityLevel), onClick = null, enabled = !hasCustomCalories)
+                    RadioButton(selected = (it == activityLevel), onClick = null, enabled = !hasAllOverrides)
                     Text(text = it.name.lowercase(Locale.getDefault())
                         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                 }
@@ -942,13 +1147,13 @@ fun ProfileSettingsSection(
                         .fillMaxWidth()
                         .selectable(
                             selected = (goal == calorieGoal),
-                            enabled = !hasCustomCalories,
+                            enabled = !hasAllOverrides,
                             onClick = { onCalorieGoalChange(goal) }
                         )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RadioButton(selected = (goal == calorieGoal), onClick = null, enabled = !hasCustomCalories)
+                    RadioButton(selected = (goal == calorieGoal), onClick = null, enabled = !hasAllOverrides)
                     Text(
                         text = goal.name.lowercase(Locale.getDefault())
                             .replace('_', ' ')
@@ -972,6 +1177,32 @@ fun ProfileSettingsSection(
             modifier = Modifier.padding(bottom = 8.dp)
         )
     }
+}
+
+private fun calculateCalorieTargetEstimate(
+    weightKg: Double?,
+    heightCm: Double?,
+    age: Int?,
+    gender: Gender,
+    activityLevel: ActivityLevel,
+    calorieGoal: CalorieGoal
+): Double? {
+    if (weightKg == null || heightCm == null || age == null) return null
+    if (weightKg <= 0 || heightCm <= 0 || age <= 0) return null
+    val genderConstant = if (gender == Gender.MALE) 5 else -161
+    val bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + genderConstant
+    val activityFactor = when (activityLevel) {
+        ActivityLevel.SEDENTARY -> 1.2
+        ActivityLevel.LIGHT -> 1.375
+        ActivityLevel.MODERATE -> 1.55
+        ActivityLevel.ACTIVE -> 1.725
+    }
+    val goalAdjustment = when (calorieGoal) {
+        CalorieGoal.MAINTAIN -> 0.0
+        CalorieGoal.LOSE_WEIGHT -> -500.0
+        CalorieGoal.GAIN_WEIGHT -> 300.0
+    }
+    return (bmr * activityFactor + goalAdjustment).coerceAtLeast(0.0)
 }
 
 

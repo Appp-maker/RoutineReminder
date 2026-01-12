@@ -10,6 +10,13 @@ data class UserSettings(
     val gender: Gender,
     val activityLevel: ActivityLevel,
     val customCaloriesTarget: Double,
+    val customProteinTargetG: Double = 0.0,
+    val customCarbsTargetG: Double = 0.0,
+    val customFatTargetG: Double = 0.0,
+    val customFiberTargetG: Double = 0.0,
+    val customSaturatedFatTargetG: Double = 0.0,
+    val customAddedSugarsTargetG: Double = 0.0,
+    val customSodiumTargetMg: Double = 0.0,
     val calorieGoal: CalorieGoal = CalorieGoal.MAINTAIN
 )
 
