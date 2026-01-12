@@ -1222,6 +1222,9 @@ fun NutrientProgress(
     lowerIsBetter: Boolean = false
 ) {
     val progress = if (target > 0) (value / target).toFloat() else 0f
+    val labelColor = MaterialTheme.colorScheme.onSurface
+    val valueColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant
     val color = when {
         lowerIsBetter -> if (progress > 1f) Color.Red else Color(0xFF00C853)
         else -> if (progress <= 1f) Color(0xFF00C853) else Color.Red
@@ -1232,7 +1235,7 @@ fun NutrientProgress(
             .padding(horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(name, color = Color.White)
+        Text(name, color = labelColor)
         LinearProgressIndicator(
             progress = { progress.coerceIn(0f, 1f) },
             modifier = Modifier
@@ -1241,9 +1244,9 @@ fun NutrientProgress(
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp)),
             color = color,
-            trackColor = Color.DarkGray
+            trackColor = trackColor
         )
-        Text("${value.toInt()} / ${target.toInt()}", color = Color.Gray, fontSize = 11.sp)
+        Text("${value.toInt()} / ${target.toInt()}", color = valueColor, fontSize = 11.sp)
     }
 }
 
@@ -1291,17 +1294,21 @@ fun CircularNutrientIndicator(
         val sweepAngle = 315f
         val startAngle = -225f
         val progress = (currentValue / targetValue).coerceAtMost(1.5).toFloat()
+        val indicatorTrackColor = MaterialTheme.colorScheme.surfaceVariant
+        val indicatorProgressColor = MaterialTheme.colorScheme.primary
+        val primaryTextColor = MaterialTheme.colorScheme.onSurface
+        val secondaryTextColor = MaterialTheme.colorScheme.onSurfaceVariant
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawArc(
-                color = Color.DarkGray,
+                color = indicatorTrackColor,
                 startAngle = startAngle,
                 sweepAngle = sweepAngle,
                 useCenter = false,
                 style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Butt)
             )
             drawArc(
-                color = Color(0xFF00C853),
+                color = indicatorProgressColor,
                 startAngle = startAngle,
                 sweepAngle = sweepAngle * progress,
                 useCenter = false,
@@ -1310,9 +1317,9 @@ fun CircularNutrientIndicator(
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(currentValue.toInt().toString(), color = Color.White, fontSize = 26.sp)
-            Text("/ ${targetValue.toInt()}", color = Color.Gray, fontSize = 12.sp)
-            Text(label, color = Color.White, fontSize = 13.sp)
+            Text(currentValue.toInt().toString(), color = primaryTextColor, fontSize = 26.sp)
+            Text("/ ${targetValue.toInt()}", color = secondaryTextColor, fontSize = 12.sp)
+            Text(label, color = primaryTextColor, fontSize = 13.sp)
         }
     }
 }
