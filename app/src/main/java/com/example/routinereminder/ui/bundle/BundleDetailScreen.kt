@@ -17,7 +17,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -25,6 +24,7 @@ import com.example.routinereminder.data.entities.FoodBundleWithItems
 import com.example.routinereminder.ui.CalorieTrackerViewModel
 import androidx.compose.ui.Alignment
 import com.example.routinereminder.ui.Screen
+import com.example.routinereminder.ui.theme.AppPalette
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Check
@@ -246,7 +246,7 @@ fun BundleDetailScreen(
                 } else if (data.bundle.description.isNotBlank()) {
                     Text(
                         text = formatChecklistText(data.bundle.description),
-                        color = Color.Gray
+                        color = AppPalette.TextMuted
                     )
                 }
 
@@ -260,7 +260,7 @@ fun BundleDetailScreen(
                             "Portion: grams"
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = AppPalette.TextMuted
                     )
                 }
             }
@@ -329,7 +329,7 @@ fun BundleDetailScreen(
         if (data.items.isEmpty()) {
             Text(
                 text = "No ingredients yet.",
-                color = Color.Gray
+                color = AppPalette.TextMuted
             )
         } else {
             data.items.forEach { item ->
@@ -446,7 +446,7 @@ fun IngredientSummaryRow(item: RecipeIngredient) {
                 "Carbs: ${item.carbsG} g • " +
                 "Fat: ${item.fatG} g",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
+            color = AppPalette.TextMuted
         )
     }
 }

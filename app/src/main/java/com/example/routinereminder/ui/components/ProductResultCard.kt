@@ -9,9 +9,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.routinereminder.ui.theme.AppPalette
 
 
 /**
@@ -39,7 +39,7 @@ fun ProductResultCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF1C1C1C), RoundedCornerShape(16.dp))
+            .background(AppPalette.Surface, RoundedCornerShape(16.dp))
             .clickable { onClick() }
             .padding(14.dp)
     ) {
@@ -57,7 +57,7 @@ fun ProductResultCard(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFB0B0B0),
+                color = AppPalette.TextSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -107,7 +107,7 @@ fun ProductResultCard(
         Text(
             text = "per 100 g",
             style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF8A8A8A)
+            color = AppPalette.TextMuted
         )
     }
 }
@@ -118,13 +118,13 @@ private fun NutrientChip(label: String, value: Double?) {
 
     Box(
         modifier = Modifier
-            .background(Color(0xFF2A2A2A), RoundedCornerShape(12.dp))
+            .background(AppPalette.SurfaceAlt, RoundedCornerShape(12.dp))
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(
             text = "$label $displayValue",
             style = MaterialTheme.typography.labelMedium,
-            color = Color(0xFFEAEAEA)
+            color = AppPalette.TextPrimary
         )
     }
 }

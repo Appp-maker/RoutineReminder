@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.routinereminder.ui.theme.AppPalette
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
 import androidx.navigation.NavController
@@ -690,7 +691,7 @@ fun CalorieTrackerScreen(
                                                 .weight(1f)
                                                 .height(70.dp)
                                                 .clip(RoundedCornerShape(16.dp))
-                                                .background(Color(0xFF1C1C1C))
+                                                .background(AppPalette.Surface)
                                                 .clickable(
                                                     interactionSource = remember { MutableInteractionSource() },
                                                     indication = LocalIndication.current
@@ -702,7 +703,7 @@ fun CalorieTrackerScreen(
                                         ) {
                                             Text(
                                                 meal,
-                                                color = Color.White,
+                                                color = AppPalette.TextInverse,
                                                 fontSize = 16.sp
                                             )
                                         }
@@ -760,7 +761,7 @@ fun MealSlotDetail(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF2A2A2A))
+            .background(AppPalette.SurfaceAlt)
             .padding(16.dp)
     )
 
@@ -780,13 +781,13 @@ fun MealSlotDetail(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = AppPalette.TextInverse
                 )
             }
 
             Text(
                 text = slotName,
-                color = Color.White,
+                color = AppPalette.TextInverse,
                 fontSize = 20.sp,
                 modifier = Modifier.padding(start = 4.dp)
             )
@@ -815,10 +816,10 @@ fun MealSlotDetail(
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(food.foodProduct.name, color = Color.White)
+                            Text(food.foodProduct.name, color = AppPalette.TextInverse)
                             Text(
                                 "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
-                                color = Color.Gray,
+                                color = AppPalette.TextMuted,
                                 fontSize = 12.sp
                             )
                         }
@@ -830,12 +831,12 @@ fun MealSlotDetail(
                                 },
                                 colors = CheckboxDefaults.colors(
                                     checkedColor = MaterialTheme.colorScheme.primary,
-                                    uncheckedColor = Color.LightGray
+                                    uncheckedColor = AppPalette.TextSecondary
                                 )
                             )
                         }
                         IconButton(onClick = { onDelete(food) }) {
-                            Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                            Icon(Icons.Default.Delete, contentDescription = null, tint = AppPalette.Danger)
                         }
                     }
                 } else {
@@ -888,13 +889,13 @@ fun AllFoodsList(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF2A2A2A))
+            .background(AppPalette.SurfaceAlt)
             .padding(16.dp)
     ) {
         if (foods.isEmpty()) {
             Text(
                 text = "No foods logged for this day.",
-                color = Color.LightGray,
+                color = AppPalette.TextSecondary,
                 fontSize = 13.sp
             )
             return@Column
@@ -908,7 +909,7 @@ fun AllFoodsList(
                 item {
                     Text(
                         text = mealSlot,
-                        color = Color.LightGray,
+                        color = AppPalette.TextSecondary,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
@@ -924,10 +925,10 @@ fun AllFoodsList(
                                 modifier = Modifier.padding(end = 8.dp)
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(food.foodProduct.name, color = Color.White)
+                                Text(food.foodProduct.name, color = AppPalette.TextInverse)
                                 Text(
                                     "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
-                                    color = Color.Gray,
+                                    color = AppPalette.TextMuted,
                                     fontSize = 12.sp
                                 )
                             }
@@ -939,7 +940,7 @@ fun AllFoodsList(
                                     },
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = MaterialTheme.colorScheme.primary,
-                                        uncheckedColor = Color.LightGray
+                                        uncheckedColor = AppPalette.TextSecondary
                                     )
                                 )
                             }
@@ -947,7 +948,7 @@ fun AllFoodsList(
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = null,
-                                    tint = Color.Red
+                                    tint = AppPalette.Danger
                                 )
                             }
                         }
@@ -977,7 +978,7 @@ private fun FoodRowCard(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF1C1C1C))
+            .background(AppPalette.Surface)
             .clickable { onClick() }
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1007,7 +1008,7 @@ fun ExpandableRecipeRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF1C1C1C))
+            .background(AppPalette.Surface)
             .clickable { showRecipeDialog = true }
             .padding(12.dp)
     ) {
@@ -1019,10 +1020,10 @@ fun ExpandableRecipeRow(
                 modifier = Modifier.padding(end = 8.dp)
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(recipeName, color = Color.White, fontSize = 16.sp)
+                Text(recipeName, color = AppPalette.TextInverse, fontSize = 16.sp)
                 Text(
                     "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
-                    color = Color.Gray,
+                    color = AppPalette.TextMuted,
                     fontSize = 12.sp
                 )
             }
@@ -1035,12 +1036,12 @@ fun ExpandableRecipeRow(
                     },
                     colors = CheckboxDefaults.colors(
                         checkedColor = MaterialTheme.colorScheme.primary,
-                        uncheckedColor = Color.LightGray
+                        uncheckedColor = AppPalette.TextSecondary
                     )
                 )
             }
             IconButton(onClick = onDeleteRecipe) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                Icon(Icons.Default.Delete, contentDescription = null, tint = AppPalette.Danger)
             }
         }
     }
@@ -1052,7 +1053,7 @@ fun ExpandableRecipeRow(
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = Color(0xFF111111)
+                color = AppPalette.SurfaceDialog
             ) {
                 Column(
                     modifier = Modifier
@@ -1068,18 +1069,18 @@ fun ExpandableRecipeRow(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 recipeName,
-                                color = Color.White,
+                                color = AppPalette.TextInverse,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
                                 "${food.calories.toInt()} cal • ${food.portionSizeG.toInt()} g",
-                                color = Color.Gray,
+                                color = AppPalette.TextMuted,
                                 fontSize = 13.sp
                             )
                         }
                         IconButton(onClick = { showRecipeDialog = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = AppPalette.TextInverse)
                         }
                     }
 
@@ -1093,13 +1094,13 @@ fun ExpandableRecipeRow(
                                 },
                                 colors = CheckboxDefaults.colors(
                                     checkedColor = MaterialTheme.colorScheme.primary,
-                                    uncheckedColor = Color.LightGray
+                                    uncheckedColor = AppPalette.TextSecondary
                                 )
                             )
-                            Text("Consumed", color = Color.LightGray)
+                            Text("Consumed", color = AppPalette.TextSecondary)
                             Spacer(Modifier.weight(1f))
                             IconButton(onClick = onDeleteRecipe) {
-                                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                                Icon(Icons.Default.Delete, contentDescription = null, tint = AppPalette.Danger)
                             }
                         }
                         Spacer(Modifier.height(8.dp))
@@ -1108,7 +1109,7 @@ fun ExpandableRecipeRow(
                     if (recipeDescription.isNotBlank()) {
                         Text(
                             formatChecklistText(recipeDescription),
-                            color = Color.LightGray,
+                            color = AppPalette.TextSecondary,
                             fontSize = 14.sp
                         )
                         Spacer(Modifier.height(12.dp))
@@ -1117,7 +1118,7 @@ fun ExpandableRecipeRow(
                     recipeItems.forEach { item ->
                         Text(
                             "• ${item.name} – ${item.portionSizeG.toInt()} g",
-                            color = Color.LightGray,
+                            color = AppPalette.TextSecondary,
                             fontSize = 14.sp
                         )
                     }
@@ -1205,7 +1206,7 @@ fun DateHeader(
         Text(
             currentDate.format(formatter),
             textAlign = TextAlign.Center,
-            color = Color.White
+            color = AppPalette.TextInverse
         )
         IconButton(onClick = onNextDay) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Day")
@@ -1226,8 +1227,8 @@ fun NutrientProgress(
     val valueColor = MaterialTheme.colorScheme.onSurfaceVariant
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
     val color = when {
-        lowerIsBetter -> if (progress > 1f) Color.Red else Color(0xFF00C853)
-        else -> if (progress <= 1f) Color(0xFF00C853) else Color.Red
+        lowerIsBetter -> if (progress > 1f) AppPalette.Danger else AppPalette.Success
+        else -> if (progress <= 1f) AppPalette.Success else AppPalette.Danger
     }
 
     Column(
@@ -1271,11 +1272,15 @@ fun LoggedFoodsList(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(food.foodProduct.name, color = Color.White)
-                    Text("${food.calories.toInt()} cal, ${food.portionSizeG.toInt()}g", color = Color.Gray, fontSize = 12.sp)
+                    Text(food.foodProduct.name, color = AppPalette.TextInverse)
+                    Text(
+                        "${food.calories.toInt()} cal, ${food.portionSizeG.toInt()}g",
+                        color = AppPalette.TextMuted,
+                        fontSize = 12.sp
+                    )
                 }
                 IconButton(onClick = { onDelete(food) }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color.Red)
+                    Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = AppPalette.Danger)
                 }
             }
         }
@@ -1333,7 +1338,7 @@ private fun MissingProfileScreen(navController: NavController) {
     ) {
         Text(
             "Please complete your profile in settings to use the calorie tracker.",
-            color = Color.White
+            color = AppPalette.TextInverse
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = { navController.navigate("settings/calories") }) {
@@ -1358,7 +1363,7 @@ fun FoodSearchDialog(
 
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = Color(0xFF121212)
+                color = AppPalette.SurfaceStrong
             )
             {
             Column(
@@ -1408,7 +1413,7 @@ fun FoodSearchDialog(
                 if (searchResults.isEmpty() && query.length >= 3) {
                     Text(
                         text = "No search started or results found",
-                        color = Color.Gray,
+                        color = AppPalette.TextMuted,
                         modifier = Modifier.padding(vertical = 12.dp)
                     )
                 }

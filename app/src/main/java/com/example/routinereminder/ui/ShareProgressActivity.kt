@@ -15,7 +15,8 @@ import org.maplibre.android.style.sources.RasterSource
 import org.maplibre.android.style.layers.RasterLayer
 import android.view.Gravity
 import android.view.ViewGroup
-import android.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import com.example.routinereminder.ui.theme.AppPalette
 
 class ShareProgressActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -41,10 +42,10 @@ class ShareProgressActivity : AppCompatActivity(), OnMapReadyCallback {
         // Create the attribution TextView
         val attributionText = TextView(this).apply {
             text = "Imagery © NASA Earth Observatory (GIBS)"
-            setTextColor(Color.WHITE)
+            setTextColor(AppPalette.TextInverse.toArgb())
             textSize = 12f
             setPadding(8, 8, 8, 8)
-            setBackgroundColor(Color.parseColor("#66000000")) // semi-transparent black
+            setBackgroundColor(AppPalette.Overlay.toArgb()) // semi-transparent black
         }
 
         // Position it bottom-right

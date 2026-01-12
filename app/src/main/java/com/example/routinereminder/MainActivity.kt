@@ -112,6 +112,7 @@ import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.SeriesColorDot
 import com.example.routinereminder.ui.components.SettingsIconButton
+import com.example.routinereminder.ui.theme.AppPalette
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
 import androidx.compose.foundation.isSystemInDarkTheme
 
@@ -1397,7 +1398,7 @@ fun ScheduleItemView(
         "IMPORTED_GOOGLE" -> Color.Green
         "APP_CREATED_GOOGLE" -> Color.Magenta
         "IMPORTED_LOCAL" -> Color.Yellow
-        "APP_CREATED_LOCAL" -> Color.Cyan
+        "APP_CREATED_LOCAL" -> AppPalette.AccentCyan
         "APP_CREATED" -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         else -> baseTextColor
     }
@@ -1451,12 +1452,12 @@ fun ScheduleItemView(
                             modifier = Modifier
                                 .width(70.dp)              // SAME WIDTH FOR ALL BADGES
                                 .height(20.dp)             // UNIFIED HEIGHT
-                                .background(Color(0x332196F3), MaterialTheme.shapes.extraSmall),
+                                .background(AppPalette.AccentSoft, MaterialTheme.shapes.extraSmall),
                             contentAlignment = Alignment.Center  // CENTER TEXT
                         ) {
                             Text(
                                 text = "ONE TIME",
-                                color = Color(0xFF2196F3),
+                                color = AppPalette.AccentStrong,
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -1466,12 +1467,12 @@ fun ScheduleItemView(
                             modifier = Modifier
                                 .width(70.dp)              // SAME WIDTH
                                 .height(20.dp)             // SAME HEIGHT
-                                .background(Color(0x334CAF50), MaterialTheme.shapes.extraSmall),
+                                .background(AppPalette.AccentSecondarySoft, MaterialTheme.shapes.extraSmall),
                             contentAlignment = Alignment.Center  // CENTER TEXT
                         ) {
                             Text(
                                 text = "REPEATS",
-                                color = Color(0xFF4CAF50),
+                                color = AppPalette.AccentSecondary,
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -1514,12 +1515,12 @@ fun ScheduleItemView(
                         prefix?.let {
                             // Unique colors NOT using blue or green
                             val (bgColor, textColor) = when (item.origin) {
-                                "APP_CREATED" -> Color(0x33FF9800) to Color(0xFFCBCBCB)       // App Only → Orange
-                                "IMPORTED_GOOGLE" -> Color(0x33AA00FF) to Color(0xFF0FEEE5)   // Google Calendar → Purple
-                                "APP_CREATED_GOOGLE" -> Color(0x33E91E63) to Color(0xFFE91E63) // App Google → Pink
-                                "IMPORTED_LOCAL" -> Color(0x33FFC107) to Color(0xFFFFC107)    // Local Calendar → Amber
-                                "APP_CREATED_LOCAL" -> Color(0x33FF5722) to Color(0xFFFF5722) // Local App → Deep Orange
-                                else -> Color(0x33444444) to Color(0xFF888888)                // fallback → grey
+                                "APP_CREATED" -> AppPalette.AccentOrangeSoft to AppPalette.TextDisabled       // App Only → Orange
+                                "IMPORTED_GOOGLE" -> AppPalette.AccentPurpleSoft to AppPalette.TextAccent   // Google Calendar → Purple
+                                "APP_CREATED_GOOGLE" -> AppPalette.AccentPinkSoft to AppPalette.AccentPink // App Google → Pink
+                                "IMPORTED_LOCAL" -> AppPalette.AccentAmberSoft to AppPalette.AccentAmber    // Local Calendar → Amber
+                                "APP_CREATED_LOCAL" -> AppPalette.AccentDeepOrangeSoft to AppPalette.AccentDeepOrange // Local App → Deep Orange
+                                else -> AppPalette.TagFallbackSoft to AppPalette.TextSoft                // fallback → grey
                             }
 
                             Text(

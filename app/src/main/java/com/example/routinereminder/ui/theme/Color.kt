@@ -77,3 +77,62 @@ val eye_care_warm_surface = Color(0xFFFFF8E1) // Light Yellow/Cream
 val eye_care_warm_onSurface = Color(0xFF4E342E) // Dark Brown
 val eye_care_warm_background = Color(0xFFFFF3E0) // Light Orange/Cream
 val eye_care_warm_onBackground = Color(0xFF4E342E)
+
+object AppPalette {
+    val SurfaceStrong = Color(0xFF121212)
+    val Surface = Color(0xFF1C1C1C)
+    val SurfaceAlt = Color(0xFF2A2A2A)
+    val SurfaceElevated = Color(0xFF1B1B1B)
+    val SurfaceDeep = Color(0xFF0E0E0E)
+    val SurfaceOverlay = Color(0xFF101010)
+    val SurfaceDialog = Color(0xFF111111)
+    val SurfaceMuted = Color(0xFF151515)
+    val SurfaceSubtle = Color(0xFF1A1A1A)
+    val SurfaceTrack = Color(0xFF3A3A3A)
+    val SurfaceDanger = Color(0xFF3B1B1B)
+
+    val TextPrimary = Color(0xFFEAEAEA)
+    val TextSecondary = Color(0xFFB0B0B0)
+    val TextMuted = Color(0xFF8A8A8A)
+    val TextHint = Color(0xFFBBBBBB)
+    val TextDisabled = Color(0xFFCBCBCB)
+    val TextLight = Color(0xFFE6E6E6)
+    val TextSubtle = Color(0xFFBDBDBD)
+    val TextSoft = Color(0xFF888888)
+    val TextInverse = Color(0xFFFFFFFF)
+    val TextAccent = Color(0xFF0FEEE5)
+
+    val Accent = Color(0xFF1E88E5)
+    val AccentStrong = Color(0xFF2196F3)
+    val AccentSoft = Color(0x332196F3)
+    val AccentSecondary = Color(0xFF4CAF50)
+    val AccentSecondarySoft = Color(0x334CAF50)
+    val AccentOrangeSoft = Color(0x33FF9800)
+    val AccentPinkSoft = Color(0x33E91E63)
+    val AccentPink = Color(0xFFE91E63)
+    val AccentAmberSoft = Color(0x33FFC107)
+    val AccentAmber = Color(0xFFFFC107)
+    val AccentPurpleSoft = Color(0x33AA00FF)
+    val AccentDeepOrangeSoft = Color(0x33FF5722)
+    val AccentDeepOrange = Color(0xFFFF5722)
+    val AccentCyan = Color(0xFF00BCD4)
+    val Info = Color(0xFF64B5F6)
+
+    val Success = Color(0xFF00C853)
+    val Danger = Color(0xFFB3261E)
+    val DangerSoft = Color(0xFFFFB4B4)
+    val DangerAccent = Color(0xFFE53935)
+    val DangerBright = Color(0xFFFF5252)
+
+    val BorderSubtle = Color(0xFF333333)
+    val BorderNeutral = Color(0xFF9E9E9E)
+    val BorderStrong = Color(0xFF424242)
+
+    val MapLocation = Color(0xFF2196F3)
+    val MapTrail = Color(0xFFFF4081)
+    val MapStroke = Color(0xFFFFFFFF)
+    val MapBackground = Color(0xFF000000)
+
+    val Overlay = Color(0x66000000)
+    val TagFallbackSoft = Color(0x33444444)
+}

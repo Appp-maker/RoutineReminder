@@ -42,7 +42,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
@@ -54,6 +54,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.FileProvider
 import com.example.routinereminder.ui.SessionStore
 import com.example.routinereminder.ui.components.SettingsIconButton
+import com.example.routinereminder.ui.theme.AppPalette
 import com.google.android.gms.location.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -518,7 +519,7 @@ fun MapScreen(
                     Text(
                         text = "Enter your estimated distance and duration.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = ComposeColor.Gray
+                        color = AppPalette.TextMuted
                     )
                     Text(
                         text = "Activity",
@@ -546,7 +547,7 @@ fun MapScreen(
                     Text(
                         text = "Estimated calories: ${estimatedCalories?.toString() ?: "--"} kcal",
                         style = MaterialTheme.typography.bodySmall,
-                        color = ComposeColor.Gray
+                        color = AppPalette.TextMuted
                     )
                 }
             },
@@ -621,7 +622,7 @@ fun MapScreen(
                 Card(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = ComposeColor(0xFF121212))
+                    colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceStrong)
                 ) {
                     Row(
                         modifier = Modifier.padding(8.dp),
@@ -642,7 +643,7 @@ fun MapScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = ComposeColor(0xFF1B1B1B))
+                    colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceElevated)
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp)
@@ -650,7 +651,7 @@ fun MapScreen(
                         Text(
                             text = "Splits (per km)",
                             style = MaterialTheme.typography.bodySmall,
-                            color = ComposeColor.Gray
+                            color = AppPalette.TextMuted
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Row(
@@ -661,7 +662,7 @@ fun MapScreen(
                                 Text(
                                     text = "${index + 1}km ${formatSplitPace(split)}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = ComposeColor.White
+                                    color = AppPalette.TextInverse
                                 )
                             }
                         }
@@ -675,7 +676,7 @@ fun MapScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = ComposeColor(0xFF3B1B1B))
+                    colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceDanger)
                 ) {
                     Row(
                         modifier = Modifier
@@ -686,12 +687,12 @@ fun MapScreen(
                     ) {
                         Text(
                             text = "Location permission required to track.",
-                            color = ComposeColor(0xFFFFB4B4),
+                            color = AppPalette.DangerSoft,
                             style = MaterialTheme.typography.bodySmall
                         )
                         Button(
                             onClick = { requestLocationPermissions() },
-                            colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFFB3261E))
+                            colors = ButtonDefaults.buttonColors(containerColor = AppPalette.Danger)
                         ) {
                             Text("Grant")
                         }
@@ -719,9 +720,13 @@ fun MapScreen(
                                     style.addLayer(
                                         CircleLayer("location-layer", "location-source").withProperties(
                                             org.maplibre.android.style.layers.PropertyFactory.circleRadius(6f),
-                                            org.maplibre.android.style.layers.PropertyFactory.circleColor("#2196F3"),
+                                            org.maplibre.android.style.layers.PropertyFactory.circleColor(
+                                                String.format("#%08X", AppPalette.MapLocation.toArgb())
+                                            ),
                                             org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth(2f),
-                                            org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor("#FFFFFF")
+                                            org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor(
+                                                String.format("#%08X", AppPalette.MapStroke.toArgb())
+                                            )
                                         )
                                     )
 
@@ -729,7 +734,9 @@ fun MapScreen(
                                     style.addSource(trailSrc)
                                     style.addLayer(
                                         LineLayer("trail-layer", "trail-source").withProperties(
-                                            org.maplibre.android.style.layers.PropertyFactory.lineColor("#FF4081"),
+                                            org.maplibre.android.style.layers.PropertyFactory.lineColor(
+                                                String.format("#%08X", AppPalette.MapTrail.toArgb())
+                                            ),
                                             org.maplibre.android.style.layers.PropertyFactory.lineWidth(4f),
                                             org.maplibre.android.style.layers.PropertyFactory.lineJoin("round"),
                                             org.maplibre.android.style.layers.PropertyFactory.lineCap("round")
@@ -840,25 +847,25 @@ fun MapScreen(
                         if (!isRecording) {
                             Button(
                                 onClick = { navController.navigate("history") },
-                                colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFF424242)),
+                                colors = ButtonDefaults.buttonColors(containerColor = AppPalette.BorderStrong),
                                 shape = RoundedCornerShape(30.dp),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
                                     .padding(end = 8.dp)
                             ) {
-                                Text("Log", color = ComposeColor.White)
+                                Text("Log", color = AppPalette.TextInverse)
                             }
                             Button(
                                 onClick = { showManualEntry = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = ComposeColor(0xFF1E88E5)),
+                                colors = ButtonDefaults.buttonColors(containerColor = AppPalette.Accent),
                                 shape = RoundedCornerShape(30.dp),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
                                     .padding(end = 8.dp)
                             ) {
-                                Text("Add", color = ComposeColor.White)
+                                Text("Add", color = AppPalette.TextInverse)
                             }
                         }
 
@@ -959,7 +966,7 @@ fun MapScreen(
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isRecording) ComposeColor.Red else ComposeColor(0xFF00C853)
+                                containerColor = if (isRecording) AppPalette.Danger else AppPalette.Success
                             ),
                             shape = RoundedCornerShape(30.dp),
                             modifier = Modifier
@@ -969,7 +976,7 @@ fun MapScreen(
                         ) {
                             Text(
                                 if (!isRecording) "Start" else "Stop & Share",
-                                color = ComposeColor.White
+                                color = AppPalette.TextInverse
                             )
                         }
 
@@ -1376,7 +1383,7 @@ fun shareSessionImage(
         }
 
         val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+            color = AppPalette.MapStroke.toArgb()
             strokeWidth = 12f
             style = Paint.Style.STROKE
             strokeJoin = Paint.Join.ROUND
@@ -1385,7 +1392,7 @@ fun shareSessionImage(
         }
 
         val trail = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#FF4081")
+            color = AppPalette.MapTrail.toArgb()
             strokeWidth = 8f
             style = Paint.Style.STROKE
             strokeJoin = Paint.Join.ROUND
@@ -1401,7 +1408,7 @@ fun shareSessionImage(
         val height = 1920
         val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
-        canvas.drawColor(Color.BLACK)
+        canvas.drawColor(AppPalette.MapBackground.toArgb())
 
         val overlayTop = height - 300f
         val mapRect = RectF(0f, 0f, width.toFloat(), overlayTop - 80f)
@@ -1416,7 +1423,7 @@ fun shareSessionImage(
             )
             canvas.drawBitmap(scaled, mapRect.left, mapRect.top, null)
         } else {
-            canvas.drawRect(mapRect, Paint().apply { color = Color.DKGRAY })
+            canvas.drawRect(mapRect, Paint().apply { color = AppPalette.SurfaceTrack.toArgb() })
         }
 
         // centered trail in the same mapRect
@@ -1435,16 +1442,16 @@ fun shareSessionImage(
 
         // Text paints
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+            color = AppPalette.TextInverse.toArgb()
             textSize = 90f
             typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
         }
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+            color = AppPalette.TextInverse.toArgb()
             textSize = 48f
         }
         val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.LTGRAY
+            color = AppPalette.TextSubtle.toArgb()
             textSize = 36f
         }
 
@@ -1581,9 +1588,9 @@ private fun StatBlock(title: String, value: String) {
             value,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = ComposeColor(0xFFE6E6E6)
+            color = AppPalette.TextLight
         )
-        Text(title, style = MaterialTheme.typography.bodySmall, color = ComposeColor.Gray)
+        Text(title, style = MaterialTheme.typography.bodySmall, color = AppPalette.TextMuted)
     }
 }
 
@@ -1617,8 +1624,8 @@ private fun ModeChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val bg = if (selected) ComposeColor(0xFF1E88E5) else ComposeColor(0xFF2A2A2A)
-    val fg = if (selected) ComposeColor.White else ComposeColor.LightGray
+    val bg = if (selected) AppPalette.Accent else AppPalette.SurfaceAlt
+    val fg = if (selected) AppPalette.TextInverse else AppPalette.TextSecondary
     Row(
         modifier = Modifier
             .background(bg, RoundedCornerShape(24.dp))

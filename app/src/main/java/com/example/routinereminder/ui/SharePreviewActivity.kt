@@ -6,11 +6,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color as ComposeColor
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
+import com.example.routinereminder.ui.theme.AppPalette
 import org.maplibre.android.maps.MapView
 import androidx.core.content.FileProvider
 import java.util.UUID
@@ -33,8 +32,8 @@ class SharePreviewActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(ComposeColor(0xFF101010)),
-                    color = ComposeColor(0xFF101010)
+                        .background(AppPalette.SurfaceOverlay),
+                    color = AppPalette.SurfaceOverlay
                 ) {
                     SessionSharePreviewScreen(
                         sessionId = sessionId,
