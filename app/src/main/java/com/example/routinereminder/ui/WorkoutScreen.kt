@@ -45,7 +45,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -611,14 +611,16 @@ fun WorkoutScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            SmallFloatingActionButton(
+            FloatingActionButton(
                 onClick = {
                     if (selectedPlan == null) {
                         coroutineScope.launch { snackbarHostState.showSnackbar(message = selectPlanMessage) }
                     } else {
                         showExerciseSearchDialog = true
                     }
-                }
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Filled.Add, contentDescription = openExerciseSearchLabel)
             }
