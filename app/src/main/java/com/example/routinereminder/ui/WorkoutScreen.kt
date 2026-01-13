@@ -802,6 +802,8 @@ fun WorkoutScreen(
     }
 }
 
+}
+
 @Composable
 private fun ExerciseSearchDialog(
     uiState: WorkoutUiState,
