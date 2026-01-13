@@ -130,6 +130,15 @@
     <string name="map_weather_title">Weather</string>
     <string name="map_weather_temperature">Temperature</string>
     <string name="map_weather_wind">Wind (km/h)</string>
+    <string name="map_weather_humidity">Humidity: %1$s</string>
+    <string name="map_weather_clear">Sunny</string>
+    <string name="map_weather_partly_cloudy">Partly cloudy</string>
+    <string name="map_weather_overcast">Overcast</string>
+    <string name="map_weather_fog">Foggy</string>
+    <string name="map_weather_rain">Rain</string>
+    <string name="map_weather_snow">Snow</string>
+    <string name="map_weather_thunder">Thunderstorm</string>
+    <string name="map_weather_unknown">Weather</string>
 
     <!-- Tabs -->
     <string name="tab_events">Events</string>
