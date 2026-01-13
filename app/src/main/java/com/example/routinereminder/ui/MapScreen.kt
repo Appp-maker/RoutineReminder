@@ -7,6 +7,12 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudQueue
+import androidx.compose.material.icons.filled.Grain
+import androidx.compose.material.icons.filled.Thunderstorm
+import androidx.compose.material.icons.filled.WbSunny
 import com.example.routinereminder.data.model.SessionStats
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -140,6 +146,8 @@ private const val WEATHER_MIN_DISTANCE_METERS = 250.0
 private data class WeatherSnapshot(
     val temperatureC: Double,
     val windSpeedKmh: Double,
+    val humidityPercent: Int,
+    val weatherCode: Int,
     val fetchedAtMs: Long
 )
 
@@ -151,7 +159,9 @@ private data class OpenMeteoResponse(
 @Serializable
 private data class OpenMeteoCurrent(
     @SerialName("temperature_2m") val temperatureC: Double? = null,
-    @SerialName("wind_speed_10m") val windSpeedKmh: Double? = null
+    @SerialName("wind_speed_10m") val windSpeedKmh: Double? = null,
+    @SerialName("relative_humidity_2m") val humidityPercent: Int? = null,
+    @SerialName("weather_code") val weatherCode: Int? = null
 )
 
 private val weatherJson = Json { ignoreUnknownKeys = true }
@@ -675,7 +685,8 @@ fun MapScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
-            val windText = weatherSnapshot?.let { "%.0f km/h".format(it.windSpeedKmh) } ?: "--"
+            val humidityText = weatherSnapshot?.let { "${it.humidityPercent}%" } ?: "--"
+            val weatherVisual = weatherVisualForCode(weatherSnapshot?.weatherCode)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -685,7 +696,9 @@ fun MapScreen(
             ) {
                 WeatherSummaryCard(
                     temperatureText = temperatureText,
-                    windText = windText,
+                    humidityText = humidityText,
+                    weatherIcon = weatherVisual.icon,
+                    weatherDescription = weatherVisual.description,
                     isLoading = weatherLoading
                 )
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
@@ -1342,7 +1355,7 @@ private suspend fun fetchWeatherSnapshot(lat: Double, lng: Double): WeatherSnaps
         .addPathSegments("v1/forecast")
         .addQueryParameter("latitude", lat.toString())
         .addQueryParameter("longitude", lng.toString())
-        .addQueryParameter("current", "temperature_2m,wind_speed_10m")
+        .addQueryParameter("current", "temperature_2m,wind_speed_10m,relative_humidity_2m,weather_code")
         .addQueryParameter("wind_speed_unit", "kmh")
         .addQueryParameter("temperature_unit", "celsius")
         .build()
@@ -1358,9 +1371,13 @@ private suspend fun fetchWeatherSnapshot(lat: Double, lng: Double): WeatherSnaps
             val current = decoded.current ?: return@withContext null
             val temp = current.temperatureC ?: return@withContext null
             val wind = current.windSpeedKmh ?: return@withContext null
+            val humidity = current.humidityPercent ?: return@withContext null
+            val weatherCode = current.weatherCode ?: return@withContext null
             WeatherSnapshot(
                 temperatureC = temp,
                 windSpeedKmh = wind,
+                humidityPercent = humidity,
+                weatherCode = weatherCode,
                 fetchedAtMs = System.currentTimeMillis()
             )
         }
@@ -1728,7 +1745,9 @@ private fun StatBlock(title: String, value: String) {
 @Composable
 private fun WeatherSummaryCard(
     temperatureText: String,
-    windText: String,
+    humidityText: String,
+    weatherIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    weatherDescription: String,
     isLoading: Boolean
 ) {
     val statusColor = if (isLoading) AppPalette.TextMuted else AppPalette.TextSecondary
@@ -1746,20 +1765,77 @@ private fun WeatherSummaryCard(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = weatherIcon,
+                    contentDescription = weatherDescription,
+                    tint = statusColor
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = temperatureText,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = AppPalette.TextPrimary
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = windText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = statusColor
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = weatherDescription,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusColor
+                    )
+                    Text(
+                        text = stringResource(R.string.map_weather_humidity, humidityText),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusColor
+                    )
                 )
             }
         }
+    }
+}
+
+private data class WeatherVisual(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val description: String
+)
+
+@Composable
+private fun weatherVisualForCode(code: Int?): WeatherVisual {
+    val unknown = WeatherVisual(
+        icon = Icons.Filled.Cloud,
+        description = stringResource(R.string.map_weather_unknown)
+    )
+    return when (code) {
+        0 -> WeatherVisual(
+            icon = Icons.Filled.WbSunny,
+            description = stringResource(R.string.map_weather_clear)
+        )
+        1, 2 -> WeatherVisual(
+            icon = Icons.Filled.CloudQueue,
+            description = stringResource(R.string.map_weather_partly_cloudy)
+        )
+        3 -> WeatherVisual(
+            icon = Icons.Filled.Cloud,
+            description = stringResource(R.string.map_weather_overcast)
+        )
+        45, 48 -> WeatherVisual(
+            icon = Icons.Filled.Cloud,
+            description = stringResource(R.string.map_weather_fog)
+        )
+        51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82 -> WeatherVisual(
+            icon = Icons.Filled.Grain,
+            description = stringResource(R.string.map_weather_rain)
+        )
+        71, 73, 75, 77, 85, 86 -> WeatherVisual(
+            icon = Icons.Filled.AcUnit,
+            description = stringResource(R.string.map_weather_snow)
+        )
+        95, 96, 99 -> WeatherVisual(
+            icon = Icons.Filled.Thunderstorm,
+            description = stringResource(R.string.map_weather_thunder)
+        )
+        else -> unknown
     }
 }
 
