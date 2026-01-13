@@ -58,8 +58,10 @@ import com.example.routinereminder.ui.theme.AppPalette
 import com.google.android.gms.location.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import org.maplibre.android.camera.CameraPosition
@@ -87,6 +89,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.example.routinereminder.R
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 
 enum class ActivityType(val label: String) {
@@ -125,6 +133,28 @@ private const val DEFAULT_HEIGHT_CM = 175.0
 private const val DEFAULT_AGE_YEARS = 30
 private const val DEFAULT_GENDER = "Male"
 private const val CALORIE_LOG_TAG = "CalorieProfile"
+private const val WEATHER_REFRESH_MS = 10 * 60_000L
+private const val WEATHER_MIN_DISTANCE_METERS = 250.0
+
+private data class WeatherSnapshot(
+    val temperatureC: Double,
+    val windSpeedKmh: Double,
+    val fetchedAtMs: Long
+)
+
+@Serializable
+private data class OpenMeteoResponse(
+    val current: OpenMeteoCurrent? = null
+)
+
+@Serializable
+private data class OpenMeteoCurrent(
+    @SerialName("temperature_2m") val temperatureC: Double? = null,
+    @SerialName("wind_speed_10m") val windSpeedKmh: Double? = null
+)
+
+private val weatherJson = Json { ignoreUnknownKeys = true }
+private val weatherClient = OkHttpClient()
 
 private data class CalorieProfile(
     val weightKg: Double,
@@ -263,6 +293,10 @@ fun MapScreen(
     val kalman = remember { KalmanLatLong() }
     var smoothedLat by remember { mutableStateOf<Double?>(null) }
     var smoothedLng by remember { mutableStateOf<Double?>(null) }
+    var weatherSnapshot by remember { mutableStateOf<WeatherSnapshot?>(null) }
+    var weatherLoading by remember { mutableStateOf(false) }
+    var lastWeatherPoint by remember { mutableStateOf<Point?>(null) }
+    var lastWeatherFetchAt by remember { mutableStateOf(0L) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     fun requestLocationPermissions() {
@@ -302,6 +336,28 @@ fun MapScreen(
             if (timerJob == null) {
                 startRunTimers()
             }
+        }
+    }
+
+    fun shouldFetchWeather(nextPoint: Point): Boolean {
+        val lastPoint = lastWeatherPoint ?: return true
+        val timeDelta = System.currentTimeMillis() - lastWeatherFetchAt
+        val distanceDelta = haversineMeters(lastPoint, nextPoint)
+        return timeDelta >= WEATHER_REFRESH_MS || distanceDelta >= WEATHER_MIN_DISTANCE_METERS
+    }
+
+    fun requestWeather(lat: Double, lng: Double) {
+        val point = Point.fromLngLat(lng, lat)
+        if (weatherLoading || !shouldFetchWeather(point)) return
+        weatherLoading = true
+        lastWeatherPoint = point
+        lastWeatherFetchAt = System.currentTimeMillis()
+        scope.launch {
+            val snapshot = fetchWeatherSnapshot(lat, lng)
+            if (snapshot != null) {
+                weatherSnapshot = snapshot
+            }
+            weatherLoading = false
         }
     }
 
@@ -361,6 +417,7 @@ fun MapScreen(
         val latLng = LatLng(lpLat, lpLng)
         val m = map ?: return
         val s = m.style ?: return
+        requestWeather(lpLat, lpLng)
 
 
         // update marker
@@ -424,6 +481,7 @@ fun MapScreen(
                     longitude = lng
                     accuracy = 5f
                 }
+                onLocation(loc)
             }
         }
 
@@ -636,6 +694,42 @@ fun MapScreen(
                     }
                 }
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
+            }
+            if (weatherSnapshot != null || weatherLoading) {
+                val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
+                val windText = weatherSnapshot?.let { "%.0f km/h".format(it.windSpeedKmh) } ?: "--"
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceElevated)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.map_weather_title),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppPalette.TextMuted
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            StatBlock(
+                                title = stringResource(R.string.map_weather_temperature),
+                                value = temperatureText
+                            )
+                            StatBlock(
+                                title = stringResource(R.string.map_weather_wind),
+                                value = windText
+                            )
+                        }
+                    }
+                }
             }
             if (splitDurations.isNotEmpty()) {
                 Card(
@@ -1254,6 +1348,38 @@ private fun haversineMeters(a: Point, b: Point): Double {
         )
     )
     return R * c
+}
+
+private suspend fun fetchWeatherSnapshot(lat: Double, lng: Double): WeatherSnapshot? {
+    val url = HttpUrl.Builder()
+        .scheme("https")
+        .host("api.open-meteo.com")
+        .addPathSegments("v1/forecast")
+        .addQueryParameter("latitude", lat.toString())
+        .addQueryParameter("longitude", lng.toString())
+        .addQueryParameter("current", "temperature_2m,wind_speed_10m")
+        .addQueryParameter("wind_speed_unit", "kmh")
+        .addQueryParameter("temperature_unit", "celsius")
+        .build()
+    val request = Request.Builder().url(url).build()
+    return withContext(Dispatchers.IO) {
+        val response = weatherClient.newCall(request).execute()
+        response.use {
+            if (!it.isSuccessful) {
+                return@withContext null
+            }
+            val body = it.body?.string() ?: return@withContext null
+            val decoded = weatherJson.decodeFromString<OpenMeteoResponse>(body)
+            val current = decoded.current ?: return@withContext null
+            val temp = current.temperatureC ?: return@withContext null
+            val wind = current.windSpeedKmh ?: return@withContext null
+            WeatherSnapshot(
+                temperatureC = temp,
+                windSpeedKmh = wind,
+                fetchedAtMs = System.currentTimeMillis()
+            )
+        }
+    }
 }
 
 /* ---------------- Tiny JSON codec (no external libs) ---------------- */

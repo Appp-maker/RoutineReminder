@@ -125,6 +125,9 @@
     <string name="event_sets_dialog_settings_action">Event set settings</string>
     <string name="event_sets_dialog_done">Done</string>
     <string name="map_calories_log_empty_toast">No run calories saved for today yet.</string>
+    <string name="map_weather_title">Weather</string>
+    <string name="map_weather_temperature">Temperature</string>
+    <string name="map_weather_wind">Wind (km/h)</string>
 
     <!-- Tabs -->
     <string name="tab_events">Events</string>
