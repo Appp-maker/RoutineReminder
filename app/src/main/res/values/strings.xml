@@ -91,8 +91,6 @@
     <string name="settings_app_about_body">RoutineReminder helps you build routines, log workouts, and schedule workout plans.</string>
     <string name="settings_app_credits_body">Exercise data powered by ExerciseDB (exercisedb.dev). Thanks to the ExerciseDB contributors for maintaining the public dataset.</string>
     <string name="settings_app_legal_body">Workout exercise data is provided by ExerciseDB and remains property of its respective owners. Usage requires attribution only; no login or payment is required. Please review ExerciseDB terms for updates.</string>
-    <string name="settings_map_log_daily_calories">Log today’s run calories from history</string>
-    <string name="settings_map_log_daily_calories_hint">Uses your running history for today instead of manual entry on the map.</string>
     <string name="settings_calorie_track_consumed">Track consumed foods with checkboxes</string>
     <string name="settings_calorie_track_consumed_hint">When enabled, calories start at 0 until you check foods as consumed.</string>
     <string name="settings_event_sets_title">Event Sets</string>
