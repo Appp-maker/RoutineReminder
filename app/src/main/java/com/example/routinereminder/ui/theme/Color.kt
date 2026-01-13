@@ -1,6 +1,10 @@
 package com.example.routinereminder.ui.theme
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import com.example.routinereminder.data.AppThemeColors
 
 object AppPalette {
     val SurfaceStrong = Color(0xFF121212)
@@ -26,21 +30,21 @@ object AppPalette {
     val TextInverse = Color(0xFFFFFFFF)
     val TextAccent = Color(0xFF0FEEE5)
 
-    val Accent = Color(0xFF1E88E5)
-    val AccentStrong = Color(0xFF2196F3)
-    val AccentSoft = Color(0x332196F3)
-    val AccentSecondary = Color(0xFF4CAF50)
-    val AccentSecondarySoft = Color(0x334CAF50)
+    var Accent by mutableStateOf(Color(0xFF1E88E5))
+    var AccentStrong by mutableStateOf(Color(0xFF2196F3))
+    var AccentSoft by mutableStateOf(Color(0x332196F3))
+    var AccentSecondary by mutableStateOf(Color(0xFF4CAF50))
+    var AccentSecondarySoft by mutableStateOf(Color(0x334CAF50))
     val AccentOrangeSoft = Color(0x33FF9800)
     val AccentPinkSoft = Color(0x33E91E63)
     val AccentPink = Color(0xFFE91E63)
-    val AccentAmberSoft = Color(0x33FFC107)
-    val AccentAmber = Color(0xFFFFC107)
+    var AccentAmberSoft by mutableStateOf(Color(0x33FFC107))
+    var AccentAmber by mutableStateOf(Color(0xFFFFC107))
     val AccentPurpleSoft = Color(0x33AA00FF)
     val AccentDeepOrangeSoft = Color(0x33FF5722)
     val AccentDeepOrange = Color(0xFFFF5722)
     val AccentCyan = Color(0xFF00BCD4)
-    val Info = Color(0xFF64B5F6)
+    var Info by mutableStateOf(Color(0xFF64B5F6))
 
     val Success = Color(0xFF00C853)
     val Danger = Color(0xFFB3261E)
@@ -52,13 +56,30 @@ object AppPalette {
     val BorderNeutral = Color(0xFF9E9E9E)
     val BorderStrong = Color(0xFF424242)
 
-    val MapLocation = Color(0xFF2196F3)
-    val MapTrail = Color(0xFFFF4081)
+    var MapLocation by mutableStateOf(Color(0xFF2196F3))
+    var MapTrail by mutableStateOf(Color(0xFFFF4081))
     val MapStroke = Color(0xFFFFFFFF)
     val MapBackground = Color(0xFF000000)
 
     val Overlay = Color(0x66000000)
     val TagFallbackSoft = Color(0x33444444)
+
+    fun updateFromTheme(colors: AppThemeColors) {
+        val primary = Color(colors.primary)
+        val secondary = Color(colors.secondary)
+        val tertiary = Color(colors.tertiary)
+
+        Accent = primary
+        AccentStrong = primary
+        AccentSoft = primary.copy(alpha = 0.2f)
+        AccentSecondary = secondary
+        AccentSecondarySoft = secondary.copy(alpha = 0.2f)
+        AccentAmber = tertiary
+        AccentAmberSoft = tertiary.copy(alpha = 0.2f)
+        Info = primary.copy(alpha = 0.85f)
+        MapLocation = primary
+        MapTrail = tertiary
+    }
 }
 
 // Unified Material 3 Theme Colors based on AppPalette
