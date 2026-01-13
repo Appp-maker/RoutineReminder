@@ -400,10 +400,14 @@ fun MainAppUI(
             Scaffold(
                 floatingActionButton = {
                     if (currentRoute == Screen.RoutineReminder.route) {
-                        FloatingActionButton(onClick = {
-                            itemToEdit = null
-                            showEditDialog = true
-                        }) {
+                        FloatingActionButton(
+                            onClick = {
+                                itemToEdit = null
+                                showEditDialog = true
+                            },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ) {
                             Icon(Icons.Filled.Add, "Create new entry")
                         }
                     }
