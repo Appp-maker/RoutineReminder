@@ -140,7 +140,7 @@ private const val DEFAULT_HEIGHT_CM = 175.0
 private const val DEFAULT_AGE_YEARS = 30
 private const val DEFAULT_GENDER = "Male"
 private const val CALORIE_LOG_TAG = "CalorieProfile"
-private const val WEATHER_REFRESH_MS = 10 * 60_000L
+private const val WEATHER_REFRESH_MS = 5 * 60_000L
 private const val WEATHER_MIN_DISTANCE_METERS = 250.0
 
 private data class WeatherSnapshot(
@@ -166,6 +166,11 @@ private data class OpenMeteoCurrent(
 
 private val weatherJson = Json { ignoreUnknownKeys = true }
 private val weatherClient = OkHttpClient()
+
+private data class WeatherCoordinates(
+    val latitude: Double,
+    val longitude: Double
+)
 
 private data class CalorieProfile(
     val weightKg: Double,
@@ -308,6 +313,7 @@ fun MapScreen(
     var weatherLoading by remember { mutableStateOf(false) }
     var lastWeatherPoint by remember { mutableStateOf<Point?>(null) }
     var lastWeatherFetchAt by remember { mutableStateOf(0L) }
+    var lastKnownCoordinates by remember { mutableStateOf<WeatherCoordinates?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     fun requestLocationPermissions() {
@@ -347,6 +353,14 @@ fun MapScreen(
             if (timerJob == null) {
                 startRunTimers()
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            delay(WEATHER_REFRESH_MS)
+            val coordinates = lastKnownCoordinates ?: continue
+            requestWeather(coordinates.latitude, coordinates.longitude)
         }
     }
 
@@ -406,6 +420,7 @@ fun MapScreen(
 
         smoothedLat = lpLat
         smoothedLng = lpLng
+        lastKnownCoordinates = WeatherCoordinates(lpLat, lpLng)
 
         // Use filtered coordinates
         val newPoint = Point.fromLngLat(lpLng, lpLat)
