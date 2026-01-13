@@ -1399,9 +1399,9 @@ fun ScheduleItemView(
 
 
     val prefixColor = when (item.origin) {
-        "IMPORTED_GOOGLE" -> Color.Green
-        "APP_CREATED_GOOGLE" -> Color.Magenta
-        "IMPORTED_LOCAL" -> Color.Yellow
+        "IMPORTED_GOOGLE" -> AppPalette.AccentSecondary
+        "APP_CREATED_GOOGLE" -> AppPalette.AccentPink
+        "IMPORTED_LOCAL" -> AppPalette.AccentAmber
         "APP_CREATED_LOCAL" -> AppPalette.AccentCyan
         "APP_CREATED" -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         else -> baseTextColor
