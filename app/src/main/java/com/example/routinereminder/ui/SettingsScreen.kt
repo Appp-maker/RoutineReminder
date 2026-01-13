@@ -1614,6 +1614,7 @@ private fun DefaultEventsSettingsSection(
     Spacer(modifier = Modifier.height(16.dp))
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventSetsSettingsSection(
     eventSetNames: List<String>,
@@ -1733,6 +1734,7 @@ private fun EventSetsSettingsSection(
     Spacer(modifier = Modifier.height(16.dp))
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MapSettingsSection(
     trackingMode: TrackingMode,
