@@ -52,7 +52,10 @@ fun RoutineReminderTheme(
     appThemeColors: AppThemeColors = AppThemeColors.Default,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = remember(appThemeColors) { darkColors(appThemeColors) }
+    val colorScheme = remember(appThemeColors) {
+        AppPalette.updateFromTheme(appThemeColors)
+        darkColors(appThemeColors)
+    }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

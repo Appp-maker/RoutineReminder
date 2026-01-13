@@ -987,8 +987,8 @@ fun ProfileSettingsSection(
         )
         Spacer(modifier = Modifier.height(8.dp))
         ListItem(
-            headlineText = { Text("Daily target overrides") },
-            supportingText = {
+            headlineContent = { Text("Daily target overrides") },
+            supportingContent = {
                 Text("Replace calculated calorie and macro targets with custom values.")
             },
             trailingContent = {
