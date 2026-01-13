@@ -18,6 +18,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -1742,21 +1744,34 @@ private fun MapSettingsSection(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
-        TextButton(onClick = { trackingMenuExpanded = true }) {
-            Text("Change")
-        }
-        DropdownMenu(
+        ExposedDropdownMenuBox(
             expanded = trackingMenuExpanded,
-            onDismissRequest = { trackingMenuExpanded = false }
+            onExpandedChange = { trackingMenuExpanded = !trackingMenuExpanded }
         ) {
-            TrackingMode.values().forEach { mode ->
-                DropdownMenuItem(
-                    text = { Text(mode.label) },
-                    onClick = {
-                        onTrackingModeChange(mode)
-                        trackingMenuExpanded = false
-                    }
+            FilledTonalButton(
+                onClick = { trackingMenuExpanded = !trackingMenuExpanded },
+                modifier = Modifier.menuAnchor()
+            ) {
+                Text(trackingMode.label)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = if (trackingMenuExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
                 )
+            }
+            ExposedDropdownMenu(
+                expanded = trackingMenuExpanded,
+                onDismissRequest = { trackingMenuExpanded = false }
+            ) {
+                TrackingMode.values().forEach { mode ->
+                    DropdownMenuItem(
+                        text = { Text(mode.label) },
+                        onClick = {
+                            onTrackingModeChange(mode)
+                            trackingMenuExpanded = false
+                        }
+                    )
+                }
             }
         }
     }
