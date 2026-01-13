@@ -356,14 +356,6 @@ fun MapScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        while (isActive) {
-            delay(WEATHER_REFRESH_MS)
-            val coordinates = lastKnownCoordinates ?: continue
-            requestWeather(coordinates.latitude, coordinates.longitude)
-        }
-    }
-
     fun shouldFetchWeather(nextPoint: Point): Boolean {
         val lastPoint = lastWeatherPoint ?: return true
         val timeDelta = System.currentTimeMillis() - lastWeatherFetchAt
@@ -383,6 +375,14 @@ fun MapScreen(
                 weatherSnapshot = snapshot
             }
             weatherLoading = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            delay(WEATHER_REFRESH_MS)
+            val coordinates = lastKnownCoordinates ?: continue
+            requestWeather(coordinates.latitude, coordinates.longitude)
         }
     }
 
