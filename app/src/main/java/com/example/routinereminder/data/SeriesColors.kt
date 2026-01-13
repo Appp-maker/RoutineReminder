@@ -1,17 +1,17 @@
 package com.example.routinereminder.data
 
-const val DEFAULT_SERIES_COLOR_ARGB: Int = -14776091
-const val DEFAULT_SERIES_COLOR_ARGB_SQL: String = "-14776091"
+const val DEFAULT_SERIES_COLOR_ARGB: Int = -14575885
+const val DEFAULT_SERIES_COLOR_ARGB_SQL: String = "-14575885"
 
 val SERIES_COLOR_OPTIONS: List<Int> = listOf(
     DEFAULT_SERIES_COLOR_ARGB,
-    0xFF43A047.toInt(),
-    0xFFF4511E.toInt(),
-    0xFF8E24AA.toInt(),
-    0xFFFDD835.toInt(),
-    0xFF00897B.toInt(),
-    0xFF6D4C41.toInt(),
-    0xFFD81B60.toInt()
+    0xFF4CAF50.toInt(),
+    0xFFFFC107.toInt(),
+    0xFFE91E63.toInt(),
+    0xFF00BCD4.toInt(),
+    0xFFFF5722.toInt(),
+    0xFFFF5252.toInt(),
+    0xFF64B5F6.toInt()
 )
 
 fun defaultSeriesColorForIndex(index: Int): Int {
