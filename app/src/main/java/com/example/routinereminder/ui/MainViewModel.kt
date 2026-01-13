@@ -87,7 +87,7 @@ class MainViewModel @Inject constructor(
         MutableStateFlow(SettingsRepository.ACTION_APP_DELETE_KEEPS_CALENDAR)
     val onAppDeleteImportedAction: StateFlow<String> = _onAppDeleteImportedAction.asStateFlow()
 
-    private val _useGoogleBackupMode = MutableStateFlow(true)
+    private val _useGoogleBackupMode = MutableStateFlow(false)
     val useGoogleBackupMode: StateFlow<Boolean> = _useGoogleBackupMode.asStateFlow()
 
     private val _importTargetCalendarIdForBothMode =
