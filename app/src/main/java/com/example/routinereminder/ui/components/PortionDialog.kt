@@ -707,7 +707,7 @@ private fun NutrientTile(
                 // LEFT  = +current (blue, no unit)
                 // RIGHT = "/ target unit" (white)
                 Text(
-                    text = "+${current.round()}",
+                    text = "+${current.round()} $unit",
                     color = AccentBlue,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
