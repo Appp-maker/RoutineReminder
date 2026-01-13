@@ -1369,7 +1369,7 @@ fun FoodSearchDialog(
         unfocusedBorderColor = AppPalette.BorderSubtle,
         focusedLabelColor = AppPalette.TextSecondary,
         unfocusedLabelColor = AppPalette.TextSecondary,
-        cursorColor = AppPalette.AccentStrong
+        cursorColor = MaterialTheme.colorScheme.primary
     )
 
     Dialog(

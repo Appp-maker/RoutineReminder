@@ -23,6 +23,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -104,7 +105,7 @@ fun PortionDialog(
         unfocusedBorderColor = AppPalette.BorderSubtle,
         focusedLabelColor = TextSecondary,
         unfocusedLabelColor = TextSecondary,
-        cursorColor = AppPalette.AccentStrong
+        cursorColor = MaterialTheme.colorScheme.primary
     )
 
     // ==== Initialize state from existing entry if available ====
@@ -786,7 +787,7 @@ private fun NutrientPairRow(
         unfocusedBorderColor = AppPalette.BorderSubtle,
         focusedLabelColor = TextSecondary,
         unfocusedLabelColor = TextSecondary,
-        cursorColor = AppPalette.AccentStrong
+        cursorColor = MaterialTheme.colorScheme.primary
     )
 
     Row(
@@ -865,7 +866,7 @@ private fun EditableNutrientRow(
         unfocusedBorderColor = AppPalette.BorderSubtle,
         focusedLabelColor = TextSecondary,
         unfocusedLabelColor = TextSecondary,
-        cursorColor = AppPalette.AccentStrong
+        cursorColor = MaterialTheme.colorScheme.primary
     )
 
     Column(
