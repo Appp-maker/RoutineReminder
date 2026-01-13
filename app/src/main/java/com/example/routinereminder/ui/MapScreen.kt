@@ -1789,7 +1789,7 @@ private fun WeatherSummaryCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = statusColor
                     )
-                )
+                }
             }
         }
     }
@@ -1869,7 +1869,7 @@ private fun ModeChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val bg = if (selected) MaterialTheme.colorScheme.primary else AppPalette.SurfaceAlt
+    val bg = if (selected) AppPalette.AccentStrong else AppPalette.SurfaceAlt
     val fg = if (selected) AppPalette.TextInverse else AppPalette.TextSecondary
     Row(
         modifier = Modifier
@@ -1885,41 +1885,39 @@ private fun ModeChip(
 }
 
 /* --------- Hooks to your ViewModel for weight prompt (no-op defaults) --------- */
-    // ------------ Kalman Filter for GPS ------------
-    class KalmanLatLong(private var qMetersPerSecond: Float = 3f) {
+// ------------ Kalman Filter for GPS ------------
+class KalmanLatLong(private var qMetersPerSecond: Float = 3f) {
 
-        private var lat: Double = 0.0
-        private var lng: Double = 0.0
-        private var variance = -1.0 // -1 means uninitialized
+    private var lat: Double = 0.0
+    private var lng: Double = 0.0
+    private var variance = -1.0 // -1 means uninitialized
 
-        fun process(
-            newLat: Double,
-            newLng: Double,
-            accuracy: Float,
-            timestampMs: Long
-        ): Pair<Double, Double> {
+    fun process(
+        newLat: Double,
+        newLng: Double,
+        accuracy: Float,
+        timestampMs: Long
+    ): Pair<Double, Double> {
 
-            val accuracySq = accuracy * accuracy
+        val accuracySq = accuracy * accuracy
 
-            if (variance < 0) {
-                // First measurement
-                lat = newLat
-                lng = newLng
-                variance = accuracySq.toDouble()
-            } else {
-                val dt = 1.0 // assume 1 sec since your update interval is 1s
-                variance += dt * qMetersPerSecond * qMetersPerSecond
+        if (variance < 0) {
+            // First measurement
+            lat = newLat
+            lng = newLng
+            variance = accuracySq.toDouble()
+        } else {
+            val dt = 1.0 // assume 1 sec since your update interval is 1s
+            variance += dt * qMetersPerSecond * qMetersPerSecond
 
-                // Kalman gain
-                val k = variance / (variance + accuracySq)
+            // Kalman gain
+            val k = variance / (variance + accuracySq)
 
-                lat += k * (newLat - lat)
-                lng += k * (newLng - lng)
+            lat += k * (newLat - lat)
+            lng += k * (newLng - lng)
 
-                variance *= (1 - k)
-            }
-            return lat to lng
-
+            variance *= (1 - k)
+        }
+        return lat to lng
     }
-
 }
