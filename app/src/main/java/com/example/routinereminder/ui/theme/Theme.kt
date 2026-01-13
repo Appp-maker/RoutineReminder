@@ -44,8 +44,7 @@ private fun darkColors(appThemeColors: AppThemeColors) = darkColorScheme(
     inversePrimary = Color(appThemeColors.primary),
     surfaceTint = Color(appThemeColors.primary),
     outlineVariant = AppPalette.BorderStrong,
-    scrim = AppPalette.Overlay,
-    shadow = AppPalette.SurfaceDeep
+    scrim = AppPalette.Overlay
 )
 
 @Composable
