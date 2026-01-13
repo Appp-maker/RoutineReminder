@@ -151,6 +151,43 @@ fun WorkoutSessionScreen(
         }
     }
 
+    fun handleBack() {
+        if (!workoutStarted || workoutCompleted) {
+            return
+        }
+        when (workoutPhase) {
+            WorkoutPhase.Ready -> {
+                when {
+                    currentSetIndex > 0 -> {
+                        currentSetIndex -= 1
+                        workoutPhase = WorkoutPhase.Rest
+                        restRemainingSeconds = exercise.restSeconds?.takeIf { it > 0 }
+                        setRemainingSeconds = null
+                    }
+                    currentExerciseIndex > 0 -> {
+                        currentExerciseIndex -= 1
+                        val previousExercise = plan.exercises[currentExerciseIndex]
+                        val previousTotalSets = (previousExercise.sets ?: 1).coerceAtLeast(1)
+                        currentSetIndex = previousTotalSets - 1
+                        workoutPhase = WorkoutPhase.Rest
+                        restRemainingSeconds = previousExercise.restSeconds?.takeIf { it > 0 }
+                        setRemainingSeconds = null
+                    }
+                }
+            }
+            WorkoutPhase.Set -> {
+                workoutPhase = WorkoutPhase.Ready
+                setRemainingSeconds = null
+            }
+            WorkoutPhase.Rest -> {
+                workoutPhase = WorkoutPhase.Set
+                restRemainingSeconds = null
+                setRemainingSeconds = exercise.durationMinutes?.let { minutes -> minutes * 60 }
+            }
+            WorkoutPhase.Completed -> Unit
+        }
+    }
+
     LaunchedEffect(workoutStarted, workoutCompleted) {
         if (workoutStarted && !workoutCompleted) {
             while (true) {
@@ -320,7 +357,13 @@ fun WorkoutSessionScreen(
             }
 
             Row(modifier = Modifier.fillMaxSize()) {
-                Spacer(modifier = Modifier.weight(1f))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                        .clickable(enabled = workoutStarted && !workoutCompleted) { handleBack() }
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.01f))
+                )
                 Box(
                     modifier = Modifier
                         .weight(1f)
