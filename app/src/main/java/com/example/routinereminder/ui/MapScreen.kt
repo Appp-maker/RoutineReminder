@@ -674,13 +674,20 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
+            val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
+            val windText = weatherSnapshot?.let { "%.0f km/h".format(it.windSpeedKmh) } ?: "--"
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                WeatherSummaryCard(
+                    temperatureText = temperatureText,
+                    windText = windText,
+                    isLoading = weatherLoading
+                )
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
             Row(
@@ -706,42 +713,6 @@ fun MapScreen(
                         StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
                         StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
                         StatBlock(title = "Calories", value = calories.roundToInt().toString())
-                    }
-                }
-            }
-            if (weatherSnapshot != null || weatherLoading) {
-                val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
-                val windText = weatherSnapshot?.let { "%.0f km/h".format(it.windSpeedKmh) } ?: "--"
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceElevated)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.map_weather_title),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppPalette.TextMuted
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            StatBlock(
-                                title = stringResource(R.string.map_weather_temperature),
-                                value = temperatureText
-                            )
-                            StatBlock(
-                                title = stringResource(R.string.map_weather_wind),
-                                value = windText
-                            )
-                        }
                     }
                 }
             }
@@ -1751,6 +1722,44 @@ private fun StatBlock(title: String, value: String) {
             softWrap = false,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Composable
+private fun WeatherSummaryCard(
+    temperatureText: String,
+    windText: String,
+    isLoading: Boolean
+) {
+    val statusColor = if (isLoading) AppPalette.TextMuted else AppPalette.TextSecondary
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceElevated)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.map_weather_title),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppPalette.TextMuted
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = temperatureText,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.TextPrimary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = windText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = statusColor
+                )
+            }
+        }
     }
 }
 
