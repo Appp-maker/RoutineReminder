@@ -83,6 +83,7 @@ class WorkoutViewModel @Inject constructor(
     private var refreshJob: Job? = null
     private var progressJob: Job? = null
     private var downloadJob: Job? = null
+    private var gifDownloadJob: Job? = null
 
     init {
         observeWorkoutPlans()
@@ -379,7 +380,8 @@ class WorkoutViewModel @Inject constructor(
     }
 
     private fun downloadExerciseGifs() {
-        viewModelScope.launch {
+        gifDownloadJob?.cancel()
+        gifDownloadJob = viewModelScope.launch {
             repository.downloadExerciseGifsForCachedExercises { progress ->
                 _uiState.update {
                     it.copy(
@@ -424,6 +426,7 @@ class WorkoutViewModel @Inject constructor(
 
     fun pauseExerciseDbDownload() {
         downloadJob?.cancel()
+        gifDownloadJob?.cancel()
         _uiState.update {
             it.copy(
                 isExerciseDbDownloading = false,

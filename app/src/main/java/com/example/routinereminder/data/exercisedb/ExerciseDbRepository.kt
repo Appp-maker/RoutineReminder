@@ -10,6 +10,7 @@ import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
+import kotlin.coroutines.coroutineContext
 
 
 data class ExerciseDbExercise(
@@ -456,6 +458,7 @@ class ExerciseDbRepository @Inject constructor(
         }
         onProgress(ExerciseDbGifDownloadProgress(downloadedCount, total, downloadedCount >= total))
         exercisesWithGifs.forEach { exercise ->
+            coroutineContext.ensureActive()
             val gifUrl = exercise.gifUrl?.trim()
             if (gifUrl.isNullOrBlank()) return@forEach
             val targetFile = gifFileForExerciseId(exercise.id)
@@ -480,6 +483,7 @@ class ExerciseDbRepository @Inject constructor(
             }.onFailure {
                 tempFile.delete()
             }
+            coroutineContext.ensureActive()
             downloadedCount += 1
             onProgress(ExerciseDbGifDownloadProgress(downloadedCount, total, downloadedCount >= total))
         }
