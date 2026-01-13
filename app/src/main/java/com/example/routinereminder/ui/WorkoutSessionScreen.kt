@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -28,12 +29,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.request.ImageRequest
 import com.example.routinereminder.R
 import kotlinx.coroutines.delay
 
@@ -110,6 +117,13 @@ fun WorkoutSessionScreen(
 
     val exercise = plan.exercises[currentExerciseIndex]
     val totalSets = (exercise.sets ?: 1).coerceAtLeast(1)
+    val imageModels = remember(exercise) {
+        buildList {
+            exercise.gifUrl?.let { add(it) }
+            addAll(exercise.imageUrls)
+        }
+    }
+    var currentImageIndex by remember(imageModels) { mutableStateOf(0) }
 
     fun startSet() {
         workoutPhase = WorkoutPhase.Set
@@ -239,6 +253,18 @@ fun WorkoutSessionScreen(
 
     val timerActiveColor = MaterialTheme.colorScheme.primaryContainer
     val timerInactiveColor = MaterialTheme.colorScheme.surfaceVariant
+    val descriptionText = exercise.instructions.takeIf { it.isNotEmpty() }
+        ?.joinToString(separator = " ")
+        ?: stringResource(R.string.workout_session_description_unavailable)
+
+    LaunchedEffect(imageModels) {
+        if (imageModels.size > 1) {
+            while (true) {
+                delay(2000)
+                currentImageIndex = (currentImageIndex + 1) % imageModels.size
+            }
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -265,7 +291,7 @@ fun WorkoutSessionScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -276,44 +302,25 @@ fun WorkoutSessionScreen(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
                         )
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.workout_session_close_action)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    R.string.workout_session_total_timer,
+                                    formatDuration(totalElapsedSeconds)
+                                ),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold
                             )
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = stringResource(R.string.workout_session_close_action)
+                                )
+                            }
                         }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        WorkoutTimerChip(
-                            modifier = Modifier.weight(1f),
-                            title = stringResource(R.string.workout_timer_total_label),
-                            time = formatDuration(totalElapsedSeconds),
-                            isActive = workoutStarted && !workoutCompleted,
-                            activeColor = timerActiveColor,
-                            inactiveColor = timerInactiveColor
-                        )
-                        WorkoutTimerChip(
-                            modifier = Modifier.weight(1f),
-                            title = stringResource(R.string.workout_timer_set_label),
-                            time = setRemainingSeconds?.let(::formatDuration)
-                                ?: stringResource(R.string.workout_timer_idle),
-                            isActive = workoutPhase == WorkoutPhase.Set,
-                            activeColor = timerActiveColor,
-                            inactiveColor = timerInactiveColor
-                        )
-                        WorkoutTimerChip(
-                            modifier = Modifier.weight(1f),
-                            title = stringResource(R.string.workout_timer_rest_label),
-                            time = restRemainingSeconds?.let(::formatDuration)
-                                ?: stringResource(R.string.workout_timer_idle),
-                            isActive = workoutPhase == WorkoutPhase.Rest,
-                            activeColor = timerActiveColor,
-                            inactiveColor = timerInactiveColor
-                        )
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -323,27 +330,70 @@ fun WorkoutSessionScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
+                            text = "${exercise.bodyPart} - ${exercise.target} - ${exercise.equipment}",
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        Text(
-                            text = stringResource(
-                                R.string.workout_session_set_counter,
+                    }
+
+                    WorkoutExerciseMedia(
+                        imageModels = imageModels,
+                        currentImageIndex = currentImageIndex,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        val setDisplay = setRemainingSeconds?.let(::formatDuration)
+                            ?: exercise.durationMinutes?.let(::formatDuration)
+                            ?: stringResource(R.string.workout_timer_idle)
+                        val restDisplay = restRemainingSeconds?.let(::formatDuration)
+                            ?: exercise.restSeconds?.takeIf { it > 0 }?.let(::formatDuration)
+                            ?: stringResource(R.string.workout_timer_idle)
+                        WorkoutTimerChip(
+                            modifier = Modifier.weight(1f),
+                            title = stringResource(R.string.workout_timer_set_label),
+                            time = setDisplay,
+                            isActive = workoutPhase == WorkoutPhase.Set,
+                            activeColor = timerActiveColor,
+                            inactiveColor = timerInactiveColor
+                        )
+                        WorkoutTimerChip(
+                            modifier = Modifier.weight(1f),
+                            title = stringResource(R.string.workout_timer_rest_label),
+                            time = restDisplay,
+                            isActive = workoutPhase == WorkoutPhase.Rest,
+                            activeColor = timerActiveColor,
+                            inactiveColor = timerInactiveColor
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        WorkoutStatChip(
+                            modifier = Modifier.weight(1f),
+                            title = stringResource(R.string.workout_session_sets_label),
+                            value = stringResource(
+                                R.string.workout_session_sets_value,
                                 currentSetIndex + 1,
                                 totalSets
-                            ),
-                            style = MaterialTheme.typography.bodyMedium
+                            )
                         )
-                        if (workoutPhase == WorkoutPhase.Set) {
-                            exercise.repetitions?.let { reps ->
-                                Text(
-                                    text = stringResource(R.string.workout_session_reps_label, reps),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
+                        WorkoutStatChip(
+                            modifier = Modifier.weight(1f),
+                            title = stringResource(R.string.workout_session_reps_title),
+                            value = exercise.repetitions?.toString()
+                                ?: stringResource(R.string.workout_session_value_placeholder)
+                        )
                     }
+
+                    Text(
+                        text = descriptionText,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
 
                 Column(
@@ -377,6 +427,57 @@ fun WorkoutSessionScreen(
 }
 
 @Composable
+private fun WorkoutExerciseMedia(
+    imageModels: List<String>,
+    currentImageIndex: Int,
+    modifier: Modifier = Modifier
+) {
+    val currentModel = imageModels.getOrNull(currentImageIndex)
+    Surface(
+        modifier = modifier.height(220.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        if (currentModel == null) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.workout_session_media_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(currentModel)
+                    .build(),
+                contentDescription = stringResource(R.string.workout_exercise_gif_preview),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            ) {
+                when (painter.state) {
+                    is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
+                    else -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.workout_session_media_loading),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun WorkoutTimerChip(
     modifier: Modifier = Modifier,
     title: String,
@@ -401,6 +502,35 @@ private fun WorkoutTimerChip(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = time,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun WorkoutStatChip(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: String
+) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = value,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
