@@ -674,13 +674,23 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
+            val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
+            val windText = weatherSnapshot?.let { "%.0f km/h".format(it.windSpeedKmh) } ?: "--"
+            val weatherLabel = resolveWeatherLabel(weatherSnapshot, weatherLoading)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                WeatherSummaryCard(
+                    temperatureText = temperatureText,
+                    windText = windText,
+                    isLoading = weatherLoading,
+                    labelIcon = weatherLabel.icon,
+                    labelText = weatherLabel.text
+                )
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
             Row(
@@ -706,42 +716,6 @@ fun MapScreen(
                         StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
                         StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
                         StatBlock(title = "Calories", value = calories.roundToInt().toString())
-                    }
-                }
-            }
-            if (weatherSnapshot != null || weatherLoading) {
-                val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
-                val windText = weatherSnapshot?.let { "%.0f km/h".format(it.windSpeedKmh) } ?: "--"
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceElevated)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.map_weather_title),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppPalette.TextMuted
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            StatBlock(
-                                title = stringResource(R.string.map_weather_temperature),
-                                value = temperatureText
-                            )
-                            StatBlock(
-                                title = stringResource(R.string.map_weather_wind),
-                                value = windText
-                            )
-                        }
                     }
                 }
             }
@@ -1751,6 +1725,84 @@ private fun StatBlock(title: String, value: String) {
             softWrap = false,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Composable
+private fun WeatherSummaryCard(
+    temperatureText: String,
+    windText: String,
+    isLoading: Boolean,
+    labelIcon: String,
+    labelText: String
+) {
+    val statusColor = if (isLoading) AppPalette.TextMuted else AppPalette.TextSecondary
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceElevated)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = labelIcon,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = AppPalette.TextPrimary
+                )
+                Text(
+                    text = labelText,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = AppPalette.TextSecondary
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.map_weather_title),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppPalette.TextMuted
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = temperatureText,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppPalette.TextPrimary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = windText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = statusColor
+                )
+            }
+        }
+    }
+}
+
+private data class WeatherLabel(
+    val icon: String,
+    val text: String
+)
+
+private fun resolveWeatherLabel(
+    snapshot: WeatherSnapshot?,
+    isLoading: Boolean
+): WeatherLabel {
+    if (isLoading || snapshot == null) {
+        return WeatherLabel(icon = "⏳", text = "Loading")
+    }
+    val temp = snapshot.temperatureC
+    val wind = snapshot.windSpeedKmh
+    return when {
+        temp <= 0.0 -> WeatherLabel(icon = "❄️", text = "Snow")
+        wind >= 30.0 -> WeatherLabel(icon = "💨", text = "Windy")
+        temp >= 30.0 -> WeatherLabel(icon = "☀️", text = "Hot")
+        else -> WeatherLabel(icon = "☀️", text = "Clear")
     }
 }
 
