@@ -47,6 +47,7 @@ fun ProductResultCard(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
+            color = AppPalette.TextPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -69,7 +70,7 @@ fun ProductResultCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start
         ) {
-            NutrientChip("kcal", nutrition?.kcalPer100g)
+            NutrientChip("kcal", nutrition?.kcalPer100g, unit = "")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -79,9 +80,9 @@ fun ProductResultCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            NutrientChip("C", nutrition?.carbsPer100g)
-            NutrientChip("P", nutrition?.proteinPer100g)
-            NutrientChip("F", nutrition?.fatPer100g)
+            NutrientChip("C", nutrition?.carbsPer100g, unit = "g")
+            NutrientChip("P", nutrition?.proteinPer100g, unit = "g")
+            NutrientChip("F", nutrition?.fatPer100g, unit = "g")
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -91,11 +92,12 @@ fun ProductResultCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            NutrientChip("Fi", nutrition?.fiberPer100g)
-            NutrientChip("Sugar", nutrition?.sugarPer100g)
+            NutrientChip("Fi", nutrition?.fiberPer100g, unit = "g")
+            NutrientChip("Sugar", nutrition?.sugarPer100g, unit = "g")
             NutrientChip(
                 "Na",
-                nutrition?.saltPer100g   // already converted to g earlier
+                nutrition?.saltPer100g?.let { it * 1000 }, // grams -> mg
+                unit = "mg"
             )
         }
 
@@ -113,8 +115,9 @@ fun ProductResultCard(
 }
 
 @Composable
-private fun NutrientChip(label: String, value: Double?) {
+private fun NutrientChip(label: String, value: Double?, unit: String) {
     val displayValue = value?.let { formatOneDecimal(it) } ?: "-"
+    val unitLabel = unit.takeIf { it.isNotBlank() }?.let { " $it" } ?: ""
 
     Box(
         modifier = Modifier
@@ -122,7 +125,7 @@ private fun NutrientChip(label: String, value: Double?) {
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(
-            text = "$label $displayValue",
+            text = "$label $displayValue$unitLabel",
             style = MaterialTheme.typography.labelMedium,
             color = AppPalette.TextPrimary
         )
