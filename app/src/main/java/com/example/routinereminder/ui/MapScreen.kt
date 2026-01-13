@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
@@ -625,9 +626,11 @@ fun MapScreen(
                     colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceStrong)
                 ) {
                     Row(
-                        modifier = Modifier.padding(8.dp),
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .horizontalScroll(rememberScrollState()),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         StatBlock(title = "Duration", value = formatHMS(durationSec))
                         StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
@@ -1591,16 +1594,26 @@ private fun StatBlock(title: String, value: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .widthIn(min = 0.dp)
+            .widthIn(min = 88.dp)
             .padding(horizontal = 4.dp)
     ) {
         Text(
             value,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = AppPalette.TextLight
+            color = AppPalette.TextLight,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
         )
-        Text(title, style = MaterialTheme.typography.bodySmall, color = AppPalette.TextMuted)
+        Text(
+            title,
+            style = MaterialTheme.typography.bodySmall,
+            color = AppPalette.TextMuted,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
