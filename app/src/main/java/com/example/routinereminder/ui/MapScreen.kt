@@ -676,7 +676,6 @@ fun MapScreen(
         ) {
             val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
             val windText = weatherSnapshot?.let { "%.0f km/h".format(it.windSpeedKmh) } ?: "--"
-            val weatherLabel = resolveWeatherLabel(weatherSnapshot, weatherLoading)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -687,9 +686,7 @@ fun MapScreen(
                 WeatherSummaryCard(
                     temperatureText = temperatureText,
                     windText = windText,
-                    isLoading = weatherLoading,
-                    labelIcon = weatherLabel.icon,
-                    labelText = weatherLabel.text
+                    isLoading = weatherLoading
                 )
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
@@ -1732,9 +1729,7 @@ private fun StatBlock(title: String, value: String) {
 private fun WeatherSummaryCard(
     temperatureText: String,
     windText: String,
-    isLoading: Boolean,
-    labelIcon: String,
-    labelText: String
+    isLoading: Boolean
 ) {
     val statusColor = if (isLoading) AppPalette.TextMuted else AppPalette.TextSecondary
     Card(
@@ -1744,22 +1739,6 @@ private fun WeatherSummaryCard(
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = labelIcon,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = AppPalette.TextPrimary
-                )
-                Text(
-                    text = labelText,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = AppPalette.TextSecondary
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.map_weather_title),
                 style = MaterialTheme.typography.labelSmall,
@@ -1781,28 +1760,6 @@ private fun WeatherSummaryCard(
                 )
             }
         }
-    }
-}
-
-private data class WeatherLabel(
-    val icon: String,
-    val text: String
-)
-
-private fun resolveWeatherLabel(
-    snapshot: WeatherSnapshot?,
-    isLoading: Boolean
-): WeatherLabel {
-    if (isLoading || snapshot == null) {
-        return WeatherLabel(icon = "⏳", text = "Loading")
-    }
-    val temp = snapshot.temperatureC
-    val wind = snapshot.windSpeedKmh
-    return when {
-        temp <= 0.0 -> WeatherLabel(icon = "❄️", text = "Snow")
-        wind >= 30.0 -> WeatherLabel(icon = "💨", text = "Windy")
-        temp >= 30.0 -> WeatherLabel(icon = "☀️", text = "Hot")
-        else -> WeatherLabel(icon = "☀️", text = "Clear")
     }
 }
 
