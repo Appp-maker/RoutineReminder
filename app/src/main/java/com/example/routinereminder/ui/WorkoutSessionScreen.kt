@@ -113,7 +113,7 @@ fun WorkoutSessionScreen(
 
     fun startSet() {
         workoutPhase = WorkoutPhase.Set
-        setRemainingSeconds = exercise.durationMinutes?.let { minutes -> minutes * 60 }
+        setRemainingSeconds = exercise.durationMinutes
         restRemainingSeconds = null
     }
 
@@ -162,7 +162,7 @@ fun WorkoutSessionScreen(
 
     LaunchedEffect(workoutPhase, currentExerciseIndex, currentSetIndex) {
         if (workoutPhase == WorkoutPhase.Set) {
-            val duration = exercise.durationMinutes?.let { it * 60 }
+            val duration = exercise.durationMinutes
             if (duration != null && duration > 0) {
                 setRemainingSeconds = duration
                 while ((setRemainingSeconds ?: 0) > 0 && workoutPhase == WorkoutPhase.Set) {
