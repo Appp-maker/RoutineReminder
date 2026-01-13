@@ -2,6 +2,7 @@ package com.example.routinereminder.ui
 import java.time.DayOfWeek
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -691,7 +692,12 @@ fun CalorieTrackerScreen(
                                                 .weight(1f)
                                                 .height(70.dp)
                                                 .clip(RoundedCornerShape(16.dp))
-                                                .background(AppPalette.Surface)
+                                                .background(AppPalette.SurfaceAlt)
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = AppPalette.BorderSubtle,
+                                                    shape = RoundedCornerShape(16.dp)
+                                                )
                                                 .clickable(
                                                     interactionSource = remember { MutableInteractionSource() },
                                                     indication = LocalIndication.current
@@ -703,7 +709,7 @@ fun CalorieTrackerScreen(
                                         ) {
                                             Text(
                                                 meal,
-                                                color = AppPalette.TextInverse,
+                                                color = AppPalette.TextPrimary,
                                                 fontSize = 16.sp
                                             )
                                         }
