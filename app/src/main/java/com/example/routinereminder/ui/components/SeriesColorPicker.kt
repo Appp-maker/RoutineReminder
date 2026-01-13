@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -72,16 +73,12 @@ fun SeriesColorPicker(
         ) {
             colorOptions.forEach { color ->
                 val isSelected = color.toArgb() == selectedColor.toArgb()
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(color, CircleShape)
-                        .border(
-                            width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
-                            shape = CircleShape
-                        )
-                        .clickable(enabled = enabled) { onColorSelected(color) }
+                SeriesColorSwatch(
+                    color = color,
+                    size = 30.dp,
+                    isSelected = isSelected,
+                    enabled = enabled,
+                    modifier = Modifier.clickable(enabled = enabled) { onColorSelected(color) }
                 )
             }
         }
@@ -99,11 +96,10 @@ fun SeriesColorPicker(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(customColor, CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                SeriesColorSwatch(
+                    color = customColor,
+                    size = 36.dp,
+                    enabled = enabled
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
@@ -184,11 +180,43 @@ private fun ColorChannelSlider(
 fun SeriesColorDot(
     color: Color,
     modifier: Modifier = Modifier,
-    size: Dp = 10.dp
+    size: Dp = 14.dp
 ) {
+    SeriesColorSwatch(
+        color = color,
+        size = size,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun SeriesColorSwatch(
+    color: Color,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    enabled: Boolean = true
+) {
+    val borderWidth = if (isSelected) 2.dp else 1.dp
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+    val surfaceRing = MaterialTheme.colorScheme.surfaceVariant
+    val swatchAlpha = if (enabled) 1f else 0.5f
+
     Box(
         modifier = modifier
             .size(size)
-            .background(color, CircleShape)
-    )
+            .background(surfaceRing.copy(alpha = swatchAlpha), CircleShape)
+            .border(borderWidth, borderColor.copy(alpha = swatchAlpha), CircleShape)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(3.dp)
+                .background(color.copy(alpha = swatchAlpha), CircleShape)
+        )
+    }
 }
