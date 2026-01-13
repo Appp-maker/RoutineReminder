@@ -24,6 +24,7 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,10 +56,10 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-private val Bg = AppPalette.SurfaceStrong
+private val Bg = AppPalette.Surface
 private val Track = AppPalette.SurfaceTrack
-private val TextPrimary = AppPalette.TextInverse
-private val TextSecondary = AppPalette.TextSubtle
+private val TextPrimary = AppPalette.TextPrimary
+private val TextSecondary = AppPalette.TextSecondary
 private val AccentBlue = AppPalette.Info
 private val DangerRed = AppPalette.DangerAccent
 
@@ -95,6 +96,17 @@ fun PortionDialog(
     initialPortion: Double? = null
 )
 {
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = TextPrimary,
+        unfocusedTextColor = TextPrimary,
+        disabledTextColor = AppPalette.TextMuted,
+        focusedBorderColor = AppPalette.BorderStrong,
+        unfocusedBorderColor = AppPalette.BorderSubtle,
+        focusedLabelColor = TextSecondary,
+        unfocusedLabelColor = TextSecondary,
+        cursorColor = AppPalette.AccentStrong
+    )
+
     // ==== Initialize state from existing entry if available ====
     val initialIsOneTime = existingLoggedFood?.isOneTime ?: true
     val initialRepeatDays = existingLoggedFood?.repeatOnDays ?: emptySet()
@@ -203,6 +215,7 @@ fun PortionDialog(
                         onValueChange = { customName = it },
                         label = { Text("Custom Food Name (required)") },
                         modifier = Modifier.fillMaxWidth(),
+                        colors = textFieldColors,
                         singleLine = true
                     )}
                 else
@@ -233,7 +246,8 @@ fun PortionDialog(
                     onValueChange = { portionText = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(color = TextPrimary)
+                    textStyle = LocalTextStyle.current.copy(color = TextPrimary),
+                    colors = textFieldColors
                 )
 
 
@@ -264,6 +278,7 @@ fun PortionDialog(
                             modifier = Modifier
                                 .width(80.dp)
                                 .height(90.dp),
+                            colors = textFieldColors,
                             singleLine = true
                         )
                     }}
@@ -293,6 +308,7 @@ fun PortionDialog(
                             onValueChange = { customCarbs = cleanInput(customCarbs, it) },
                             label = { Text("g") },
                             modifier = Modifier.weight(1f),
+                            colors = textFieldColors,
                             singleLine = true
                         )
 
@@ -301,6 +317,7 @@ fun PortionDialog(
                             onValueChange = { customProtein = cleanInput(customProtein, it) },
                             label = { Text("g") },
                             modifier = Modifier.weight(1f),
+                            colors = textFieldColors,
                             singleLine = true
                         )
                     }
@@ -330,6 +347,7 @@ fun PortionDialog(
                             onValueChange = { customFat = cleanInput(customFat, it) },
                             label = { Text("g") },
                             modifier = Modifier.weight(1f),
+                            colors = textFieldColors,
                             singleLine = true
                         )
 
@@ -338,6 +356,7 @@ fun PortionDialog(
                             onValueChange = { customFiber = cleanInput(customFiber, it) },
                             label = { Text("g") },
                             modifier = Modifier.weight(1f),
+                            colors = textFieldColors,
                             singleLine = true
                         )
                     }
@@ -367,6 +386,7 @@ fun PortionDialog(
                             onValueChange = { customSugar = cleanInput(customSugar, it) },
                             label = { Text("g") },
                             modifier = Modifier.weight(1f),
+                            colors = textFieldColors,
                             singleLine = true
                         )
 
@@ -375,6 +395,7 @@ fun PortionDialog(
                             onValueChange = { customSodium = cleanInput(customSodium, it) },
                             label = { Text("mg") },
                             modifier = Modifier.weight(1f),
+                            colors = textFieldColors,
                             singleLine = true
                         )
                     }
@@ -529,7 +550,8 @@ fun PortionDialog(
                                     repeatEveryWeeks = it.toIntOrNull()?.coerceAtLeast(1) ?: 1
                                 },
                                 singleLine = true,
-                                textStyle = LocalTextStyle.current.copy(color = TextPrimary)
+                                textStyle = LocalTextStyle.current.copy(color = TextPrimary),
+                                colors = textFieldColors
                             )
 
                             Spacer(Modifier.height(8.dp))
@@ -756,6 +778,17 @@ private fun NutrientPairRow(
     lowerIsBetter1: Boolean = false,
     lowerIsBetter2: Boolean = false
 ) {
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = TextPrimary,
+        unfocusedTextColor = TextPrimary,
+        disabledTextColor = AppPalette.TextMuted,
+        focusedBorderColor = AppPalette.BorderStrong,
+        unfocusedBorderColor = AppPalette.BorderSubtle,
+        focusedLabelColor = TextSecondary,
+        unfocusedLabelColor = TextSecondary,
+        cursorColor = AppPalette.AccentStrong
+    )
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -784,6 +817,7 @@ private fun NutrientPairRow(
             modifier = Modifier
                 .weight(0.6f)
                 .height(56.dp),
+            colors = textFieldColors,
             singleLine = true
         )
 
@@ -808,6 +842,7 @@ private fun NutrientPairRow(
             modifier = Modifier
                 .weight(0.6f)
                 .height(56.dp),
+            colors = textFieldColors,
             singleLine = true
         )
     }
@@ -822,6 +857,17 @@ private fun EditableNutrientRow(
     textValue: String,
     onValueChange: (String) -> Unit
 ) {
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = TextPrimary,
+        unfocusedTextColor = TextPrimary,
+        disabledTextColor = AppPalette.TextMuted,
+        focusedBorderColor = AppPalette.BorderStrong,
+        unfocusedBorderColor = AppPalette.BorderSubtle,
+        focusedLabelColor = TextSecondary,
+        unfocusedLabelColor = TextSecondary,
+        cursorColor = AppPalette.AccentStrong
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -861,6 +907,7 @@ private fun EditableNutrientRow(
             onValueChange = { onValueChange(it.filter(Char::isDigit)) },
             label = { Text(unit) },
             modifier = Modifier.fillMaxWidth(),
+            colors = textFieldColors,
             singleLine = true
         )
     }

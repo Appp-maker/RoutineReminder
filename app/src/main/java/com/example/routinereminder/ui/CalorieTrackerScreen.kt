@@ -1355,6 +1355,16 @@ fun FoodSearchDialog(
     onSearch: (String) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = AppPalette.TextPrimary,
+        unfocusedTextColor = AppPalette.TextPrimary,
+        disabledTextColor = AppPalette.TextMuted,
+        focusedBorderColor = AppPalette.BorderStrong,
+        unfocusedBorderColor = AppPalette.BorderSubtle,
+        focusedLabelColor = AppPalette.TextSecondary,
+        unfocusedLabelColor = AppPalette.TextSecondary,
+        cursorColor = AppPalette.AccentStrong
+    )
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1363,7 +1373,7 @@ fun FoodSearchDialog(
 
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = AppPalette.SurfaceStrong
+                color = AppPalette.Surface
             )
             {
             Column(
@@ -1392,7 +1402,8 @@ fun FoodSearchDialog(
                     onValueChange = { query = it },
                     label = { Text("Enter food name") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors
                 )
 
                 Spacer(Modifier.height(10.dp))
