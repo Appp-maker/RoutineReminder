@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -16,17 +15,17 @@ import androidx.core.view.WindowCompat
 import com.example.routinereminder.data.AppThemeColors
 
 private fun darkColors(appThemeColors: AppThemeColors) = darkColorScheme(
-    primary = Color(appThemeColors.primary),
+    primary = AppPalette.AccentStrong,
     onPrimary = AppPalette.TextInverse,
-    primaryContainer = Color(appThemeColors.primary).copy(alpha = 0.2f),
+    primaryContainer = AppPalette.AccentSoft,
     onPrimaryContainer = AppPalette.TextPrimary,
-    secondary = Color(appThemeColors.secondary),
+    secondary = AppPalette.AccentSecondary,
     onSecondary = AppPalette.TextInverse,
-    secondaryContainer = Color(appThemeColors.secondary).copy(alpha = 0.2f),
+    secondaryContainer = AppPalette.AccentSecondarySoft,
     onSecondaryContainer = AppPalette.TextPrimary,
-    tertiary = Color(appThemeColors.tertiary),
+    tertiary = AppPalette.AccentAmber,
     onTertiary = AppPalette.SurfaceStrong,
-    tertiaryContainer = Color(appThemeColors.tertiary).copy(alpha = 0.2f),
+    tertiaryContainer = AppPalette.AccentAmberSoft,
     onTertiaryContainer = AppPalette.TextPrimary,
     error = AppPalette.Danger,
     onError = AppPalette.TextInverse,
@@ -41,8 +40,8 @@ private fun darkColors(appThemeColors: AppThemeColors) = darkColorScheme(
     outline = AppPalette.BorderNeutral,
     inverseSurface = AppPalette.TextPrimary,
     inverseOnSurface = AppPalette.SurfaceStrong,
-    inversePrimary = Color(appThemeColors.primary),
-    surfaceTint = Color(appThemeColors.primary),
+    inversePrimary = AppPalette.AccentStrong,
+    surfaceTint = AppPalette.AccentStrong,
     outlineVariant = AppPalette.BorderStrong,
     scrim = AppPalette.Overlay
 )
