@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
@@ -44,6 +45,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -77,6 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
@@ -112,14 +115,13 @@ fun WorkoutScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val selectPlanMessage = stringResource(R.string.workout_snackbar_select_plan)
-    val exerciseListState = rememberLazyListState()
 
     var newPlanName by remember { mutableStateOf("") }
     var planMenuExpanded by remember { mutableStateOf(false) }
-    var bodyPartMenuExpanded by remember { mutableStateOf(false) }
     var customBodyPartMenuExpanded by remember { mutableStateOf(false) }
     var showNewPlanDialog by remember { mutableStateOf(false) }
     var showCustomExerciseDialog by remember { mutableStateOf(false) }
+    var showExerciseSearchDialog by remember { mutableStateOf(false) }
     var planToSchedule by remember { mutableStateOf<WorkoutPlan?>(null) }
     var planToDelete by remember { mutableStateOf<WorkoutPlan?>(null) }
     var previewExercise by remember { mutableStateOf<ExercisePreview?>(null) }
@@ -134,6 +136,7 @@ fun WorkoutScreen(
     var workoutCaloriesInput by remember { mutableStateOf("") }
 
     val selectedPlan = uiState.plans.firstOrNull { it.id == uiState.selectedPlanId }
+    val openExerciseSearchLabel = stringResource(R.string.workout_open_exercise_library_action)
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
@@ -521,6 +524,47 @@ fun WorkoutScreen(
         )
     }
 
+    if (showExerciseSearchDialog) {
+        ExerciseSearchDialog(
+            uiState = uiState,
+            onDismiss = { showExerciseSearchDialog = false },
+            onRequestDownloadPrompt = viewModel::requestExerciseDbDownloadPrompt,
+            onPauseDownload = viewModel::pauseExerciseDbDownload,
+            onResumeDownload = viewModel::resumeExerciseDbDownload,
+            onUpdateSearchQuery = viewModel::updateSearchQuery,
+            onSelectBodyPart = viewModel::selectBodyPart,
+            onOpenCustomExercise = {
+                customExerciseName = ""
+                customExerciseBodyPart = uiState.selectedBodyPart
+                    ?.takeIf { selected ->
+                        uiState.customBodyParts.any { it.equals(selected, ignoreCase = true) }
+                    }
+                    ?: uiState.customBodyParts.firstOrNull().orEmpty()
+                customExerciseTarget = ""
+                customExerciseEquipment = ""
+                customExerciseGifUrl = ""
+                customExerciseImageUrls.clear()
+                repeat(2) { customExerciseImageUrls.add("") }
+                customExerciseInstructions = ""
+                showCustomExerciseDialog = true
+            },
+            onPreviewExercise = { exercise ->
+                previewExercise = ExercisePreview(
+                    title = exercise.name,
+                    subtitle = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
+                    gifFile = viewModel.getExerciseGifFile(exercise.id, exercise.gifUrl),
+                    gifUrl = exercise.gifUrl,
+                    imageUrls = exercise.imageUrls,
+                    videoUrl = exercise.videoUrl,
+                    instructions = exercise.instructions
+                )
+            },
+            onAddExercise = { exercise ->
+                selectedPlan?.let { plan -> viewModel.addExerciseToPlan(plan.id, exercise) }
+            }
+        )
+    }
+
     previewExercise?.let { preview ->
         ExercisePreviewDialog(
             preview = preview,
@@ -565,7 +609,20 @@ fun WorkoutScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            SmallFloatingActionButton(
+                onClick = {
+                    if (selectedPlan == null) {
+                        coroutineScope.launch { snackbarHostState.showSnackbar(message = selectPlanMessage) }
+                    } else {
+                        showExerciseSearchDialog = true
+                    }
+                }
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = openExerciseSearchLabel)
+            }
+        }
     ) { padding ->
         val layoutDirection = LocalLayoutDirection.current
         val contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -576,7 +633,6 @@ fun WorkoutScreen(
         )
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
-                state = exerciseListState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(contentPadding)
@@ -722,6 +778,11 @@ fun WorkoutScreen(
                                 }
                             }
                         }
+                        Text(
+                            text = stringResource(R.string.workout_exercise_library_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = {
@@ -737,349 +798,353 @@ fun WorkoutScreen(
                     }
                 }
             }
-
-            item {
-                Divider()
-            }
-
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = stringResource(R.string.workout_exercises_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    if (!uiState.isExerciseDbReady) {
-                        if (uiState.isExerciseDbPaused) {
-                            Text(
-                                text = stringResource(R.string.workout_download_paused_title),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = stringResource(R.string.workout_download_notification_paused_body),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Button(
-                                onClick = viewModel::resumeExerciseDbDownload,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.workout_download_resume_action))
-                            }
-                        } else if (uiState.isExerciseDbDownloading) {
-                            Text(
-                                text = stringResource(R.string.workout_download_title),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = stringResource(R.string.workout_download_body),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            val totalCount = uiState.exerciseDbTotalCount
-                            val downloadedCount = uiState.exerciseDbDownloadedCount
-                            if (totalCount != null && totalCount > 0) {
-                                LinearProgressIndicator(
-                                    progress = downloadedCount.toFloat() / totalCount.toFloat(),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Text(
-                                    text = stringResource(
-                                        R.string.workout_download_progress_known,
-                                        downloadedCount,
-                                        totalCount
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            } else {
-                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                                Text(
-                                    text = stringResource(
-                                        R.string.workout_download_progress_unknown,
-                                        downloadedCount
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = viewModel::pauseExerciseDbDownload,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.workout_download_pause_action))
-                            }
-                        } else {
-                            Text(
-                                text = stringResource(R.string.workout_download_pending_title),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = stringResource(R.string.workout_download_prompt_body_short),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Button(
-                                onClick = viewModel::requestExerciseDbDownloadPrompt,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.workout_download_prompt_confirm))
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = stringResource(R.string.workout_exercises_subtitle),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-
-                        TextField(
-                            value = uiState.searchQuery,
-                            onValueChange = viewModel::updateSearchQuery,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = TextFieldDefaults.MinHeight),
-                            label = { Text(stringResource(R.string.workout_search_label)) }
-                        )
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedButton(
-                                onClick = { bodyPartMenuExpanded = true },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(uiState.selectedBodyPart ?: stringResource(R.string.workout_body_part_all))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(Icons.Filled.ExpandMore, contentDescription = null)
-                            }
-                            DropdownMenu(
-                                expanded = bodyPartMenuExpanded,
-                                onDismissRequest = { bodyPartMenuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.workout_body_part_all)) },
-                                    onClick = {
-                                        viewModel.selectBodyPart(null)
-                                        bodyPartMenuExpanded = false
-                                    }
-                                )
-                                uiState.bodyParts.forEach { bodyPart ->
-                                    DropdownMenuItem(
-                                        text = { Text(bodyPart) },
-                                        onClick = {
-                                            viewModel.selectBodyPart(bodyPart)
-                                            bodyPartMenuExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Button(onClick = {
-                                customExerciseName = ""
-                                customExerciseBodyPart = uiState.selectedBodyPart
-                                    ?.takeIf { selected ->
-                                        uiState.customBodyParts.any { it.equals(selected, ignoreCase = true) }
-                                    }
-                                    ?: uiState.customBodyParts.firstOrNull().orEmpty()
-                                customExerciseTarget = ""
-                                customExerciseEquipment = ""
-                                customExerciseGifUrl = ""
-                                customExerciseImageUrls.clear()
-                                repeat(2) { customExerciseImageUrls.add("") }
-                                customExerciseInstructions = ""
-                                showCustomExerciseDialog = true
-                            }) {
-                                Text(stringResource(R.string.workout_custom_exercise_action))
-                            }
-                        }
-                    }
-                    if (uiState.isGifDownloading && uiState.gifTotalCount > 0) {
-                        Text(
-                            text = stringResource(R.string.workout_gif_download_title),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        LinearProgressIndicator(
-                            progress = uiState.gifDownloadedCount.toFloat() / uiState.gifTotalCount.toFloat(),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Text(
-                            text = stringResource(
-                                R.string.workout_gif_download_progress,
-                                uiState.gifDownloadedCount,
-                                uiState.gifTotalCount
-                            ),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            }
-
-            if (uiState.isExerciseDbReady) {
-                if (uiState.isLoading) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.workout_loading_message),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                } else if (uiState.exercises.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.workout_empty_results),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                } else {
-                    items(uiState.exercises, key = { it.id }) { exercise ->
-                        ExerciseSearchRow(
-                            exercise = exercise,
-                            onPreview = {
-                                previewExercise = ExercisePreview(
-                                    title = exercise.name,
-                                    subtitle = "${exercise.bodyPart} • ${exercise.target} • ${exercise.equipment}",
-                                    gifFile = viewModel.getExerciseGifFile(exercise.id, exercise.gifUrl),
-                                    gifUrl = exercise.gifUrl,
-                                    imageUrls = exercise.imageUrls,
-                                    videoUrl = exercise.videoUrl,
-                                    instructions = exercise.instructions
-                                )
-                            },
-                            onAdd = {
-                                val planId = selectedPlan?.id
-                                if (planId == null) {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(message = selectPlanMessage)
-                                    }
-                                } else {
-                                    viewModel.addExerciseToPlan(planId, exercise)
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-
-            item {
-                Text(
-                    text = stringResource(R.string.workout_exercisedb_attribution),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 12.dp)
-                )
-            }
-
-        }
-        if (uiState.isExerciseDbReady && uiState.exercises.isNotEmpty()) {
-            val exerciseStartIndex = 4
-            val letterIndexMap = remember(uiState.exercises) {
-                buildMap {
-                    uiState.exercises.forEachIndexed { index, exercise ->
-                        val letter = exercise.name.firstOrNull()?.uppercaseChar() ?: return@forEachIndexed
-                        if (!containsKey(letter)) {
-                            put(letter, index)
-                        }
-                    }
-                }
-            }
-            val currentLetter by remember(uiState.exercises, exerciseListState) {
-                derivedStateOf {
-                    val firstExerciseIndex = exerciseListState.layoutInfo.visibleItemsInfo
-                        .firstOrNull { it.index >= exerciseStartIndex }
-                        ?.index
-                    val exerciseIndex = firstExerciseIndex?.minus(exerciseStartIndex) ?: return@derivedStateOf null
-                    uiState.exercises.getOrNull(exerciseIndex)
-                        ?.name
-                        ?.firstOrNull()
-                        ?.uppercaseChar()
-                }
-            }
-            val alphabet = remember { ('A'..'Z').toList() }
-            val availableLetterIndices = remember(letterIndexMap) {
-                letterIndexMap.keys.mapNotNull { letter ->
-                    alphabet.indexOf(letter).takeIf { it >= 0 }
-                }.sorted()
-            }
-            val sliderRangeMax = alphabet.lastIndex.toFloat()
-            fun sliderValueToIndex(value: Float): Int {
-                val reversed = sliderRangeMax - value
-                return reversed.roundToInt().coerceIn(0, alphabet.lastIndex)
-            }
-            fun indexToSliderValue(index: Int): Float {
-                val clamped = index.coerceIn(0, alphabet.lastIndex).toFloat()
-                return sliderRangeMax - clamped
-            }
-            var sliderValue by remember { mutableStateOf(0f) }
-            var isDragging by remember { mutableStateOf(false) }
-            val sliderLetter by remember(sliderValue, availableLetterIndices) {
-                derivedStateOf {
-                    val targetIndex = sliderValueToIndex(sliderValue)
-                    val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
-                    nearestIndex?.let { alphabet[it] }
-                }
-            }
-            LaunchedEffect(currentLetter, isDragging) {
-                if (!isDragging) {
-                    val index = currentLetter?.let { alphabet.indexOf(it) } ?: 0
-                    sliderValue = indexToSliderValue(index)
-                }
-            }
-            val showScrollIndicator = isDragging || exerciseListState.isScrollInProgress
-            val scrollIndicatorLetter = if (isDragging) sliderLetter else currentLetter
-            val configuration = LocalConfiguration.current
-            val sliderHeight = (configuration.screenHeightDp * 0.6f).dp
-            val sliderTopPadding = (configuration.screenHeightDp * 0.2f).dp
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 12.dp, top = sliderTopPadding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(
-                    modifier = Modifier.size(width = 36.dp, height = sliderHeight),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { value ->
-                            sliderValue = value
-                            isDragging = true
-                            val targetIndex = sliderValueToIndex(value)
-                            val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
-                            val targetLetter = nearestIndex?.let { alphabet[it] } ?: return@Slider
-                            val listIndex = letterIndexMap[targetLetter] ?: return@Slider
-                            coroutineScope.launch {
-                                exerciseListState.scrollToItem(
-                                    index = exerciseStartIndex + listIndex
-                                )
-                            }
-                        },
-                        onValueChangeFinished = { isDragging = false },
-                        valueRange = 0f..sliderRangeMax,
-                        steps = alphabet.size - 2,
-                        modifier = Modifier
-                            .requiredWidth(sliderHeight)
-                            .rotate(-90f),
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
-                            activeTrackColor = Color.Transparent,
-                            inactiveTrackColor = Color.Transparent
-                        )
-                    )
-                }
-            }
-            if (showScrollIndicator && scrollIndicatorLetter != null) {
-                Surface(
-                    tonalElevation = 3.dp,
-                    shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 16.dp)
-                ) {
-                    Text(
-                        text = scrollIndicatorLetter.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
-            }
         }
     }
 }
 
+@Composable
+private fun ExerciseSearchDialog(
+    uiState: WorkoutUiState,
+    onDismiss: () -> Unit,
+    onRequestDownloadPrompt: () -> Unit,
+    onPauseDownload: () -> Unit,
+    onResumeDownload: () -> Unit,
+    onUpdateSearchQuery: (String) -> Unit,
+    onSelectBodyPart: (String?) -> Unit,
+    onOpenCustomExercise: () -> Unit,
+    onPreviewExercise: (ExerciseDbExercise) -> Unit,
+    onAddExercise: (ExerciseDbExercise) -> Unit
+) {
+    val exerciseListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    var bodyPartMenuExpanded by remember { mutableStateOf(false) }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            tonalElevation = 2.dp,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.workout_exercise_library_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.alert_action_close))
+                    }
+                }
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                Box(modifier = Modifier.weight(1f)) {
+                    LazyColumn(
+                        state = exerciseListState,
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                if (!uiState.isExerciseDbReady) {
+                                    if (uiState.isExerciseDbPaused) {
+                                        Text(
+                                            text = stringResource(R.string.workout_download_paused_title),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.workout_download_notification_paused_body),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Button(
+                                            onClick = onResumeDownload,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(stringResource(R.string.workout_download_resume_action))
+                                        }
+                                    } else if (uiState.isExerciseDbDownloading) {
+                                        Text(
+                                            text = stringResource(R.string.workout_download_title),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.workout_download_body),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        val totalCount = uiState.exerciseDbTotalCount
+                                        val downloadedCount = uiState.exerciseDbDownloadedCount
+                                        if (totalCount != null && totalCount > 0) {
+                                            LinearProgressIndicator(
+                                                progress = downloadedCount.toFloat() / totalCount.toFloat(),
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                            Text(
+                                                text = stringResource(
+                                                    R.string.workout_download_progress_known,
+                                                    downloadedCount,
+                                                    totalCount
+                                                ),
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        } else {
+                                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                            Text(
+                                                text = stringResource(
+                                                    R.string.workout_download_progress_unknown,
+                                                    downloadedCount
+                                                ),
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Button(
+                                            onClick = onPauseDownload,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(stringResource(R.string.workout_download_pause_action))
+                                        }
+                                    } else {
+                                        Text(
+                                            text = stringResource(R.string.workout_download_pending_title),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.workout_download_prompt_body_short),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Button(
+                                            onClick = onRequestDownloadPrompt,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(stringResource(R.string.workout_download_prompt_confirm))
+                                        }
+                                    }
+                                } else {
+                                    Text(
+                                        text = stringResource(R.string.workout_exercises_subtitle),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+
+                                    TextField(
+                                        value = uiState.searchQuery,
+                                        onValueChange = onUpdateSearchQuery,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .heightIn(min = TextFieldDefaults.MinHeight),
+                                        label = { Text(stringResource(R.string.workout_search_label)) }
+                                    )
+
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        OutlinedButton(
+                                            onClick = { bodyPartMenuExpanded = true },
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(uiState.selectedBodyPart ?: stringResource(R.string.workout_body_part_all))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Icon(Icons.Filled.ExpandMore, contentDescription = null)
+                                        }
+                                        DropdownMenu(
+                                            expanded = bodyPartMenuExpanded,
+                                            onDismissRequest = { bodyPartMenuExpanded = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.workout_body_part_all)) },
+                                                onClick = {
+                                                    onSelectBodyPart(null)
+                                                    bodyPartMenuExpanded = false
+                                                }
+                                            )
+                                            uiState.bodyParts.forEach { bodyPart ->
+                                                DropdownMenuItem(
+                                                    text = { Text(bodyPart) },
+                                                    onClick = {
+                                                        onSelectBodyPart(bodyPart)
+                                                        bodyPartMenuExpanded = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Button(onClick = onOpenCustomExercise) {
+                                            Text(stringResource(R.string.workout_custom_exercise_action))
+                                        }
+                                    }
+                                }
+                                if (uiState.isGifDownloading && uiState.gifTotalCount > 0) {
+                                    Text(
+                                        text = stringResource(R.string.workout_gif_download_title),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    LinearProgressIndicator(
+                                        progress = uiState.gifDownloadedCount.toFloat() / uiState.gifTotalCount.toFloat(),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Text(
+                                        text = stringResource(
+                                            R.string.workout_gif_download_progress,
+                                            uiState.gifDownloadedCount,
+                                            uiState.gifTotalCount
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+
+                        if (uiState.isExerciseDbReady) {
+                            if (uiState.isLoading) {
+                                item {
+                                    Text(
+                                        text = stringResource(R.string.workout_loading_message),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            } else if (uiState.exercises.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = stringResource(R.string.workout_empty_results),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            } else {
+                                items(uiState.exercises, key = { it.id }) { exercise ->
+                                    ExerciseSearchRow(
+                                        exercise = exercise,
+                                        onPreview = { onPreviewExercise(exercise) },
+                                        onAdd = { onAddExercise(exercise) }
+                                    )
+                                }
+                            }
+                        }
+
+                        item {
+                            Text(
+                                text = stringResource(R.string.workout_exercisedb_attribution),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
+                        }
+                    }
+                    if (uiState.isExerciseDbReady && uiState.exercises.isNotEmpty()) {
+                        val exerciseStartIndex = 1
+                        val letterIndexMap = remember(uiState.exercises) {
+                            buildMap {
+                                uiState.exercises.forEachIndexed { index, exercise ->
+                                    val letter = exercise.name.firstOrNull()?.uppercaseChar() ?: return@forEachIndexed
+                                    if (!containsKey(letter)) {
+                                        put(letter, index)
+                                    }
+                                }
+                            }
+                        }
+                        val currentLetter by remember(uiState.exercises, exerciseListState) {
+                            derivedStateOf {
+                                val firstExerciseIndex = exerciseListState.layoutInfo.visibleItemsInfo
+                                    .firstOrNull { it.index >= exerciseStartIndex }
+                                    ?.index
+                                val exerciseIndex = firstExerciseIndex?.minus(exerciseStartIndex) ?: return@derivedStateOf null
+                                uiState.exercises.getOrNull(exerciseIndex)
+                                    ?.name
+                                    ?.firstOrNull()
+                                    ?.uppercaseChar()
+                            }
+                        }
+                        val alphabet = remember { ('A'..'Z').toList() }
+                        val availableLetterIndices = remember(letterIndexMap) {
+                            letterIndexMap.keys.mapNotNull { letter ->
+                                alphabet.indexOf(letter).takeIf { it >= 0 }
+                            }.sorted()
+                        }
+                        val sliderRangeMax = alphabet.lastIndex.toFloat()
+                        fun sliderValueToIndex(value: Float): Int {
+                            val reversed = sliderRangeMax - value
+                            return reversed.roundToInt().coerceIn(0, alphabet.lastIndex)
+                        }
+                        fun indexToSliderValue(index: Int): Float {
+                            val clamped = index.coerceIn(0, alphabet.lastIndex).toFloat()
+                            return sliderRangeMax - clamped
+                        }
+                        var sliderValue by remember { mutableStateOf(0f) }
+                        var isDragging by remember { mutableStateOf(false) }
+                        val sliderLetter by remember(sliderValue, availableLetterIndices) {
+                            derivedStateOf {
+                                val targetIndex = sliderValueToIndex(sliderValue)
+                                val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
+                                nearestIndex?.let { alphabet[it] }
+                            }
+                        }
+                        LaunchedEffect(currentLetter, isDragging) {
+                            if (!isDragging) {
+                                val index = currentLetter?.let { alphabet.indexOf(it) } ?: 0
+                                sliderValue = indexToSliderValue(index)
+                            }
+                        }
+                        val showScrollIndicator = isDragging || exerciseListState.isScrollInProgress
+                        val scrollIndicatorLetter = if (isDragging) sliderLetter else currentLetter
+                        val configuration = LocalConfiguration.current
+                        val sliderHeight = (configuration.screenHeightDp * 0.6f).dp
+                        val sliderTopPadding = (configuration.screenHeightDp * 0.2f).dp
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(start = 12.dp, top = sliderTopPadding),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.size(width = 36.dp, height = sliderHeight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Slider(
+                                    value = sliderValue,
+                                    onValueChange = { value ->
+                                        sliderValue = value
+                                        isDragging = true
+                                        val targetIndex = sliderValueToIndex(value)
+                                        val nearestIndex = availableLetterIndices.minByOrNull { abs(it - targetIndex) }
+                                        val targetLetter = nearestIndex?.let { alphabet[it] } ?: return@Slider
+                                        val listIndex = letterIndexMap[targetLetter] ?: return@Slider
+                                        coroutineScope.launch {
+                                            exerciseListState.scrollToItem(
+                                                index = exerciseStartIndex + listIndex
+                                            )
+                                        }
+                                    },
+                                    onValueChangeFinished = { isDragging = false },
+                                    valueRange = 0f..sliderRangeMax,
+                                    steps = alphabet.size - 2,
+                                    modifier = Modifier
+                                        .requiredWidth(sliderHeight)
+                                        .rotate(-90f),
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                                        activeTrackColor = Color.Transparent,
+                                        inactiveTrackColor = Color.Transparent
+                                    )
+                                )
+                            }
+                        }
+                        if (showScrollIndicator && scrollIndicatorLetter != null) {
+                            Surface(
+                                tonalElevation = 3.dp,
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(end = 16.dp)
+                            ) {
+                                Text(
+                                    text = scrollIndicatorLetter.toString(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
