@@ -390,7 +390,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
 
     fun getUseGoogleBackupMode(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
-            preferences[USE_GOOGLE_BACKUP_MODE] ?: true
+            preferences[USE_GOOGLE_BACKUP_MODE] ?: false
         }
     }
 
