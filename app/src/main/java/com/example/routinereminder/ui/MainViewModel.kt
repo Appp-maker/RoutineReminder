@@ -12,6 +12,7 @@ import com.example.routinereminder.data.RunSessionRepository
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.data.UserSettings
+import com.example.routinereminder.data.AppThemeColors
 import com.example.routinereminder.data.defaultSeriesColorForIndex
 import com.example.routinereminder.data.model.ActiveRunState
 import com.example.routinereminder.data.model.TrailPoint
@@ -136,6 +137,9 @@ class MainViewModel @Inject constructor(
         }
     )
     val eventSetColors: StateFlow<List<Int>> = _eventSetColors.asStateFlow()
+
+    private val _appThemeColors = MutableStateFlow(AppThemeColors.Default)
+    val appThemeColors: StateFlow<AppThemeColors> = _appThemeColors.asStateFlow()
 
     private val _availableSetIds = MutableStateFlow<Set<Int>>(emptySet())
     val availableSetIds: StateFlow<Set<Int>> = _availableSetIds.asStateFlow()
@@ -285,6 +289,12 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEventSetColors().collectLatest { colors ->
                 _eventSetColors.value = colors
+            }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.getAppThemeColors().collectLatest { colors ->
+                _appThemeColors.value = colors
             }
         }
         viewModelScope.launch {
@@ -533,6 +543,12 @@ class MainViewModel @Inject constructor(
     fun saveEventSetColors(colors: List<Int>) {
         viewModelScope.launch {
             settingsRepository.saveEventSetColors(colors)
+        }
+    }
+
+    fun saveAppThemeColors(colors: AppThemeColors) {
+        viewModelScope.launch {
+            settingsRepository.saveAppThemeColors(colors)
         }
     }
 

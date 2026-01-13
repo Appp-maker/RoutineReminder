@@ -144,6 +144,7 @@ fun SettingsScreen(
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
     val eventSetColors by viewModel.eventSetColors.collectAsState()
+    val appThemeColors by viewModel.appThemeColors.collectAsState()
     val defaultActiveSetsByWeekday by viewModel.defaultActiveSetsByWeekday.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
@@ -182,6 +183,9 @@ fun SettingsScreen(
     var foodConsumedTrackingEnabledChecked by remember(currentFoodConsumedTrackingEnabled) { mutableStateOf(currentFoodConsumedTrackingEnabled) }
     val eventSetNameInputs = remember { mutableStateListOf<String>() }
     val eventSetColorInputs = remember { mutableStateListOf<Int>() }
+    var primaryColorInput by remember { mutableStateOf(appThemeColors.primary) }
+    var secondaryColorInput by remember { mutableStateOf(appThemeColors.secondary) }
+    var tertiaryColorInput by remember { mutableStateOf(appThemeColors.tertiary) }
     var defaultActiveSetSelections by remember { mutableStateOf<Map<DayOfWeek, Set<Int>>>(emptyMap()) }
 
 
@@ -256,6 +260,12 @@ fun SettingsScreen(
     LaunchedEffect(eventSetColors) {
         eventSetColorInputs.clear()
         eventSetColorInputs.addAll(eventSetColors)
+    }
+
+    LaunchedEffect(appThemeColors) {
+        primaryColorInput = appThemeColors.primary
+        secondaryColorInput = appThemeColors.secondary
+        tertiaryColorInput = appThemeColors.tertiary
     }
 
     LaunchedEffect(defaultActiveSetsByWeekday) {
@@ -490,6 +500,13 @@ fun SettingsScreen(
                         viewModel.saveFoodConsumedTrackingEnabled(foodConsumedTrackingEnabledChecked)
                         viewModel.saveEventSetNames(eventSetNameInputs.toList())
                         viewModel.saveEventSetColors(eventSetColorInputs.toList())
+                        viewModel.saveAppThemeColors(
+                            AppThemeColors(
+                                primary = primaryColorInput,
+                                secondary = secondaryColorInput,
+                                tertiary = tertiaryColorInput
+                            )
+                        )
                         viewModel.saveDefaultActiveSetsByWeekday(defaultActiveSetSelections)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
@@ -768,7 +785,13 @@ fun SettingsScreen(
                             accountNameToManage = account
                             showDataManagementDialog = source
                         },
-                        calendarEventCounts = calendarEventCounts
+                        calendarEventCounts = calendarEventCounts,
+                        primaryColor = primaryColorInput,
+                        secondaryColor = secondaryColorInput,
+                        tertiaryColor = tertiaryColorInput,
+                        onPrimaryColorChange = { primaryColorInput = it; justSavedSuccessfully = false },
+                        onSecondaryColorChange = { secondaryColorInput = it; justSavedSuccessfully = false },
+                        onTertiaryColorChange = { tertiaryColorInput = it; justSavedSuccessfully = false }
                     )
                 }
             }
@@ -1796,7 +1819,13 @@ private fun AppSettingsSection(
     onTabSelectionChange: (Set<AppTab>) -> Unit,
     selectedGoogleAccountName: String?,
     onDataManagementClick: (String, String?) -> Unit,
-    calendarEventCounts: CalendarEventCounts
+    calendarEventCounts: CalendarEventCounts,
+    primaryColor: Int,
+    secondaryColor: Int,
+    tertiaryColor: Int,
+    onPrimaryColorChange: (Int) -> Unit,
+    onSecondaryColorChange: (Int) -> Unit,
+    onTertiaryColorChange: (Int) -> Unit
 ) {
     var backupSyncHoursInputText by remember { mutableStateOf("1") }
     var backupSyncMinutesInputText by remember { mutableStateOf("0") }
@@ -1846,6 +1875,31 @@ private fun AppSettingsSection(
 
     Text(stringResource(R.string.settings_app_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Text("General", style = MaterialTheme.typography.titleMedium)
+    Text("Appearance", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+    Text(
+        text = stringResource(R.string.settings_app_theme_colors_description),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+    SeriesColorPicker(
+        label = stringResource(R.string.settings_app_theme_primary_label),
+        selectedColor = Color(primaryColor),
+        onColorSelected = { onPrimaryColorChange(it.toArgb()) }
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+    SeriesColorPicker(
+        label = stringResource(R.string.settings_app_theme_secondary_label),
+        selectedColor = Color(secondaryColor),
+        onColorSelected = { onSecondaryColorChange(it.toArgb()) }
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+    SeriesColorPicker(
+        label = stringResource(R.string.settings_app_theme_tertiary_label),
+        selectedColor = Color(tertiaryColor),
+        onColorSelected = { onTertiaryColorChange(it.toArgb()) }
+    )
+    Spacer(modifier = Modifier.height(16.dp))
     Text(stringResource(R.string.settings_tabs_title), style = MaterialTheme.typography.titleMedium)
     Text(
         text = stringResource(R.string.settings_tabs_description),

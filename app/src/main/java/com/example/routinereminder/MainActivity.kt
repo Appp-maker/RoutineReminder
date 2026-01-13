@@ -276,7 +276,8 @@ fun MainAppUI(
     openMapOnLaunch: Boolean,
     onMapLaunchConsumed: () -> Unit
 ) {
-    RoutineReminderTheme {
+    val appThemeColors by viewModel.appThemeColors.collectAsState()
+    RoutineReminderTheme(appThemeColors = appThemeColors) {
         val context = LocalContext.current
         var showExactAlarmPermissionDialogState by remember { mutableStateOf(false) }
         var showSettingsScreen by remember { mutableStateOf(false) }
@@ -1403,9 +1404,9 @@ fun ScheduleItemView(
 
 
     val prefixColor = when (item.origin) {
-        "IMPORTED_GOOGLE" -> AppPalette.AccentSecondary
+        "IMPORTED_GOOGLE" -> MaterialTheme.colorScheme.secondary
         "APP_CREATED_GOOGLE" -> AppPalette.AccentPink
-        "IMPORTED_LOCAL" -> AppPalette.AccentAmber
+        "IMPORTED_LOCAL" -> MaterialTheme.colorScheme.tertiary
         "APP_CREATED_LOCAL" -> AppPalette.AccentCyan
         "APP_CREATED" -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         else -> baseTextColor
@@ -1460,12 +1461,12 @@ fun ScheduleItemView(
                             modifier = Modifier
                                 .width(70.dp)              // SAME WIDTH FOR ALL BADGES
                                 .height(20.dp)             // UNIFIED HEIGHT
-                                .background(AppPalette.AccentSoft, MaterialTheme.shapes.extraSmall),
+                                .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall),
                             contentAlignment = Alignment.Center  // CENTER TEXT
                         ) {
                             Text(
                                 text = "ONE TIME",
-                                color = AppPalette.AccentStrong,
+                                color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -1475,12 +1476,12 @@ fun ScheduleItemView(
                             modifier = Modifier
                                 .width(70.dp)              // SAME WIDTH
                                 .height(20.dp)             // SAME HEIGHT
-                                .background(AppPalette.AccentSecondarySoft, MaterialTheme.shapes.extraSmall),
+                                .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.extraSmall),
                             contentAlignment = Alignment.Center  // CENTER TEXT
                         ) {
                             Text(
                                 text = "REPEATS",
-                                color = AppPalette.AccentSecondary,
+                                color = MaterialTheme.colorScheme.secondary,
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }

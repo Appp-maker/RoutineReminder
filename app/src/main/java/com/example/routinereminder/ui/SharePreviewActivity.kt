@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
 import com.example.routinereminder.ui.theme.AppPalette
@@ -14,6 +15,7 @@ import org.maplibre.android.maps.MapView
 import androidx.core.content.FileProvider
 import java.util.UUID
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @AndroidEntryPoint
 class SharePreviewActivity : ComponentActivity() {
@@ -28,7 +30,9 @@ class SharePreviewActivity : ComponentActivity() {
         val mapView = MapView(this)
 
         setContent {
-            RoutineReminderTheme {
+            val viewModel: MainViewModel = hiltViewModel()
+            val appThemeColors = viewModel.appThemeColors.collectAsState().value
+            RoutineReminderTheme(appThemeColors = appThemeColors) {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()

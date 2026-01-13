@@ -60,6 +60,9 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
     val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
     val EVENT_SET_COLORS = stringSetPreferencesKey("event_set_colors")
+    val APP_PRIMARY_COLOR = intPreferencesKey("app_primary_color")
+    val APP_SECONDARY_COLOR = intPreferencesKey("app_secondary_color")
+    val APP_TERTIARY_COLOR = intPreferencesKey("app_tertiary_color")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -253,6 +256,24 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }.toSet()
         dataStore.edit { preferences ->
             preferences[EVENT_SET_COLORS] = normalizedColors
+        }
+    }
+
+    fun getAppThemeColors(): Flow<AppThemeColors> {
+        return dataStore.data.map { preferences ->
+            AppThemeColors(
+                primary = preferences[APP_PRIMARY_COLOR] ?: DEFAULT_PRIMARY_COLOR_ARGB,
+                secondary = preferences[APP_SECONDARY_COLOR] ?: DEFAULT_SECONDARY_COLOR_ARGB,
+                tertiary = preferences[APP_TERTIARY_COLOR] ?: DEFAULT_TERTIARY_COLOR_ARGB
+            )
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveAppThemeColors(colors: AppThemeColors) {
+        dataStore.edit { preferences ->
+            preferences[APP_PRIMARY_COLOR] = colors.primary
+            preferences[APP_SECONDARY_COLOR] = colors.secondary
+            preferences[APP_TERTIARY_COLOR] = colors.tertiary
         }
     }
 

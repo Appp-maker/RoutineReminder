@@ -963,7 +963,7 @@ fun MapScreen(
                             }
                             Button(
                                 onClick = { showManualEntry = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = AppPalette.Accent),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                 shape = RoundedCornerShape(30.dp),
                                 modifier = Modifier
                                     .weight(1f)
@@ -1781,7 +1781,7 @@ private fun ModeChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val bg = if (selected) AppPalette.Accent else AppPalette.SurfaceAlt
+    val bg = if (selected) MaterialTheme.colorScheme.primary else AppPalette.SurfaceAlt
     val fg = if (selected) AppPalette.TextInverse else AppPalette.TextSecondary
     Row(
         modifier = Modifier
