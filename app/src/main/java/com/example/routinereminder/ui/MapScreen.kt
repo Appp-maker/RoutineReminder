@@ -615,12 +615,21 @@ fun MapScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SettingsIconButton(onClick = { navController.navigate("settings/map") })
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Card(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceStrong)
                 ) {
@@ -635,7 +644,6 @@ fun MapScreen(
                         StatBlock(title = "Calories", value = calories.roundToInt().toString())
                     }
                 }
-                SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
             if (splitDurations.isNotEmpty()) {
                 Card(
