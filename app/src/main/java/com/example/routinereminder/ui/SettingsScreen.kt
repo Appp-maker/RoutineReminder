@@ -16,6 +16,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -1858,6 +1859,7 @@ private fun AppSettingsSection(
     var showAboutDialog by remember { mutableStateOf(false) }
     var showCreditsDialog by remember { mutableStateOf(false) }
     var showLegalDialog by remember { mutableStateOf(false) }
+    var showAppearanceSection by remember { mutableStateOf(true) }
 
     if (showAboutDialog) {
         AlertDialog(
@@ -1900,30 +1902,57 @@ private fun AppSettingsSection(
 
     Text(stringResource(R.string.settings_app_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Text("General", style = MaterialTheme.typography.titleMedium)
-    Text("Appearance", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
-    Text(
-        text = stringResource(R.string.settings_app_theme_colors_description),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-    SeriesColorPicker(
-        label = stringResource(R.string.settings_app_theme_primary_label),
-        selectedColor = Color(primaryColor),
-        onColorSelected = { onPrimaryColorChange(it.toArgb()) }
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-    SeriesColorPicker(
-        label = stringResource(R.string.settings_app_theme_secondary_label),
-        selectedColor = Color(secondaryColor),
-        onColorSelected = { onSecondaryColorChange(it.toArgb()) }
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-    SeriesColorPicker(
-        label = stringResource(R.string.settings_app_theme_tertiary_label),
-        selectedColor = Color(tertiaryColor),
-        onColorSelected = { onTertiaryColorChange(it.toArgb()) }
-    )
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showAppearanceSection = !showAppearanceSection },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Appearance",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (showAppearanceSection) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+            AnimatedVisibility(visible = showAppearanceSection) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.settings_app_theme_colors_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                    )
+                    SeriesColorPicker(
+                        label = stringResource(R.string.settings_app_theme_primary_label),
+                        selectedColor = Color(primaryColor),
+                        onColorSelected = { onPrimaryColorChange(it.toArgb()) }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SeriesColorPicker(
+                        label = stringResource(R.string.settings_app_theme_secondary_label),
+                        selectedColor = Color(secondaryColor),
+                        onColorSelected = { onSecondaryColorChange(it.toArgb()) }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SeriesColorPicker(
+                        label = stringResource(R.string.settings_app_theme_tertiary_label),
+                        selectedColor = Color(tertiaryColor),
+                        onColorSelected = { onTertiaryColorChange(it.toArgb()) }
+                    )
+                }
+            }
+        }
+    }
     Spacer(modifier = Modifier.height(16.dp))
     Text(stringResource(R.string.settings_tabs_title), style = MaterialTheme.typography.titleMedium)
     Text(
