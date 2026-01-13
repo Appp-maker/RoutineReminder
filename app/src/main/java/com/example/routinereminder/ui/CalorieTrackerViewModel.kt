@@ -88,7 +88,21 @@ class CalorieTrackerViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getUserSettings().collectLatest { settings ->
                 _userSettings.value = settings
-                _isProfileComplete.value = settings != null && settings.weightKg > 0 && settings.heightCm > 0 && settings.age > 0
+                val hasProfileBasics = settings != null
+                    && settings.weightKg > 0
+                    && settings.heightCm > 0
+                    && settings.age > 0
+                val hasFullOverrides = settings != null && listOf(
+                    settings.customCaloriesTarget,
+                    settings.customProteinTargetG,
+                    settings.customCarbsTargetG,
+                    settings.customFatTargetG,
+                    settings.customFiberTargetG,
+                    settings.customSaturatedFatTargetG,
+                    settings.customAddedSugarsTargetG,
+                    settings.customSodiumTargetMg
+                ).all { value -> value > 0 }
+                _isProfileComplete.value = hasProfileBasics || hasFullOverrides
                 calculateDailyTargets()
                 calculateDailyTotals()
             }
