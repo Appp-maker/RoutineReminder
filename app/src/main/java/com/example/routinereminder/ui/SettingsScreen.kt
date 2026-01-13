@@ -892,6 +892,7 @@ fun SettingsScreen(
 }}
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun ProfileSettingsSection(
     weight: String,
     onWeightChange: (String) -> Unit,
@@ -953,12 +954,9 @@ fun ProfileSettingsSection(
         customAddedSugars,
         customSodium
     ).any { value -> value.toDoubleOrNull()?.let { it > 0 } == true }
-    var showOverrides by remember { mutableStateOf(false) }
-    LaunchedEffect(hasAnyOverrides) {
-        if (hasAnyOverrides) {
-            showOverrides = true
-        }
-    }
+    var showOverridesInfoDialog by remember { mutableStateOf(false) }
+    var showOverridesSheet by remember { mutableStateOf(false) }
+    val overridesSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     Column {
         Text("Profile", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
         OutlinedTextField(
@@ -988,20 +986,66 @@ fun ProfileSettingsSection(
             enabled = !hasAllOverrides
         )
         Spacer(modifier = Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = { showOverrides = !showOverrides },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Overwrite daily required values")
+        ListItem(
+            headlineText = { Text("Daily target overrides") },
+            supportingText = {
+                Text("Replace calculated calorie and macro targets with custom values.")
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = null
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showOverridesInfoDialog = true }
+        )
+        if (hasAnyOverrides) {
+            Text(
+                "Custom targets are active.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)
+            )
         }
         Spacer(modifier = Modifier.height(8.dp))
-        if (showOverrides) {
-            Surface(
-                tonalElevation = 2.dp,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth()
+        if (showOverridesInfoDialog) {
+            AlertDialog(
+                onDismissRequest = { showOverridesInfoDialog = false },
+                title = { Text("Daily target overrides") },
+                text = {
+                    Text(
+                        "Overrides replace your calculated calorie and macro targets with " +
+                            "the custom values you enter. Use this when you want fixed targets " +
+                            "instead of profile-based calculations."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showOverridesInfoDialog = false
+                        showOverridesSheet = true
+                    }) {
+                        Text("Open overrides")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showOverridesInfoDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+        if (showOverridesSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showOverridesSheet = false },
+                sheetState = overridesSheetState
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
                     Text("Daily calorie target overview", style = MaterialTheme.typography.titleMedium)
                     when {
                         customCaloriesValue != null && calculatedCalories != null -> {
@@ -1100,6 +1144,7 @@ fun ProfileSettingsSection(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
