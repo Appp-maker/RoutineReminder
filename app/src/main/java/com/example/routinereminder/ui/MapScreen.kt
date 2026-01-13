@@ -368,7 +368,8 @@ fun MapScreen(
         // -----------------------------
         // 1) Accuracy filter
         // -----------------------------
-        if (location.accuracy > 50f) {
+        val maxAccuracyMeters = 100f
+        if (location.accuracy > maxAccuracyMeters) {
             return  // ignore noisy GPS
         }
 
@@ -407,11 +408,13 @@ fun MapScreen(
         if (last != null) {
             val delta = haversineMeters(last, newPoint)
 
-            // Ignore tiny drift below 2m (still update marker)
-            if (delta < 2.0) allowTrailUpdate = false
+            val minMovementMeters = 0.5 + (location.accuracy.coerceAtMost(maxAccuracyMeters) * 0.01)
+
+            // Ignore tiny drift below the movement threshold (still update marker)
+            if (delta < minMovementMeters) allowTrailUpdate = false
 
             // Ignore giant GPS spikes
-            if (delta > 100.0) allowTrailUpdate = false
+            if (delta > 120.0) allowTrailUpdate = false
         }
 
         // Continue with original code here
