@@ -242,6 +242,23 @@ fun WorkoutSessionScreen(
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize()) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                        .clickable(enabled = workoutStarted && !workoutCompleted) { handleBack() }
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.01f))
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                        .clickable(enabled = !workoutCompleted) { handleAdvance() }
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.01f))
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -354,23 +371,6 @@ fun WorkoutSessionScreen(
                         }
                     }
                 }
-            }
-
-            Row(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxSize()
-                        .clickable(enabled = workoutStarted && !workoutCompleted) { handleBack() }
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.01f))
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxSize()
-                        .clickable(enabled = !workoutCompleted) { handleAdvance() }
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.01f))
-                )
             }
         }
     }
