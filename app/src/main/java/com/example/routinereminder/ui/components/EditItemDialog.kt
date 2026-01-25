@@ -433,18 +433,16 @@ fun EditItemDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable { isOneTime = !isOneTime }
                     ) {
-                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                            Checkbox(
-                                checked = !isOneTime,
-                                onCheckedChange = { isRepeating ->
-                                    isOneTime = !isRepeating
-                                    if (isRepeating && selectedRepeatDays.isEmpty()) {
-                                        selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
-                                    }
-                                },
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
+                        Checkbox(
+                            checked = !isOneTime,
+                            onCheckedChange = { isRepeating ->
+                                isOneTime = !isRepeating
+                                if (isRepeating && selectedRepeatDays.isEmpty()) {
+                                    selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
+                                }
+                            },
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
                         Text(stringResource(R.string.event_repeats_weekly_label))
                     }
                     Spacer(Modifier.height(8.dp))
@@ -533,14 +531,12 @@ fun EditItemDialog(
                             }
                         }
                     ) {
-                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                            Checkbox(
-                                checked = addToCalendar,
-                                onCheckedChange = { if (!useGoogleBackupMode) addToCalendar = it },
-                                enabled = !useGoogleBackupMode,
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
+                        Checkbox(
+                            checked = addToCalendar,
+                            onCheckedChange = { if (!useGoogleBackupMode) addToCalendar = it },
+                            enabled = !useGoogleBackupMode,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
                         Text(
                             text = "Calendar entry",
                             color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else LocalContentColor.current
@@ -608,13 +604,11 @@ fun EditItemDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable { notifyEnabled = !notifyEnabled }
                     ) {
-                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                            Checkbox(
-                                checked = notifyEnabled,
-                                onCheckedChange = { notifyEnabled = it },
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
+                        Checkbox(
+                            checked = notifyEnabled,
+                            onCheckedChange = { notifyEnabled = it },
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
                         Text("System notification")
                     }
                     Spacer(Modifier.height(8.dp))
@@ -628,14 +622,12 @@ fun EditItemDialog(
                             }
                         }
                     ) {
-                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                            Checkbox(
-                                checked = showDetailsInNotification,
-                                onCheckedChange = { if (notifyEnabled) showDetailsInNotification = it },
-                                enabled = notifyEnabled,
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
+                        Checkbox(
+                            checked = showDetailsInNotification,
+                            onCheckedChange = { if (notifyEnabled) showDetailsInNotification = it },
+                            enabled = notifyEnabled,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
                         Text(
                             text = "Show details in notification",
                             color = if (notifyEnabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
