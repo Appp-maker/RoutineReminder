@@ -702,6 +702,13 @@ fun MapScreen(
             val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
             val humidityText = weatherSnapshot?.let { "${it.humidityPercent}%" } ?: "--"
             val weatherVisual = weatherVisualForCode(weatherSnapshot?.weatherCode)
+            val weatherStatusText = when {
+                weatherLoading -> stringResource(R.string.map_weather_loading)
+                weatherSnapshot == null && lastKnownCoordinates == null ->
+                    stringResource(R.string.map_weather_waiting_location)
+                weatherSnapshot == null -> stringResource(R.string.map_weather_unavailable)
+                else -> null
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -714,7 +721,8 @@ fun MapScreen(
                     humidityText = humidityText,
                     weatherIcon = weatherVisual.icon,
                     weatherDescription = weatherVisual.description,
-                    isLoading = weatherLoading
+                    isLoading = weatherLoading,
+                    statusText = weatherStatusText
                 )
                 SettingsIconButton(onClick = { navController.navigate("settings/map") })
             }
@@ -1763,7 +1771,8 @@ private fun WeatherSummaryCard(
     humidityText: String,
     weatherIcon: androidx.compose.ui.graphics.vector.ImageVector,
     weatherDescription: String,
-    isLoading: Boolean
+    isLoading: Boolean,
+    statusText: String?
 ) {
     val statusColor = if (isLoading) AppPalette.TextMuted else AppPalette.TextSecondary
     Card(
@@ -1776,7 +1785,7 @@ private fun WeatherSummaryCard(
             Text(
                 text = stringResource(R.string.map_weather_title),
                 style = MaterialTheme.typography.labelSmall,
-                color = AppPalette.TextMuted
+                color = AppPalette.Primary
             )
             Spacer(modifier = Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1797,12 +1806,19 @@ private fun WeatherSummaryCard(
                     Text(
                         text = weatherDescription,
                         style = MaterialTheme.typography.bodySmall,
-                        color = statusColor
+                        color = AppPalette.Secondary
                     )
                     Text(
                         text = stringResource(R.string.map_weather_humidity, humidityText),
                         style = MaterialTheme.typography.bodySmall,
-                        color = statusColor
+                        color = AppPalette.Accent
+                    )
+                    if (statusText != null) {
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = statusColor
+                        )
                     )
                 }
             }
