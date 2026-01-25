@@ -3,7 +3,7 @@
     android:id="@+id/shareLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000">
+    android:background="@color/app_primary_variant">
 
     <!-- 🗺️ MapLibre Map -->
     <com.mapbox.mapboxsdk.maps.MapView
@@ -24,7 +24,7 @@
             android:text="RUNNING"
             android:textStyle="bold"
             android:textSize="24sp"
-            android:textColor="@android:color/white" />
+            android:textColor="@color/app_primary" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -37,21 +37,21 @@
                 android:id="@+id/distanceText"
                 android:text="0.00 km"
                 android:textSize="18sp"
-                android:textColor="@android:color/white"
+                android:textColor="@color/app_secondary"
                 android:layout_marginEnd="16dp" />
 
             <TextView
                 android:id="@+id/durationText"
                 android:text="00:00:00"
                 android:textSize="18sp"
-                android:textColor="@android:color/white"
+                android:textColor="@color/app_secondary"
                 android:layout_marginEnd="16dp" />
 
             <TextView
                 android:id="@+id/paceText"
                 android:text="0:00 min/km"
                 android:textSize="18sp"
-                android:textColor="@android:color/white" />
+                android:textColor="@color/app_secondary" />
         </LinearLayout>
 
         <!-- optional attribution line -->
@@ -59,7 +59,7 @@
             android:id="@+id/attribution"
             android:text="© OpenStreetMap contributors"
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/app_tertiary"
             android:gravity="center"
             android:layout_marginTop="8dp" />
     </LinearLayout>
