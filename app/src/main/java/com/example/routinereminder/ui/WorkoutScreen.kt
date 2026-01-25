@@ -3,6 +3,7 @@ package com.example.routinereminder.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
@@ -34,6 +37,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
@@ -42,6 +46,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -71,13 +76,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -93,7 +101,6 @@ import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
 import com.example.routinereminder.data.workout.WorkoutPlan
 import com.example.routinereminder.data.workout.WorkoutPlanExercise
 import com.example.routinereminder.ui.components.EditItemDialog
-import com.example.routinereminder.ui.components.SettingsIconButton
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.io.File
@@ -136,9 +143,17 @@ fun WorkoutScreen(
     var customExerciseInstructions by remember { mutableStateOf("") }
     var showCaloriesDialog by remember { mutableStateOf(false) }
     var workoutCaloriesInput by remember { mutableStateOf("") }
+    var totalHorizontalDrag by remember { mutableStateOf(0f) }
+    val swipeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
 
     val selectedPlan = uiState.plans.firstOrNull { it.id == uiState.selectedPlanId }
+    val currentPlanIndex = uiState.plans.indexOfFirst { it.id == uiState.selectedPlanId }.let { index ->
+        if (index == -1) 0 else index
+    }
+    val canGoPreviousPlan = uiState.plans.isNotEmpty() && currentPlanIndex > 0
+    val canGoNextPlan = uiState.plans.isNotEmpty() && currentPlanIndex < uiState.plans.lastIndex
     val openExerciseSearchLabel = stringResource(R.string.workout_open_exercise_library_action)
+    val planTitle = selectedPlan?.name ?: stringResource(R.string.workout_plan_select_placeholder)
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
@@ -639,6 +654,25 @@ fun WorkoutScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .pointerInput(uiState.plans, currentPlanIndex) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { totalHorizontalDrag = 0f },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                totalHorizontalDrag += dragAmount
+                            },
+                            onDragEnd = {
+                                when {
+                                    totalHorizontalDrag > swipeThresholdPx && canGoPreviousPlan -> {
+                                        viewModel.selectPlan(uiState.plans[currentPlanIndex - 1].id)
+                                    }
+                                    totalHorizontalDrag < -swipeThresholdPx && canGoNextPlan -> {
+                                        viewModel.selectPlan(uiState.plans[currentPlanIndex + 1].id)
+                                    }
+                                }
+                            }
+                        )
+                    }
                     .padding(contentPadding)
                     .padding(horizontal = 16.dp)
                     .padding(top = 0.dp, bottom = 8.dp),
@@ -650,56 +684,111 @@ fun WorkoutScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = { planMenuExpanded = true },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(selectedPlan?.name ?: stringResource(R.string.workout_plan_select_placeholder))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.Filled.ExpandMore, contentDescription = null)
-                        }
-                        DropdownMenu(
-                            expanded = planMenuExpanded,
-                            onDismissRequest = { planMenuExpanded = false }
-                        ) {
-                            if (uiState.plans.isEmpty()) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.workout_plan_empty_menu)) },
-                                    onClick = { planMenuExpanded = false }
-                                )
-                            } else {
-                                uiState.plans.forEach { plan ->
-                                    DropdownMenuItem(
-                                        text = { Text(plan.name) },
-                                        trailingIcon = {
-                                            IconButton(onClick = {
-                                                planMenuExpanded = false
-                                                planToDelete = plan
-                                            }) {
-                                                Icon(
-                                                    Icons.Filled.Delete,
-                                                    contentDescription = stringResource(R.string.workout_plan_delete_action)
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            viewModel.selectPlan(plan.id)
-                                            planMenuExpanded = false
-                                        }
-                                    )
+                        IconButton(
+                            onClick = {
+                                if (canGoPreviousPlan) {
+                                    viewModel.selectPlan(uiState.plans[currentPlanIndex - 1].id)
                                 }
-                            }
-                            Divider()
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.workout_plan_new_menu)) },
-                                onClick = {
-                                    planMenuExpanded = false
-                                    newPlanName = ""
-                                    showNewPlanDialog = true
-                                }
+                            },
+                            enabled = canGoPreviousPlan,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = MaterialTheme.colorScheme.secondary,
+                                disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                            ),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = stringResource(R.string.workout_plan_select_prompt)
                             )
                         }
-                        SettingsIconButton(onClick = { navController.navigate("settings/workout") })
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { planMenuExpanded = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = planTitle,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                            DropdownMenu(
+                                expanded = planMenuExpanded,
+                                onDismissRequest = { planMenuExpanded = false }
+                            ) {
+                                if (uiState.plans.isEmpty()) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.workout_plan_empty_menu)) },
+                                        onClick = { planMenuExpanded = false }
+                                    )
+                                } else {
+                                    uiState.plans.forEach { plan ->
+                                        DropdownMenuItem(
+                                            text = { Text(plan.name) },
+                                            trailingIcon = {
+                                                IconButton(onClick = {
+                                                    planMenuExpanded = false
+                                                    planToDelete = plan
+                                                }) {
+                                                    Icon(
+                                                        Icons.Filled.Delete,
+                                                        contentDescription = stringResource(R.string.workout_plan_delete_action)
+                                                    )
+                                                }
+                                            },
+                                            onClick = {
+                                                viewModel.selectPlan(plan.id)
+                                                planMenuExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                                Divider()
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.workout_plan_new_menu)) },
+                                    onClick = {
+                                        planMenuExpanded = false
+                                        newPlanName = ""
+                                        showNewPlanDialog = true
+                                    }
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = {
+                                if (canGoNextPlan) {
+                                    viewModel.selectPlan(uiState.plans[currentPlanIndex + 1].id)
+                                }
+                            },
+                            enabled = canGoNextPlan,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = MaterialTheme.colorScheme.secondary,
+                                disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                            ),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = stringResource(R.string.workout_plan_select_prompt)
+                            )
+                        }
+                        IconButton(
+                            onClick = { navController.navigate("settings/workout") },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = MaterialTheme.colorScheme.secondary
+                            ),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = stringResource(R.string.settings_action_open)
+                            )
+                        }
                     }
                 }
             }
