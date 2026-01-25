@@ -150,10 +150,6 @@ fun SettingsScreen(
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
     val selectedGoogleAccountName by viewModel.selectedGoogleAccountName.collectAsState()
-     Text(
-         text = "DEBUG: selectedGoogleAccountName = ${selectedGoogleAccountName ?: "null"}",
-         style = MaterialTheme.typography.bodySmall
-     )
 
      val showAllEvents by viewModel.showAllEvents.collectAsState()
     val calendarEventCounts by viewModel.calendarEventCounts.collectAsState()
@@ -419,7 +415,12 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = {
+                    Text(
+                        stringResource(R.string.settings_title),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
                 navigationIcon = { IconButton(onClick = ::attemptDismiss) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.settings_action_back)) } },
                 actions = {
                     Button(onClick = {
@@ -526,7 +527,7 @@ fun SettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 val includeMapTab = from == "map"
@@ -585,6 +586,8 @@ fun SettingsScreen(
                         Tab(
                             selected = selectedCategory == category,
                             onClick = { selectedCategory = category },
+                            selectedContentColor = MaterialTheme.colorScheme.secondary,
+                            unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             text = {
                                 Text(
                                     text = text,
