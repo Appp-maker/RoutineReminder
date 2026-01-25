@@ -114,6 +114,8 @@
     <string name="event_set_color_predefined_helper">Predefined in set (change in settings)</string>
     <string name="event_set_none">No set</string>
     <string name="custom_color_label">Custom color</string>
+    <string name="custom_color_recent_label">Custom (recent)</string>
+    <string name="custom_color_badge">C</string>
     <string name="custom_color_red_label">Red</string>
     <string name="custom_color_green_label">Green</string>
     <string name="custom_color_blue_label">Blue</string>

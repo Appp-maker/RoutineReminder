@@ -16,13 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Text
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,11 +64,15 @@ fun SeriesColorPicker(
     var customColor by remember { mutableStateOf(selectedColor) }
     val isCustomSelected = colorOptions.none { it.toArgb() == selectedColor.toArgb() }
     var showCustomPicker by remember { mutableStateOf(isCustomSelected && allowCustomColor) }
+    var customHistory by rememberSaveable { mutableStateOf(emptyList<Int>()) }
 
     LaunchedEffect(selectedColor, allowCustomColor, colorOptions) {
         customColor = selectedColor
         if (allowCustomColor && isCustomSelected) {
             showCustomPicker = true
+            val selectedArgb = selectedColor.toArgb()
+            customHistory = listOf(selectedArgb) + customHistory.filterNot { it == selectedArgb }
+            customHistory = customHistory.take(10)
         }
     }
 
@@ -107,6 +112,35 @@ fun SeriesColorPicker(
                         onColorSelected(customColor)
                     }
                 )
+            }
+        }
+        if (allowCustomColor && customHistory.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.custom_color_recent_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                customHistory.forEach { colorArgb ->
+                    val color = Color(colorArgb)
+                    val isSelected = colorArgb == selectedColor.toArgb()
+                    CustomHistorySwatch(
+                        color = color,
+                        size = 30.dp,
+                        isSelected = isSelected,
+                        enabled = enabled,
+                        modifier = Modifier.clickable(enabled = enabled) {
+                            customColor = color
+                            showCustomPicker = true
+                            onColorSelected(color)
+                        }
+                    )
+                }
             }
         }
         if (allowCustomColor && showCustomPicker) {
@@ -295,5 +329,41 @@ private fun CustomColorSwatch(
                 .padding(3.dp)
                 .background(spectrumBrush, CircleShape)
         )
+    }
+}
+
+@Composable
+private fun CustomHistorySwatch(
+    color: Color,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    enabled: Boolean = true
+) {
+    Box(modifier = modifier.size(size)) {
+        SeriesColorSwatch(
+            color = color,
+            size = size,
+            isSelected = isSelected,
+            enabled = enabled,
+            modifier = Modifier.align(Alignment.Center)
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(14.dp)
+                .background(
+                    MaterialTheme.colorScheme.secondary.copy(alpha = if (enabled) 1f else 0.5f),
+                    CircleShape
+                )
+                .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+        ) {
+            Text(
+                text = stringResource(R.string.custom_color_badge),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSecondary,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
     }
 }
