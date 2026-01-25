@@ -3,6 +3,9 @@ package com.example.routinereminder.data
 const val DEFAULT_SERIES_COLOR_ARGB: Int = -14575885
 const val DEFAULT_SERIES_COLOR_ARGB_SQL: String = "-14575885"
 
+const val NO_EVENT_FOOD_COLOR_ARGB: Int = 0
+const val NO_EVENT_FOOD_COLOR_ARGB_SQL: String = "0"
+
 val SERIES_COLOR_OPTIONS: List<Int> = listOf(
     DEFAULT_SERIES_COLOR_ARGB,
     0xFF4CAF50.toInt(),

@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
+import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.entities.FoodProduct
 import com.example.routinereminder.data.entities.LoggedFood
 import com.example.routinereminder.ui.CalorieTrackerViewModel
@@ -113,7 +113,7 @@ fun PortionDialog(
     val initialRepeatDays = existingLoggedFood?.repeatOnDays ?: emptySet()
     val initialRepeatEveryWeeks = existingLoggedFood?.repeatEveryWeeks ?: 1
     val initialStartDate = existingLoggedFood?.startEpochDay?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.now()
-    val initialColorArgb = existingLoggedFood?.colorArgb ?: DEFAULT_SERIES_COLOR_ARGB
+    val initialColorArgb = existingLoggedFood?.colorArgb ?: NO_EVENT_FOOD_COLOR_ARGB
 
     var portionText by remember {
         mutableStateOf(

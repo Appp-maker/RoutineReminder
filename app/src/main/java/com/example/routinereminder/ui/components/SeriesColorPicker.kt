@@ -34,12 +34,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.routinereminder.R
 import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
+import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.SERIES_COLOR_OPTIONS
 import kotlin.math.roundToInt
 
 val SeriesColorOptions = SERIES_COLOR_OPTIONS.map { Color(it) }
+val EventFoodColorOptions = listOf(Color.Transparent) + SeriesColorOptions
 
 fun defaultSeriesColorArgb(): Int = DEFAULT_SERIES_COLOR_ARGB
+fun isNoEventFoodColor(colorArgb: Int): Boolean = colorArgb == NO_EVENT_FOOD_COLOR_ARGB
+fun resolveEventFoodColor(colorArgb: Int, fallback: Color): Color {
+    return if (isNoEventFoodColor(colorArgb)) fallback else Color(colorArgb)
+}
 
 @Composable
 fun SeriesColorPicker(
@@ -48,7 +54,7 @@ fun SeriesColorPicker(
     onColorSelected: (Color) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    colorOptions: List<Color> = SeriesColorOptions,
+    colorOptions: List<Color> = EventFoodColorOptions,
     showLabel: Boolean = true,
     allowCustomColor: Boolean = true
 ) {
@@ -71,15 +77,34 @@ fun SeriesColorPicker(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            colorOptions.forEach { color ->
+            colorOptions.forEachIndexed { index, color ->
                 val isSelected = color.toArgb() == selectedColor.toArgb()
-                SeriesColorSwatch(
-                    color = color,
-                    size = 30.dp,
-                    isSelected = isSelected,
-                    enabled = enabled,
-                    modifier = Modifier.clickable(enabled = enabled) { onColorSelected(color) }
-                )
+                val swatch = @Composable {
+                    SeriesColorSwatch(
+                        color = color,
+                        size = 30.dp,
+                        isSelected = isSelected,
+                        enabled = enabled,
+                        modifier = Modifier.clickable(enabled = enabled) { onColorSelected(color) }
+                    )
+                }
+                if (index == 0 && color.alpha == 0f) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        swatch()
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.event_food_no_color_label),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (enabled) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            }
+                        )
+                    }
+                } else {
+                    swatch()
+                }
             }
         }
         if (allowCustomColor) {
@@ -218,5 +243,13 @@ private fun SeriesColorSwatch(
                 .padding(3.dp)
                 .background(color.copy(alpha = swatchAlpha), CircleShape)
         )
+        if (color.alpha == 0f) {
+            Text(
+                text = "Ø",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = swatchAlpha),
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
     }
 }
