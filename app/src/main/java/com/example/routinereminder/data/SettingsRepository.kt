@@ -62,6 +62,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val APP_PRIMARY_COLOR = intPreferencesKey("app_primary_color")
     val APP_SECONDARY_COLOR = intPreferencesKey("app_secondary_color")
     val APP_TERTIARY_COLOR = intPreferencesKey("app_tertiary_color")
+    val RECENT_CUSTOM_EVENT_COLORS = stringPreferencesKey("recent_custom_event_colors")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -243,6 +244,31 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }.toSet()
         dataStore.edit { preferences ->
             preferences[EVENT_SET_COLORS] = normalizedColors
+        }
+    }
+
+    fun getRecentCustomEventColors(): Flow<List<Int>> {
+        return dataStore.data.map { preferences ->
+            preferences[RECENT_CUSTOM_EVENT_COLORS]
+                ?.split(",")
+                ?.mapNotNull { it.toIntOrNull() }
+                ?.filter { isCustomSeriesColor(it) }
+                ?.distinct()
+                ?.take(10)
+                ?: emptyList()
+        }
+    }
+
+    suspend fun saveRecentCustomEventColor(colorArgb: Int) {
+        if (!isCustomSeriesColor(colorArgb)) return
+        dataStore.edit { preferences ->
+            val existing = preferences[RECENT_CUSTOM_EVENT_COLORS]
+                ?.split(",")
+                ?.mapNotNull { it.toIntOrNull() }
+                ?.filter { isCustomSeriesColor(it) }
+                .orEmpty()
+            val updated = listOf(colorArgb) + existing.filterNot { it == colorArgb }
+            preferences[RECENT_CUSTOM_EVENT_COLORS] = updated.take(10).joinToString(",")
         }
     }
 

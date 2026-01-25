@@ -34,7 +34,7 @@ import com.example.routinereminder.data.DefaultEventSettings
 import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
-import com.example.routinereminder.ui.components.SeriesColorPicker
+import com.example.routinereminder.data.isCustomSeriesColor
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -50,9 +50,11 @@ fun EditItemDialog(
     useGoogleBackupMode: Boolean, // Added parameter
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
+    recentCustomEventColors: List<Int>,
     onOpenDefaultSettings: () -> Unit,
     onDismissRequest: () -> Unit,
-    onSave: (ScheduleItem) -> Unit
+    onSave: (ScheduleItem) -> Unit,
+    onRecentCustomColorSaved: (Int) -> Unit
 ) {
     val isNewItem = initialItem == null
 
@@ -241,6 +243,9 @@ fun EditItemDialog(
             if (!itemToSave.isOneTime && itemToSave.repeatOnDays.isNullOrEmpty()){
                 Toast.makeText(context, "A recurring event must have at least one day selected.", Toast.LENGTH_LONG).show()
             } else {
+               if (isCustomSeriesColor(itemToSave.colorArgb)) {
+                   onRecentCustomColorSaved(itemToSave.colorArgb)
+               }
                onSave(itemToSave)
             }
         }
@@ -424,7 +429,8 @@ fun EditItemDialog(
                         enabled = !isUsingSetColor,
                         colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else EventFoodColorOptions,
                         showLabel = !isUsingSetColor,
-                        allowCustomColor = !isUsingSetColor
+                        allowCustomColor = !isUsingSetColor,
+                        recentCustomColors = recentCustomEventColors
                     )
                     Spacer(Modifier.height(16.dp))
 

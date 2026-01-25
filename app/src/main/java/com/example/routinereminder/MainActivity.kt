@@ -369,6 +369,7 @@ fun MainAppUI(
         val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
         val eventSetNames by viewModel.eventSetNames.collectAsState()
         val eventSetColors by viewModel.eventSetColors.collectAsState()
+        val recentCustomEventColors by viewModel.recentCustomEventColors.collectAsState()
         val activeSetIds by viewModel.activeSetIds.collectAsState()
         val availableSetIds by viewModel.availableSetIds.collectAsState()
         val hasManualActiveSetsForDate by viewModel.hasManualActiveSetsForDate.collectAsState()
@@ -707,6 +708,7 @@ fun MainAppUI(
                             useGoogleBackupMode = useGoogleBackupMode,
                             eventSetNames = eventSetNames,
                             eventSetColors = eventSetColors,
+                            recentCustomEventColors = recentCustomEventColors,
                             onOpenDefaultSettings = {
                                 showEditDialog = false
                                 navController.navigate("settings/routine?category=default_events")
@@ -715,6 +717,9 @@ fun MainAppUI(
                             onSave = {
                                 viewModel.upsertScheduleItem(it)
                                 showEditDialog = false
+                            },
+                            onRecentCustomColorSaved = { colorArgb ->
+                                viewModel.saveRecentCustomEventColor(colorArgb)
                             }
                         )
                     }

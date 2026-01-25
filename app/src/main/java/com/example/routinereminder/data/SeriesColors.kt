@@ -21,3 +21,7 @@ fun defaultSeriesColorForIndex(index: Int): Int {
     if (SERIES_COLOR_OPTIONS.isEmpty()) return DEFAULT_SERIES_COLOR_ARGB
     return SERIES_COLOR_OPTIONS[index % SERIES_COLOR_OPTIONS.size]
 }
+
+fun isCustomSeriesColor(colorArgb: Int): Boolean {
+    return colorArgb != NO_EVENT_FOOD_COLOR_ARGB && SERIES_COLOR_OPTIONS.none { it == colorArgb }
+}
