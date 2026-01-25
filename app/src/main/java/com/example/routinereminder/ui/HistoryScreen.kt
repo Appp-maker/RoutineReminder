@@ -38,7 +38,12 @@ fun HistoryScreen(navController: NavController) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("History") },
+                title = {
+                    Text(
+                        "History",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -58,7 +63,10 @@ fun HistoryScreen(navController: NavController) {
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No past sessions yet.")
+                Text(
+                    "No past sessions yet.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         } else {
             LazyColumn(
@@ -93,7 +101,8 @@ private fun AnalyticsSummary(sessions: List<SessionStats>) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Analytics",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
             )
             if (sessions.isEmpty()) {
                 Text(
@@ -125,7 +134,7 @@ private fun SummarySection(title: String, summaries: List<PeriodSummary>) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.secondary
     )
     if (summaries.isEmpty()) {
         Text(
