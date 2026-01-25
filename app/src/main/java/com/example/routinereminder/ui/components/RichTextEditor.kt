@@ -62,8 +62,11 @@ fun RichTextEditor(
     )
     val richTextVisualTransformation = remember { RichTextVisualTransformation() }
     val cursorIndex = fieldValue.selection.min
-    val activeBold = fieldValue.isCursorWithinInlineTag("__", "__")
-    val activeItalic = fieldValue.isCursorWithinInlineTag("*", "*")
+    val cursorState = remember(fieldValue.text, fieldValue.selection) {
+        computeCursorState(fieldValue.text, cursorIndex)
+    }
+    val activeBold = cursorState.bold
+    val activeItalic = cursorState.italic
     val activeColor = fieldValue.findEnclosingColorTag(cursorIndex)
     val activeActionColor = MaterialTheme.colorScheme.secondary
     val inactiveActionColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -197,6 +200,8 @@ fun RichTextEditor(
                     value = fieldValue,
                     onValueChange = {
                         val normalized = it.normalizeColorTagsForNewlines()
+                            .sanitizeColorTagEdits()
+                            .stripInlinePlaceholders()
                         fieldValue = normalized
                         onValueChange(normalized.text)
                     },
@@ -211,6 +216,8 @@ fun RichTextEditor(
                     value = fieldValue,
                     onValueChange = {
                         val normalized = it.normalizeColorTagsForNewlines()
+                            .sanitizeColorTagEdits()
+                            .stripInlinePlaceholders()
                         fieldValue = normalized
                         onValueChange(normalized.text)
                     },
@@ -285,16 +292,13 @@ private data class ColorOption(
 private data class ColorTagRange(
     val hex: String,
     val start: Int,
+    val startEnd: Int,
     val end: Int
 )
 
 private fun Color.toHexString(): String {
     val rgb = toArgb() and 0xFFFFFF
     return String.format("%06X", rgb)
-}
-
-private fun TextFieldValue.isCursorWithinInlineTag(prefix: String, suffix: String): Boolean {
-    return findEnclosingInlineTag(text, selection.min, prefix, suffix) != null
 }
 
 private fun TextFieldValue.toggleInlineFormatting(prefix: String, suffix: String): TextFieldValue {
@@ -320,9 +324,7 @@ private fun TextFieldValue.toggleInlineFormatting(prefix: String, suffix: String
     return if (enclosing != null) {
         removeEnclosingInlineTag(enclosing, prefix, suffix)
     } else {
-        val newText = text.substring(0, selectionStart) + prefix + suffix + text.substring(selectionEnd)
-        val newCursor = selectionStart + prefix.length
-        copy(text = newText, selection = TextRange(newCursor))
+        insertInlineTagWithCursor(prefix, suffix)
     }
 }
 
@@ -335,10 +337,21 @@ private fun TextFieldValue.removeEnclosingInlineTag(
     val end = enclosing.end
     val text = text
     val before = text.substring(0, start)
-    val inner = text.substring(start + prefix.length, end)
+    val inner = text.substring(start + prefix.length, end).takeIf { it != INLINE_PLACEHOLDER.toString() } ?: ""
     val after = text.substring(end + suffix.length)
     val newText = before + inner + after
     val newCursor = (selection.min - prefix.length).coerceIn(0, newText.length)
+    return copy(text = newText, selection = TextRange(newCursor))
+}
+
+private fun TextFieldValue.insertInlineTagWithCursor(prefix: String, suffix: String): TextFieldValue {
+    val selectionStart = selection.min
+    val selectionEnd = selection.max
+    val text = text
+    val shouldUsePlaceholder = prefix.length == 1 && prefix == suffix
+    val middle = if (shouldUsePlaceholder) INLINE_PLACEHOLDER.toString() else ""
+    val newText = text.substring(0, selectionStart) + prefix + middle + suffix + text.substring(selectionEnd)
+    val newCursor = selectionStart + prefix.length + middle.length
     return copy(text = newText, selection = TextRange(newCursor))
 }
 
@@ -394,6 +407,7 @@ private fun TextFieldValue.findEnclosingColorTag(cursor: Int): ColorTagRange? {
     var index = 0
     var openHex: String? = null
     var openIndex = 0
+    var openEndIndex = 0
     val text = text
     while (index < text.length && index < cursor) {
         val colorStart = parseColorTagStart(text, index)
@@ -401,6 +415,7 @@ private fun TextFieldValue.findEnclosingColorTag(cursor: Int): ColorTagRange? {
             val (hex, nextIndex) = colorStart
             openHex = hex
             openIndex = index
+            openEndIndex = nextIndex
             index = nextIndex
             continue
         }
@@ -415,7 +430,8 @@ private fun TextFieldValue.findEnclosingColorTag(cursor: Int): ColorTagRange? {
     if (openHex == null) return null
     val closeIndex = text.indexOf(COLOR_TAG_CLOSE, startIndex = cursor)
     if (closeIndex == -1) return null
-    return ColorTagRange(openHex, openIndex, closeIndex)
+    if (cursor < openEndIndex) return null
+    return ColorTagRange(openHex, openIndex, openEndIndex, closeIndex)
 }
 
 private fun TextFieldValue.normalizeColorTagsForNewlines(): TextFieldValue {
@@ -482,9 +498,180 @@ private fun TextFieldValue.normalizeColorTagsForNewlines(): TextFieldValue {
     )
 }
 
+private fun TextFieldValue.sanitizeColorTagEdits(): TextFieldValue {
+    val text = text
+    if (!text.contains("[color=") && !text.contains(COLOR_TAG_CLOSE)) return this
+    val selectionStart = selection.min
+    val selectionEnd = selection.max
+    val ranges = mutableListOf<IntRange>()
+    var index = 0
+    while (index < text.length) {
+        val colorStart = parseColorTagStart(text, index)
+        if (colorStart != null) {
+            val (_, nextIndex) = colorStart
+            ranges.add(index until nextIndex)
+            index = nextIndex
+            continue
+        }
+        if (text.startsWith(COLOR_TAG_CLOSE, index)) {
+            ranges.add(index until index + COLOR_TAG_CLOSE.length)
+            index += COLOR_TAG_CLOSE.length
+            continue
+        }
+        index += 1
+    }
+    if (ranges.isEmpty()) return this
+    val rangesToRemove = ranges.filter { range ->
+        (selectionStart in range) || (selectionEnd in range)
+    }
+    if (rangesToRemove.isEmpty()) return this
+    var newText = text
+    var removedBeforeStart = 0
+    var removedBeforeEnd = 0
+    rangesToRemove.sortedByDescending { it.first }.forEach { range ->
+        newText = newText.removeRange(range)
+        if (range.first < selectionStart) {
+            removedBeforeStart += range.last - range.first + 1
+        }
+        if (range.first < selectionEnd) {
+            removedBeforeEnd += range.last - range.first + 1
+        }
+    }
+    return copy(
+        text = newText,
+        selection = TextRange(
+            (selectionStart - removedBeforeStart).coerceIn(0, newText.length),
+            (selectionEnd - removedBeforeEnd).coerceIn(0, newText.length)
+        )
+    )
+}
+
+private fun TextFieldValue.stripInlinePlaceholders(): TextFieldValue {
+    val text = text
+    if (!text.contains(INLINE_PLACEHOLDER)) return this
+    val starResult = stripInlinePlaceholderForMarker(text, '*', selection)
+    val underscoreResult = stripInlinePlaceholderForMarker(
+        starResult.text,
+        '_',
+        starResult.selection
+    )
+    if (underscoreResult.text == text) return this
+    return copy(text = underscoreResult.text, selection = underscoreResult.selection)
+}
+
+private data class PlaceholderStripResult(
+    val text: String,
+    val selection: TextRange
+)
+
+private fun stripInlinePlaceholderForMarker(
+    text: String,
+    marker: Char,
+    selection: TextRange
+): PlaceholderStripResult {
+    val placeholderChar = INLINE_PLACEHOLDER
+    val builder = StringBuilder(text.length)
+    var index = 0
+    var removedBeforeStart = 0
+    var removedBeforeEnd = 0
+    while (index < text.length) {
+        if (text[index] != marker || (index + 1 < text.length && text[index + 1] == marker)) {
+            builder.append(text[index])
+            index += 1
+            continue
+        }
+        val closeIndex = text.indexOf(marker, startIndex = index + 1)
+        if (closeIndex == -1) {
+            builder.append(text[index])
+            index += 1
+            continue
+        }
+        val segment = text.substring(index + 1, closeIndex)
+        val hasPlaceholder = segment.contains(placeholderChar)
+        val hasContent = segment.any { it != placeholderChar }
+        if (hasPlaceholder && hasContent) {
+            builder.append(marker)
+            segment.forEachIndexed { offset, char ->
+                val originalIndex = index + 1 + offset
+                if (char == placeholderChar) {
+                    if (originalIndex < selection.min) removedBeforeStart += 1
+                    if (originalIndex < selection.max) removedBeforeEnd += 1
+                } else {
+                    builder.append(char)
+                }
+            }
+            builder.append(marker)
+        } else {
+            builder.append(text.substring(index, closeIndex + 1))
+        }
+        index = closeIndex + 1
+    }
+    val newText = builder.toString()
+    val newSelection = TextRange(
+        (selection.min - removedBeforeStart).coerceIn(0, newText.length),
+        (selection.max - removedBeforeEnd).coerceIn(0, newText.length)
+    )
+    return PlaceholderStripResult(newText, newSelection)
+}
+
+private data class CursorFormatState(
+    val bold: Boolean,
+    val italic: Boolean
+)
+
+private fun computeCursorState(text: String, cursor: Int): CursorFormatState {
+    var index = 0
+    var bold = false
+    var italic = false
+    var code = false
+    while (index < text.length && index < cursor) {
+        if (code) {
+            if (text[index] == '`') {
+                code = false
+                index += 1
+            } else {
+                index += 1
+            }
+            continue
+        }
+        val colorStart = parseColorTagStart(text, index)
+        if (colorStart != null) {
+            index = colorStart.second
+            continue
+        }
+        if (text.startsWith(COLOR_TAG_CLOSE, index)) {
+            index += COLOR_TAG_CLOSE.length
+            continue
+        }
+        if (text.startsWith("**", index) || text.startsWith("__", index)) {
+            bold = !bold
+            index += 2
+            continue
+        }
+        if (text.startsWith("~~", index)) {
+            index += 2
+            continue
+        }
+        if (text[index] == '`') {
+            code = true
+            index += 1
+            continue
+        }
+        if (text[index] == '*' || text[index] == '_') {
+            italic = !italic
+            index += 1
+            continue
+        }
+        index += 1
+    }
+    return CursorFormatState(bold = bold, italic = italic)
+}
+
 private class RichTextVisualTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val result = buildRichAnnotatedString(text.text)
         return TransformedText(result.annotatedString, result.offsetMapping)
     }
 }
+
+private const val INLINE_PLACEHOLDER = '\u2060'
