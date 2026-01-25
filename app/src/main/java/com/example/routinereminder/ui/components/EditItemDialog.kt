@@ -30,7 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.routinereminder.R
 import com.example.routinereminder.data.DefaultEventSettings
-import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
+import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.ui.components.SeriesColorPicker
@@ -121,7 +121,7 @@ fun EditItemDialog(
     var notifyEnabled by remember(initialItem, defaultEventSettings) { mutableStateOf(initialItem?.notifyEnabled ?: defaultEventSettings.systemNotification) }
     var showDetailsInNotification by remember(initialItem, defaultEventSettings) { mutableStateOf(initialItem?.showDetailsInNotification ?: defaultEventSettings.showDetailsInNotification) }
     var selectedColorArgb by remember(initialItem) {
-        mutableStateOf(initialItem?.colorArgb ?: DEFAULT_SERIES_COLOR_ARGB)
+        mutableStateOf(initialItem?.colorArgb ?: NO_EVENT_FOOD_COLOR_ARGB)
     }
     var selectedSetId by remember(initialItem) { mutableStateOf(initialItem?.setId) }
     var setMenuExpanded by remember { mutableStateOf(false) }

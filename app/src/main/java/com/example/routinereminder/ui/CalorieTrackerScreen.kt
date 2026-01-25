@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.routinereminder.ui.components.resolveEventFoodColor
 import androidx.compose.ui.unit.sp
 import com.example.routinereminder.ui.theme.AppPalette
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -826,7 +827,7 @@ fun MealSlotDetail(
                         onClick = { onFoodClick(food) }
                     ) {
                         SeriesColorDot(
-                            color = Color(food.colorArgb),
+                            color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -935,7 +936,7 @@ fun AllFoodsList(
                             onClick = { onFoodClick(food) }
                         ) {
                             SeriesColorDot(
-                                color = Color(food.colorArgb),
+                                color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
                                 modifier = Modifier.padding(end = 8.dp)
                             )
                             Column(modifier = Modifier.weight(1f)) {
@@ -1030,7 +1031,7 @@ fun ExpandableRecipeRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             SeriesColorDot(
-                color = Color(food.colorArgb),
+                color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.padding(end = 8.dp)
             )
             Column(modifier = Modifier.weight(1f)) {
@@ -1282,7 +1283,7 @@ fun LoggedFoodsList(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SeriesColorDot(
-                    color = Color(food.colorArgb),
+                    color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Column(modifier = Modifier.weight(1f)) {

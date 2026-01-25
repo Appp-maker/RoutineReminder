@@ -6,7 +6,7 @@ import android.content.Context
 import android.provider.CalendarContract
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
-import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
+import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -334,7 +334,7 @@ object CalendarSyncManager {
             calendarEventId = event.id,
             origin = origin,
             targetCalendarSystem = targetCalendarSystem,
-            colorArgb = existingColorArgb ?: DEFAULT_SERIES_COLOR_ARGB
+            colorArgb = existingColorArgb ?: NO_EVENT_FOOD_COLOR_ARGB
         )
     }
 

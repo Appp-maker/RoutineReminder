@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.R
+import com.example.routinereminder.ui.components.SeriesColorOptions
 import com.example.routinereminder.data.*
 import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
@@ -1727,7 +1728,8 @@ private fun EventSetsSettingsSection(
             label = stringResource(R.string.settings_event_set_color_label, ('A' + index)),
             selectedColor = Color(currentColor),
             onColorSelected = { onEventSetColorChange(index, it.toArgb()) },
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = 12.dp),
+            colorOptions = SeriesColorOptions
         )
     }
 

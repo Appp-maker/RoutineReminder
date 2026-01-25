@@ -118,6 +118,7 @@
     <string name="custom_color_red_label">Red</string>
     <string name="custom_color_green_label">Green</string>
     <string name="custom_color_blue_label">Blue</string>
+    <string name="event_food_no_color_label">No event/food color</string>
     <string name="event_sets_max_selected">You can enable up to %1$d sets per day.</string>
     <string name="event_sets_compact_label">Sets %1$s</string>
     <string name="event_sets_compact_placeholder">Sets</string>

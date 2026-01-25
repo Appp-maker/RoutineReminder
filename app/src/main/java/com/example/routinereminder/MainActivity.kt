@@ -111,6 +111,7 @@ import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.SeriesColorDot
+import com.example.routinereminder.ui.components.resolveEventFoodColor
 import com.example.routinereminder.ui.components.SettingsIconButton
 import com.example.routinereminder.ui.theme.AppPalette
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
@@ -1380,7 +1381,7 @@ fun ScheduleItemView(
     val resolvedColorArgb = item.setId?.let { setId ->
         eventSetColors.getOrNull(setId - 1)
     } ?: item.colorArgb
-    val seriesColor = Color(resolvedColorArgb)
+    val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
 
 
 // Base text color logic
