@@ -1406,10 +1406,10 @@ fun ScheduleItemView(
 
     val prefixColor = when (item.origin) {
         "IMPORTED_GOOGLE" -> MaterialTheme.colorScheme.secondary
-        "APP_CREATED_GOOGLE" -> AppPalette.AccentPink
+        "APP_CREATED_GOOGLE" -> MaterialTheme.colorScheme.primary
         "IMPORTED_LOCAL" -> MaterialTheme.colorScheme.tertiary
-        "APP_CREATED_LOCAL" -> AppPalette.AccentCyan
-        "APP_CREATED" -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        "APP_CREATED_LOCAL" -> MaterialTheme.colorScheme.tertiary
+        "APP_CREATED" -> MaterialTheme.colorScheme.primary
         else -> baseTextColor
     }
     val prefix = when (item.origin) {
@@ -1523,14 +1523,13 @@ fun ScheduleItemView(
                         )
 
                         prefix?.let {
-                            // Unique colors NOT using blue or green
                             val (bgColor, textColor) = when (item.origin) {
-                                "APP_CREATED" -> AppPalette.AccentOrangeSoft to AppPalette.TextDisabled       // App Only → Orange
-                                "IMPORTED_GOOGLE" -> AppPalette.AccentPurpleSoft to AppPalette.TextAccent   // Google Calendar → Purple
-                                "APP_CREATED_GOOGLE" -> AppPalette.AccentPinkSoft to AppPalette.AccentPink // App Google → Pink
-                                "IMPORTED_LOCAL" -> AppPalette.AccentAmberSoft to AppPalette.AccentAmber    // Local Calendar → Amber
-                                "APP_CREATED_LOCAL" -> AppPalette.AccentDeepOrangeSoft to AppPalette.AccentDeepOrange // Local App → Deep Orange
-                                else -> AppPalette.TagFallbackSoft to AppPalette.TextSoft                // fallback → grey
+                                "APP_CREATED" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+                                "IMPORTED_GOOGLE" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+                                "APP_CREATED_GOOGLE" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+                                "IMPORTED_LOCAL" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+                                "APP_CREATED_LOCAL" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+                                else -> AppPalette.TagFallbackSoft to AppPalette.TextSoft
                             }
 
                             Text(

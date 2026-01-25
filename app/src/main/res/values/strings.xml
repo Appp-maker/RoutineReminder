@@ -82,10 +82,9 @@
     <string name="settings_app_title">Application</string>
     <string name="settings_app_import_export">Import / Export Data</string>
     <string name="settings_app_language">Language</string>
-    <string name="settings_app_theme_colors_description">Adjust the primary, secondary, and accent colors used across the app.</string>
+    <string name="settings_app_theme_colors_description">Adjust the primary and secondary colors used across the app.</string>
     <string name="settings_app_theme_primary_label">Primary color</string>
     <string name="settings_app_theme_secondary_label">Secondary color</string>
-    <string name="settings_app_theme_tertiary_label">Accent color</string>
     <string name="settings_tabs_title">Visible tabs</string>
     <string name="settings_tabs_description">Choose which tabs to show in the app. This can be changed later.</string>
     <string name="settings_tabs_disabled_notice">Disabled tabs are hidden and their features won\u2019t run.</string>

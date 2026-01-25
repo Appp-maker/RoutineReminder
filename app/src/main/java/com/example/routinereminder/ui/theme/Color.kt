@@ -67,7 +67,7 @@ object AppPalette {
     fun updateFromTheme(colors: AppThemeColors) {
         val primary = Color(colors.primary)
         val secondary = Color(colors.secondary)
-        val tertiary = Color(colors.tertiary)
+        val tertiary = secondary
 
         Accent = primary
         AccentStrong = primary
