@@ -120,6 +120,7 @@ fun WorkoutScreen(
     val useGoogleBackupMode by mainViewModel.useGoogleBackupMode.collectAsState()
     val eventSetNames by mainViewModel.eventSetNames.collectAsState()
     val eventSetColors by mainViewModel.eventSetColors.collectAsState()
+    val recentCustomEventColors by mainViewModel.recentCustomEventColors.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val selectPlanMessage = stringResource(R.string.workout_snackbar_select_plan)
@@ -616,6 +617,7 @@ fun WorkoutScreen(
             useGoogleBackupMode = useGoogleBackupMode,
             eventSetNames = eventSetNames,
             eventSetColors = eventSetColors,
+            recentCustomEventColors = recentCustomEventColors,
             onOpenDefaultSettings = {
                 planToSchedule = null
                 navController.navigate("settings/routine?category=default_events")
@@ -624,6 +626,9 @@ fun WorkoutScreen(
             onSave = { item ->
                 mainViewModel.upsertScheduleItem(item)
                 planToSchedule = null
+            },
+            onRecentCustomColorSaved = { colorArgb ->
+                mainViewModel.saveRecentCustomEventColor(colorArgb)
             }
         )
     }

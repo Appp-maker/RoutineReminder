@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,6 +37,7 @@ import com.example.routinereminder.R
 import com.example.routinereminder.data.DEFAULT_SERIES_COLOR_ARGB
 import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.SERIES_COLOR_OPTIONS
+import com.example.routinereminder.data.isCustomSeriesColor
 import kotlin.math.roundToInt
 
 val SeriesColorOptions = SERIES_COLOR_OPTIONS.map { Color(it) }
@@ -59,20 +59,20 @@ fun SeriesColorPicker(
     enabled: Boolean = true,
     colorOptions: List<Color> = SeriesColorOptions,
     showLabel: Boolean = true,
-    allowCustomColor: Boolean = true
+    allowCustomColor: Boolean = true,
+    recentCustomColors: List<Int> = emptyList()
 ) {
     var customColor by remember { mutableStateOf(selectedColor) }
     val isCustomSelected = colorOptions.none { it.toArgb() == selectedColor.toArgb() }
     var showCustomPicker by remember { mutableStateOf(isCustomSelected && allowCustomColor) }
-    var customHistory by rememberSaveable { mutableStateOf(emptyList<Int>()) }
+    val savedCustomHistory = remember(recentCustomColors) {
+        recentCustomColors.filter { isCustomSeriesColor(it) }.distinct().take(10)
+    }
 
     LaunchedEffect(selectedColor, allowCustomColor, colorOptions) {
         customColor = selectedColor
         if (allowCustomColor && isCustomSelected) {
             showCustomPicker = true
-            val selectedArgb = selectedColor.toArgb()
-            customHistory = listOf(selectedArgb) + customHistory.filterNot { it == selectedArgb }
-            customHistory = customHistory.take(10)
         }
     }
 
@@ -114,7 +114,7 @@ fun SeriesColorPicker(
                 )
             }
         }
-        if (allowCustomColor && customHistory.isNotEmpty()) {
+        if (allowCustomColor && savedCustomHistory.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.custom_color_recent_label),
@@ -126,7 +126,7 @@ fun SeriesColorPicker(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                customHistory.forEach { colorArgb ->
+                savedCustomHistory.forEach { colorArgb ->
                     val color = Color(colorArgb)
                     val isSelected = colorArgb == selectedColor.toArgb()
                     CustomHistorySwatch(

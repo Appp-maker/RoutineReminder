@@ -136,6 +136,9 @@ class MainViewModel @Inject constructor(
     )
     val eventSetColors: StateFlow<List<Int>> = _eventSetColors.asStateFlow()
 
+    private val _recentCustomEventColors = MutableStateFlow<List<Int>>(emptyList())
+    val recentCustomEventColors: StateFlow<List<Int>> = _recentCustomEventColors.asStateFlow()
+
     private val _appThemeColors = MutableStateFlow(AppThemeColors.Default)
     val appThemeColors: StateFlow<AppThemeColors> = _appThemeColors.asStateFlow()
 
@@ -282,6 +285,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEventSetColors().collectLatest { colors ->
                 _eventSetColors.value = colors
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getRecentCustomEventColors().collectLatest { colors ->
+                _recentCustomEventColors.value = colors
             }
         }
 
@@ -530,6 +538,12 @@ class MainViewModel @Inject constructor(
     fun saveEventSetColors(colors: List<Int>) {
         viewModelScope.launch {
             settingsRepository.saveEventSetColors(colors)
+        }
+    }
+
+    fun saveRecentCustomEventColor(colorArgb: Int) {
+        viewModelScope.launch {
+            settingsRepository.saveRecentCustomEventColor(colorArgb)
         }
     }
 
