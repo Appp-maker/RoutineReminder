@@ -709,6 +709,10 @@ fun MainAppUI(
                             useGoogleBackupMode = useGoogleBackupMode,
                             eventSetNames = eventSetNames,
                             eventSetColors = eventSetColors,
+                            onOpenDefaultSettings = {
+                                showEditDialog = false
+                                navController.navigate("settings/routine?category=default_events")
+                            },
                             onDismissRequest = { showEditDialog = false },
                             onSave = {
                                 viewModel.upsertScheduleItem(it)
