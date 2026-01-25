@@ -819,6 +819,7 @@ fun WorkoutScreen(
 
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val hasPlanExercises = selectedPlan?.exercises?.isNotEmpty() == true
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -832,7 +833,7 @@ fun WorkoutScreen(
                         )
                         OutlinedButton(
                             onClick = { planToSchedule = selectedPlan },
-                            enabled = selectedPlan != null,
+                            enabled = hasPlanExercises,
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                                 horizontal = 12.dp,
                                 vertical = 6.dp
@@ -907,7 +908,7 @@ fun WorkoutScreen(
                                     navController.navigate(Screen.WorkoutSession.route(plan.id))
                                 }
                             },
-                            enabled = selectedPlan != null,
+                            enabled = hasPlanExercises,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(stringResource(R.string.workout_plan_start_action))

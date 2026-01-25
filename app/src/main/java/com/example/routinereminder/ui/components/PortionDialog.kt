@@ -159,6 +159,7 @@ fun PortionDialog(
 
     val portionUnits = portionText.toDoubleOrNull() ?: 0.0
     val portion = portionUnits * portionToGramsMultiplier
+    val saveEnabled = portion > 0.0 && (!isCustom || customName.isNotBlank())
 
     // --- Nutrient helpers ---
     val base = if (isCustom) {
@@ -201,12 +202,84 @@ fun PortionDialog(
             modifier = Modifier.fillMaxSize().background(Bg),
             color = Bg
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(AppPalette.SurfaceElevated)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Cancel",
+                        color = TextSecondary,
+                        modifier = Modifier.clickable { onDismiss() }.padding(10.dp)
+                    )
+
+                    Button(
+                        onClick = {
+                            if (!saveEnabled) return@Button  // Prevent saving without name
+
+                            val usePortion = portion
+                            if (usePortion > 0.0) {
+                                val finalFood = if (isCustom) {
+                                    foodProduct.copy(
+                                        name = customName,
+                                        caloriesPer100g = customCalories.toDoubleOrNull() ?: 0.0,
+                                        carbsPer100g = customCarbs.toDoubleOrNull() ?: 0.0,
+                                        proteinPer100g = customProtein.toDoubleOrNull() ?: 0.0,
+                                        fatPer100g = customFat.toDoubleOrNull() ?: 0.0,
+                                        addedSugarsPer100g = customSugar.toDoubleOrNull() ?: 0.0,
+                                        fiberPer100g = customFiber.toDoubleOrNull() ?: 0.0,
+                                        sodiumPer100g = customSodium.toDoubleOrNull() ?: 0.0
+                                    )
+                                } else foodProduct
+
+                                if (onAddToBundle != null) {
+                                    // Bundle mode: ignore scheduling completely
+                                    onAddToBundle.invoke(finalFood, usePortion)
+                                } else {
+                                    // Tracker mode (existing behavior)
+                                    onConfirm(
+                                        usePortion,
+                                        finalFood,
+                                        selectedTime,
+                                        selectedMeal,
+                                        isOneTime,
+                                        selectedDays,
+                                        repeatEveryWeeks,
+                                        startDate,
+                                        selectedColorArgb
+                                    )
+                                }
+
+                                onDismiss()
+                            }
+                        },
+                        enabled = saveEnabled,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            disabledContainerColor = AppPalette.TextMuted
+                        )
+                    ) {
+                        Text(
+                            when {
+                                onAddToBundle != null -> "Add to recipe"
+                                existingLoggedFood == null -> "Save"
+                                else -> "Update"
+                            },
+                            color = AppPalette.TextInverse
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp)
+                ) {
                 if (isCustom) {
 
                     // ---- NAME FIELD ----
@@ -564,86 +637,11 @@ fun PortionDialog(
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        "Cancel",
-                        color = TextSecondary,
-                        modifier = Modifier.clickable { onDismiss() }.padding(10.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    val saveEnabled =
-                        portion > 0.0 && (!isCustom || customName.isNotBlank())
-
-
-                    Button(
-                        onClick = {
-                            if (!saveEnabled) return@Button  // Prevent saving without name
-
-                            val usePortion = portion
-                            if (usePortion > 0.0) {
-
-                                val finalFood = if (isCustom) {
-                                    foodProduct.copy(
-                                        name = customName,
-                                        caloriesPer100g = customCalories.toDoubleOrNull() ?: 0.0,
-                                        carbsPer100g = customCarbs.toDoubleOrNull() ?: 0.0,
-                                        proteinPer100g = customProtein.toDoubleOrNull() ?: 0.0,
-                                        fatPer100g = customFat.toDoubleOrNull() ?: 0.0,
-                                        addedSugarsPer100g = customSugar.toDoubleOrNull() ?: 0.0,
-                                        fiberPer100g = customFiber.toDoubleOrNull() ?: 0.0,
-                                        sodiumPer100g = customSodium.toDoubleOrNull() ?: 0.0
-                                    )
-                                } else foodProduct
-
-                                if (onAddToBundle != null) {
-                                    // Bundle mode: ignore scheduling completely
-                                    onAddToBundle.invoke(finalFood, usePortion)
-                                } else {
-                                    // Tracker mode (existing behavior)
-                                    onConfirm(
-                                        usePortion,
-                                        finalFood,
-                                        selectedTime,
-                                        selectedMeal,
-                                        isOneTime,
-                                        selectedDays,
-                                        repeatEveryWeeks,
-                                        startDate,
-                                        selectedColorArgb
-                                    )
-                                }
-
-                                onDismiss()
-
-                            }
-                        },
-                        enabled = saveEnabled,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            disabledContainerColor = AppPalette.TextMuted
-                        )
-                    ) {
-                        Text(
-                            when {
-                                onAddToBundle != null -> "Add to recipe"
-                                existingLoggedFood == null -> "Save"
-                                else -> "Update"
-                            },
-                            color = AppPalette.TextInverse
-                        )
-
-                    }
-
-
-                }
                 }
             }
         }
     }
-
+}
 
 
 
