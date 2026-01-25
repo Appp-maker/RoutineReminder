@@ -113,7 +113,6 @@ import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.isNoEventFoodColor
 import com.example.routinereminder.ui.components.resolveEventFoodColor
 import com.example.routinereminder.ui.components.SettingsIconButton
-import com.example.routinereminder.ui.theme.AppPalette
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
 
 
@@ -1414,14 +1413,6 @@ fun ScheduleItemView(
 
 
 
-    val prefixColor = when (item.origin) {
-        "IMPORTED_GOOGLE" -> MaterialTheme.colorScheme.secondary
-        "APP_CREATED_GOOGLE" -> MaterialTheme.colorScheme.secondary
-        "IMPORTED_LOCAL" -> MaterialTheme.colorScheme.tertiary
-        "APP_CREATED_LOCAL" -> MaterialTheme.colorScheme.tertiary
-        "APP_CREATED" -> MaterialTheme.colorScheme.secondary
-        else -> baseTextColor
-    }
     val prefix = when (item.origin) {
         "IMPORTED_GOOGLE" -> "Google Calendar"
         "APP_CREATED_GOOGLE" -> "Google Calendar (App)"
@@ -1545,9 +1536,9 @@ fun ScheduleItemView(
                                 "APP_CREATED" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
                                 "IMPORTED_GOOGLE" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
                                 "APP_CREATED_GOOGLE" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
-                                "IMPORTED_LOCAL" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
-                                "APP_CREATED_LOCAL" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
-                                else -> AppPalette.TagFallbackSoft to AppPalette.TextSoft
+                                "IMPORTED_LOCAL" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+                                "APP_CREATED_LOCAL" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+                                else -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
                             }
 
                             Text(
@@ -1569,7 +1560,7 @@ fun ScheduleItemView(
         if (notesText.isNotBlank()) {
             val checklistLines = remember(notesText) { parseChecklistLines(notesText) }
             val visibleChecklistLines = if (isExpanded) checklistLines else checklistLines.take(3)
-            val checklistTextIndent = 54.dp
+            val checklistTextIndent = 24.dp
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
