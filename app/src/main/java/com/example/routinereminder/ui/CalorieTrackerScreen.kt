@@ -676,26 +676,34 @@ fun CalorieTrackerScreen(
                             "Evening Snack"
                         )
 
+                        val config = LocalConfiguration.current
+                        val isCompactHeight = config.screenHeightDp < 700
+                        val verticalSpacing = if (isCompactHeight) 12.dp else 16.dp
+                        val horizontalSpacing = if (isCompactHeight) 10.dp else 12.dp
+                        val slotHeight = if (isCompactHeight) 64.dp else 72.dp
+
                         Column(
-                            modifier = Modifier.fillMaxSize(),   // grid uses full content area
-                            verticalArrangement = Arrangement.SpaceEvenly,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = horizontalSpacing, vertical = verticalSpacing),
+                            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             mealSlots.chunked(2).forEach { row ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(horizontalSpacing)
                                 ) {
                                     row.forEach { meal ->
                                         Box(
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .height(70.dp)
+                                                .height(slotHeight)
                                                 .clip(RoundedCornerShape(16.dp))
                                                 .background(AppPalette.SurfaceAlt)
                                                 .border(
                                                     width = 1.dp,
-                                                    color = AppPalette.BorderSubtle,
+                                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
                                                     shape = RoundedCornerShape(16.dp)
                                                 )
                                                 .clickable(
@@ -709,7 +717,7 @@ fun CalorieTrackerScreen(
                                         ) {
                                             Text(
                                                 meal,
-                                                color = AppPalette.TextPrimary,
+                                                color = MaterialTheme.colorScheme.primary,
                                                 fontSize = 16.sp
                                             )
                                         }
