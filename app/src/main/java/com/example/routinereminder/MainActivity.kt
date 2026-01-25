@@ -1566,6 +1566,7 @@ fun ScheduleItemView(
             val checklistLines = remember(notesText) { parseChecklistLines(notesText) }
             val visibleChecklistLines = if (isExpanded) checklistLines else checklistLines.take(3)
             val checklistTextIndent = 24.dp
+            val descriptionTextColor = baseTextColor.copy(alpha = doneAlpha)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1595,7 +1596,7 @@ fun ScheduleItemView(
                             Text(
                                 text = formatChecklistLineText(line.text),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = baseTextColor,
+                                color = descriptionTextColor,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1604,7 +1605,7 @@ fun ScheduleItemView(
                         Text(
                             text = formatChecklistLineText(line.text),
                             style = MaterialTheme.typography.bodySmall,
-                            color = baseTextColor,
+                            color = descriptionTextColor,
                             modifier = Modifier.padding(start = checklistTextIndent),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -1619,7 +1620,7 @@ fun ScheduleItemView(
                             "Double tap to expand description."
                         },
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = descriptionTextColor
                     )
                 }
             }
