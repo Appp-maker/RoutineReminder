@@ -899,6 +899,11 @@ fun MapScreen(
                                                     }
 
                                                 if (lastLoc != null) {
+                                                    lastKnownCoordinates = WeatherCoordinates(
+                                                        lastLoc.latitude,
+                                                        lastLoc.longitude
+                                                    )
+                                                    requestWeather(lastLoc.latitude, lastLoc.longitude)
                                                     val latLng = org.maplibre.android.geometry.LatLng(
                                                         lastLoc.latitude,
                                                         lastLoc.longitude
