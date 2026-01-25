@@ -1819,7 +1819,7 @@ private fun WeatherSummaryCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = statusColor
                         )
-                    )
+                    }
                 }
             }
         }
