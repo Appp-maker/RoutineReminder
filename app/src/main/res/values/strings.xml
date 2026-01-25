@@ -15,6 +15,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_action_back">Back</string>
     <string name="settings_action_save">Save</string>
+    <string name="settings_action_open">Settings</string>
     <string name="settings_toast_settings_saved">Settings saved successfully.</string>
     <string name="settings_toast_invalid_sync_interval">Invalid sync interval. Must be between 1 minute and 7 days.</string>
     <string name="settings_toast_gcalendar_disabled_backup_mode">Google Calendar features are disabled in backup mode.</string>
