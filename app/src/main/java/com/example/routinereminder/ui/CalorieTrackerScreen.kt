@@ -681,49 +681,71 @@ fun CalorieTrackerScreen(
                         val isCompactHeight = config.screenHeightDp < 700
                         val verticalSpacing = if (isCompactHeight) 12.dp else 16.dp
                         val horizontalSpacing = if (isCompactHeight) 10.dp else 12.dp
-                        val slotHeight = if (isCompactHeight) 64.dp else 72.dp
+                        val defaultSlotHeight = if (isCompactHeight) 64.dp else 72.dp
+                        val minSlotHeight = 48.dp
+                        val rows = (mealSlots.size + 1) / 2
 
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = horizontalSpacing, vertical = verticalSpacing),
-                            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        BoxWithConstraints(
+                            modifier = Modifier.fillMaxSize()
                         ) {
-                            mealSlots.chunked(2).forEach { row ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(horizontalSpacing)
-                                ) {
-                                    row.forEach { meal ->
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(slotHeight)
-                                                .clip(RoundedCornerShape(16.dp))
-                                                .background(AppPalette.SurfaceAlt)
-                                                .border(
-                                                    width = 1.dp,
-                                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                                                    shape = RoundedCornerShape(16.dp)
-                                                )
-                                                .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
-                                                    indication = LocalIndication.current
-                                                ) {
-                                                    activeMealSlot = meal
-                                                }
-                                                .padding(12.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                meal,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontSize = 16.sp
-                                            )
-                                        }
+                            val availableHeight = maxHeight -
+                                (verticalSpacing * 2) -
+                                (verticalSpacing * (rows - 1))
+                            val maxSlotHeight = availableHeight / rows
+                            val computedSlotHeight = minOf(defaultSlotHeight, maxSlotHeight)
+                            val shouldScroll = computedSlotHeight < minSlotHeight
+                            val slotHeight = if (shouldScroll) minSlotHeight else computedSlotHeight
+
+                            val columnModifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = horizontalSpacing, vertical = verticalSpacing)
+                                .then(
+                                    if (shouldScroll) {
+                                        Modifier.verticalScroll(rememberScrollState())
+                                    } else {
+                                        Modifier
                                     }
-                                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                                )
+
+                            Column(
+                                modifier = columnModifier,
+                                verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                mealSlots.chunked(2).forEach { row ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing)
+                                    ) {
+                                        row.forEach { meal ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(slotHeight)
+                                                    .clip(RoundedCornerShape(16.dp))
+                                                    .border(
+                                                        width = 1.dp,
+                                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                                                        shape = RoundedCornerShape(16.dp)
+                                                    )
+                                                    .clickable(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        indication = LocalIndication.current
+                                                    ) {
+                                                        activeMealSlot = meal
+                                                    }
+                                                    .padding(12.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    meal,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontSize = 16.sp
+                                                )
+                                            }
+                                        }
+                                        if (row.size == 1) Spacer(Modifier.weight(1f))
+                                    }
                                 }
                             }
                         }
