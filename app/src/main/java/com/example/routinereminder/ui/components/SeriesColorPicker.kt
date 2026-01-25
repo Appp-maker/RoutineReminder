@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
@@ -39,7 +40,8 @@ import com.example.routinereminder.data.SERIES_COLOR_OPTIONS
 import kotlin.math.roundToInt
 
 val SeriesColorOptions = SERIES_COLOR_OPTIONS.map { Color(it) }
-val EventFoodColorOptions = SeriesColorOptions
+val EventFoodColorOptions = listOf(Color(NO_EVENT_FOOD_COLOR_ARGB)) +
+    SeriesColorOptions.filter { it.toArgb() != NO_EVENT_FOOD_COLOR_ARGB }
 
 fun defaultSeriesColorArgb(): Int = DEFAULT_SERIES_COLOR_ARGB
 fun isNoEventFoodColor(colorArgb: Int): Boolean = colorArgb == NO_EVENT_FOOD_COLOR_ARGB
@@ -54,14 +56,19 @@ fun SeriesColorPicker(
     onColorSelected: (Color) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    colorOptions: List<Color> = EventFoodColorOptions,
+    colorOptions: List<Color> = SeriesColorOptions,
     showLabel: Boolean = true,
     allowCustomColor: Boolean = true
 ) {
     var customColor by remember { mutableStateOf(selectedColor) }
+    val isCustomSelected = colorOptions.none { it.toArgb() == selectedColor.toArgb() }
+    var showCustomPicker by remember { mutableStateOf(isCustomSelected && allowCustomColor) }
 
-    LaunchedEffect(selectedColor) {
+    LaunchedEffect(selectedColor, allowCustomColor, colorOptions) {
         customColor = selectedColor
+        if (allowCustomColor && isCustomSelected) {
+            showCustomPicker = true
+        }
     }
 
     Column(modifier = modifier) {
@@ -84,11 +91,25 @@ fun SeriesColorPicker(
                     size = 30.dp,
                     isSelected = isSelected,
                     enabled = enabled,
-                    modifier = Modifier.clickable(enabled = enabled) { onColorSelected(color) }
+                    modifier = Modifier.clickable(enabled = enabled) {
+                        onColorSelected(color)
+                        showCustomPicker = false
+                    }
+                )
+            }
+            if (allowCustomColor) {
+                CustomColorSwatch(
+                    size = 30.dp,
+                    isSelected = isCustomSelected,
+                    enabled = enabled,
+                    modifier = Modifier.clickable(enabled = enabled) {
+                        showCustomPicker = true
+                        onColorSelected(customColor)
+                    }
                 )
             }
         }
-        if (allowCustomColor) {
+        if (allowCustomColor && showCustomPicker) {
             Spacer(modifier = Modifier.height(10.dp))
             val red = (customColor.red * 255).roundToInt().coerceIn(0, 255)
             val green = (customColor.green * 255).roundToInt().coerceIn(0, 255)
@@ -232,5 +253,47 @@ private fun SeriesColorSwatch(
                 modifier = Modifier.align(Alignment.Center)
             )
         }
+    }
+}
+
+@Composable
+private fun CustomColorSwatch(
+    size: Dp,
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    enabled: Boolean = true
+) {
+    val borderWidth = if (isSelected) 2.dp else 1.dp
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+    val surfaceRing = MaterialTheme.colorScheme.surfaceVariant
+    val swatchAlpha = if (enabled) 1f else 0.5f
+    val spectrumBrush = Brush.sweepGradient(
+        listOf(
+            Color.Red,
+            Color.Yellow,
+            Color.Green,
+            Color.Cyan,
+            Color.Blue,
+            Color.Magenta,
+            Color.Red
+        )
+    )
+
+    Box(
+        modifier = modifier
+            .size(size)
+            .background(surfaceRing.copy(alpha = swatchAlpha), CircleShape)
+            .border(borderWidth, borderColor.copy(alpha = swatchAlpha), CircleShape)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(3.dp)
+                .background(spectrumBrush, CircleShape)
+        )
     }
 }

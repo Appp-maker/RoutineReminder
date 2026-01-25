@@ -399,7 +399,7 @@ fun EditItemDialog(
                         selectedColor = Color(displayColorArgb),
                         onColorSelected = { selectedColorArgb = it.toArgb() },
                         enabled = !isUsingSetColor,
-                        colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else SeriesColorOptions,
+                        colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else EventFoodColorOptions,
                         showLabel = !isUsingSetColor,
                         allowCustomColor = !isUsingSetColor
                     )
