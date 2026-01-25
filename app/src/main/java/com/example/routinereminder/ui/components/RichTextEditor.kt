@@ -33,8 +33,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,6 +62,7 @@ fun RichTextEditor(
         ColorOption("Primary", colorScheme.primary),
         ColorOption("Secondary", colorScheme.secondary)
     )
+    val colorVisualTransformation = remember { ColorTagVisualTransformation() }
 
     LaunchedEffect(value) {
         if (value != fieldValue.text) {
@@ -179,7 +186,8 @@ fun RichTextEditor(
                     label = { Text(label) },
                     modifier = textFieldModifier,
                     minLines = minLines,
-                    singleLine = singleLine
+                    singleLine = singleLine,
+                    visualTransformation = colorVisualTransformation
                 )
             } else {
                 TextField(
@@ -192,7 +200,8 @@ fun RichTextEditor(
                     label = { Text(label) },
                     modifier = textFieldModifier,
                     minLines = minLines,
-                    singleLine = singleLine
+                    singleLine = singleLine,
+                    visualTransformation = colorVisualTransformation
                 )
             }
         }
@@ -330,4 +339,136 @@ private fun TextFieldValue.normalizeColorTagsForNewlines(): TextFieldValue {
             newSelectionEnd.coerceIn(0, normalizedText.length)
         )
     )
+}
+
+private class ColorTagVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val (annotatedText, offsetMapping) = buildFormattedAnnotatedString(text.text)
+        return TransformedText(annotatedText, offsetMapping)
+    }
+}
+
+private fun buildFormattedAnnotatedString(text: String): Pair<AnnotatedString, OffsetMapping> {
+    val originalLength = text.length
+    val originalToTransformed = IntArray(originalLength + 1)
+    val transformedToOriginal = mutableListOf(0)
+    var outputLength = 0
+    var index = 0
+    var currentColor: Color? = null
+    var isBold = false
+    var isItalic = false
+
+    val annotatedText = androidx.compose.ui.text.buildAnnotatedString {
+        while (index < text.length) {
+            val colorTagStart = parseColorTagStart(text, index)
+            if (colorTagStart != null) {
+                val (hex, nextIndex) = colorTagStart
+                for (i in index until nextIndex) {
+                    originalToTransformed[i] = outputLength
+                }
+                currentColor = Color(android.graphics.Color.parseColor("#$hex"))
+                index = nextIndex
+                continue
+            }
+
+            if (text.startsWith(COLOR_TAG_CLOSE, index)) {
+                for (i in index until index + COLOR_TAG_CLOSE.length) {
+                    originalToTransformed[i] = outputLength
+                }
+                currentColor = null
+                index += COLOR_TAG_CLOSE.length
+                continue
+            }
+
+            if (index == 0 || text[index - 1] == '\n') {
+                val checkboxToken = parseCheckboxToken(text, index)
+                if (checkboxToken != null) {
+                    val (glyph, tokenLength) = checkboxToken
+                    for (i in index until index + tokenLength) {
+                        originalToTransformed[i] = outputLength
+                    }
+                    appendStyledChar(glyph, currentColor, isBold, isItalic)
+                    outputLength += 1
+                    transformedToOriginal.add((index + tokenLength).coerceAtMost(originalLength))
+                    index += tokenLength
+                    continue
+                }
+            }
+
+            val marker = parseStyleMarker(text, index)
+            if (marker != null) {
+                val (markerLength, isBoldMarker) = marker
+                for (i in index until index + markerLength) {
+                    originalToTransformed[i] = outputLength
+                }
+                if (isBoldMarker) {
+                    isBold = !isBold
+                } else {
+                    isItalic = !isItalic
+                }
+                index += markerLength
+                continue
+            }
+
+            originalToTransformed[index] = outputLength
+            val currentChar = text[index]
+            appendStyledChar(currentChar, currentColor, isBold, isItalic)
+            outputLength += 1
+            transformedToOriginal.add(index + 1)
+            index += 1
+        }
+    }
+
+    originalToTransformed[originalLength] = outputLength
+    if (transformedToOriginal.isNotEmpty()) {
+        if (transformedToOriginal.size <= outputLength) {
+            transformedToOriginal.add(originalLength)
+        } else {
+            transformedToOriginal[outputLength] = originalLength
+        }
+    }
+
+    val offsetMapping = object : OffsetMapping {
+        override fun originalToTransformed(offset: Int): Int {
+            val safeOffset = offset.coerceIn(0, originalLength)
+            return originalToTransformed[safeOffset]
+        }
+
+        override fun transformedToOriginal(offset: Int): Int {
+            val safeOffset = offset.coerceIn(0, outputLength)
+            return transformedToOriginal.getOrElse(safeOffset) { originalLength }
+        }
+    }
+
+    return annotatedText to offsetMapping
+}
+
+private fun parseCheckboxToken(text: String, index: Int): Pair<Char, Int>? {
+    if (text.startsWith("[ ]", index)) return '☐' to 3
+    if (text.startsWith("[x]", index) || text.startsWith("[X]", index)) return '☑' to 3
+    return null
+}
+
+private fun parseStyleMarker(text: String, index: Int): Pair<Int, Boolean>? {
+    if (text.startsWith("**", index)) return 2 to true
+    if (text.startsWith("__", index)) return 2 to true
+    if (text.startsWith("*", index)) return 1 to false
+    if (text.startsWith("_", index)) return 1 to false
+    return null
+}
+
+private fun AnnotatedString.Builder.appendStyledChar(
+    char: Char,
+    color: Color?,
+    isBold: Boolean,
+    isItalic: Boolean
+) {
+    val style = SpanStyle(
+        color = color ?: Color.Unspecified,
+        fontWeight = if (isBold) androidx.compose.ui.text.font.FontWeight.Bold else null,
+        fontStyle = if (isItalic) androidx.compose.ui.text.font.FontStyle.Italic else null
+    )
+    withStyle(style) {
+        append(char)
+    }
 }
