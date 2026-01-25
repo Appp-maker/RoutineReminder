@@ -251,7 +251,7 @@ fun WorkoutSessionScreen(
         }
     }
 
-    val timerActiveColor = MaterialTheme.colorScheme.primaryContainer
+    val timerActiveColor = MaterialTheme.colorScheme.secondaryContainer
     val timerInactiveColor = MaterialTheme.colorScheme.surfaceVariant
     val descriptionText = exercise.instructions.takeIf { it.isNotEmpty() }
         ?.joinToString(separator = " ")

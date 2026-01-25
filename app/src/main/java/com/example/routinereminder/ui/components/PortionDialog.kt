@@ -105,7 +105,7 @@ fun PortionDialog(
         unfocusedBorderColor = AppPalette.BorderSubtle,
         focusedLabelColor = TextSecondary,
         unfocusedLabelColor = TextSecondary,
-        cursorColor = MaterialTheme.colorScheme.primary
+        cursorColor = MaterialTheme.colorScheme.secondary
     )
     // ==== Initialize state from existing entry if available ====
     val initialIsOneTime = existingLoggedFood?.isOneTime ?: true
@@ -622,7 +622,7 @@ fun PortionDialog(
                         },
                         enabled = saveEnabled,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = MaterialTheme.colorScheme.secondary,
                             disabledContainerColor = AppPalette.TextMuted
                         )
                     ) {
@@ -786,7 +786,7 @@ private fun NutrientPairRow(
         unfocusedBorderColor = AppPalette.BorderSubtle,
         focusedLabelColor = TextSecondary,
         unfocusedLabelColor = TextSecondary,
-        cursorColor = MaterialTheme.colorScheme.primary
+        cursorColor = MaterialTheme.colorScheme.secondary
     )
 
     Row(
@@ -865,7 +865,7 @@ private fun EditableNutrientRow(
         unfocusedBorderColor = AppPalette.BorderSubtle,
         focusedLabelColor = TextSecondary,
         unfocusedLabelColor = TextSecondary,
-        cursorColor = MaterialTheme.colorScheme.primary
+        cursorColor = MaterialTheme.colorScheme.secondary
     )
 
     Column(

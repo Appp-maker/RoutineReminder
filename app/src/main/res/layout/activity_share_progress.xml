@@ -3,7 +3,7 @@
     android:id="@+id/shareLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/app_primary_variant">
+    android:background="@color/app_secondary_variant">
 
     <!-- 🗺️ MapLibre Map -->
     <com.mapbox.mapboxsdk.maps.MapView

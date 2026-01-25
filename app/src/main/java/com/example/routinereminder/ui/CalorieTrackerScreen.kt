@@ -739,7 +739,7 @@ fun CalorieTrackerScreen(
                                             ) {
                                                 Text(
                                                     meal,
-                                                    color = MaterialTheme.colorScheme.primary,
+                                                    color = MaterialTheme.colorScheme.secondary,
                                                     fontSize = 16.sp
                                                 )
                                             }
@@ -867,7 +867,7 @@ fun MealSlotDetail(
                                     viewModel.setFoodConsumed(food, isChecked)
                                 },
                                 colors = CheckboxDefaults.colors(
-                                    checkedColor = MaterialTheme.colorScheme.primary,
+                                    checkedColor = MaterialTheme.colorScheme.secondary,
                                     uncheckedColor = AppPalette.TextSecondary
                                 )
                             )
@@ -976,7 +976,7 @@ fun AllFoodsList(
                                         viewModel.setFoodConsumed(food, isChecked)
                                     },
                                     colors = CheckboxDefaults.colors(
-                                        checkedColor = MaterialTheme.colorScheme.primary,
+                                        checkedColor = MaterialTheme.colorScheme.secondary,
                                         uncheckedColor = AppPalette.TextSecondary
                                     )
                                 )
@@ -1072,7 +1072,7 @@ fun ExpandableRecipeRow(
                         viewModel.setFoodConsumed(food, isChecked)
                     },
                     colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.primary,
+                        checkedColor = MaterialTheme.colorScheme.secondary,
                         uncheckedColor = AppPalette.TextSecondary
                     )
                 )
@@ -1130,7 +1130,7 @@ fun ExpandableRecipeRow(
                                     viewModel.setFoodConsumed(food, isChecked)
                                 },
                                 colors = CheckboxDefaults.colors(
-                                    checkedColor = MaterialTheme.colorScheme.primary,
+                                    checkedColor = MaterialTheme.colorScheme.secondary,
                                     uncheckedColor = AppPalette.TextSecondary
                                 )
                             )
@@ -1337,7 +1337,7 @@ fun CircularNutrientIndicator(
         val startAngle = -225f
         val progress = (currentValue / targetValue).coerceAtMost(1.5).toFloat()
         val indicatorTrackColor = MaterialTheme.colorScheme.surfaceVariant
-        val indicatorProgressColor = MaterialTheme.colorScheme.primary
+        val indicatorProgressColor = MaterialTheme.colorScheme.secondary
         val primaryTextColor = MaterialTheme.colorScheme.onSurface
         val secondaryTextColor = MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -1400,7 +1400,7 @@ fun FoodSearchDialog(
         unfocusedBorderColor = AppPalette.BorderSubtle,
         focusedLabelColor = AppPalette.TextSecondary,
         unfocusedLabelColor = AppPalette.TextSecondary,
-        cursorColor = MaterialTheme.colorScheme.primary
+        cursorColor = MaterialTheme.colorScheme.secondary
     )
 
     Dialog(

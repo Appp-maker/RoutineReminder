@@ -636,8 +636,8 @@ fun WorkoutScreen(
                         showExerciseSearchDialog = true
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
             ) {
                 Icon(Icons.Filled.Add, contentDescription = openExerciseSearchLabel)
             }
@@ -692,8 +692,8 @@ fun WorkoutScreen(
                             },
                             enabled = canGoPreviousPlan,
                             colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary,
-                                disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                contentColor = MaterialTheme.colorScheme.secondary,
+                                disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
                             ),
                             modifier = Modifier.size(48.dp)
                         ) {
@@ -800,8 +800,8 @@ fun WorkoutScreen(
                             },
                             enabled = canGoNextPlan,
                             colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary,
-                                disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                contentColor = MaterialTheme.colorScheme.secondary,
+                                disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
                             ),
                             modifier = Modifier.size(48.dp)
                         ) {
@@ -813,7 +813,7 @@ fun WorkoutScreen(
                         IconButton(
                             onClick = { navController.navigate("settings/workout") },
                             colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
+                                contentColor = MaterialTheme.colorScheme.secondary
                             ),
                             modifier = Modifier.size(48.dp)
                         ) {
@@ -1251,7 +1251,7 @@ private fun ExerciseSearchDialog(
                                         .requiredWidth(sliderHeight)
                                         .rotate(-90f),
                                     colors = SliderDefaults.colors(
-                                        thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                                        thumbColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f),
                                         activeTrackColor = Color.Transparent,
                                         inactiveTrackColor = Color.Transparent
                                     )
@@ -1567,7 +1567,7 @@ private fun ExercisePreviewDialog(
                                             modifier = Modifier.fillMaxSize()
                                         ) {
                                             LinearProgressIndicator(
-                                                color = MaterialTheme.colorScheme.primary
+                                                color = MaterialTheme.colorScheme.secondary
                                             )
                                         }
                                     }

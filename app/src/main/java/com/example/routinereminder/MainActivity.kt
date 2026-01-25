@@ -407,8 +407,8 @@ fun MainAppUI(
                                 itemToEdit = null
                                 showEditDialog = true
                             },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary
                         ) {
                             Icon(Icons.Filled.Add, "Create new entry")
                         }
@@ -1377,7 +1377,7 @@ fun ScheduleItemView(
             !realNowDateTime.isBefore(itemAbsoluteStartDateTime) &&
             realNowDateTime.isBefore(itemAbsoluteEndDateTime)
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
-    val rowBackgroundColor = if (isEffectivelyActiveNow) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent
+    val rowBackgroundColor = if (isEffectivelyActiveNow) MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f) else Color.Transparent
     val resolvedColorArgb = item.setId?.let { setId ->
         eventSetColors.getOrNull(setId - 1)
     } ?: item.colorArgb
@@ -1406,10 +1406,10 @@ fun ScheduleItemView(
 
     val prefixColor = when (item.origin) {
         "IMPORTED_GOOGLE" -> MaterialTheme.colorScheme.secondary
-        "APP_CREATED_GOOGLE" -> MaterialTheme.colorScheme.primary
+        "APP_CREATED_GOOGLE" -> MaterialTheme.colorScheme.secondary
         "IMPORTED_LOCAL" -> MaterialTheme.colorScheme.tertiary
         "APP_CREATED_LOCAL" -> MaterialTheme.colorScheme.tertiary
-        "APP_CREATED" -> MaterialTheme.colorScheme.primary
+        "APP_CREATED" -> MaterialTheme.colorScheme.secondary
         else -> baseTextColor
     }
     val prefix = when (item.origin) {
@@ -1462,12 +1462,12 @@ fun ScheduleItemView(
                             modifier = Modifier
                                 .width(70.dp)              // SAME WIDTH FOR ALL BADGES
                                 .height(20.dp)             // UNIFIED HEIGHT
-                                .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.extraSmall),
+                                .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.extraSmall),
                             contentAlignment = Alignment.Center  // CENTER TEXT
                         ) {
                             Text(
                                 text = "ONE TIME",
-                                color = MaterialTheme.colorScheme.primary,
+                                color = MaterialTheme.colorScheme.secondary,
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -1524,9 +1524,9 @@ fun ScheduleItemView(
 
                         prefix?.let {
                             val (bgColor, textColor) = when (item.origin) {
-                                "APP_CREATED" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+                                "APP_CREATED" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
                                 "IMPORTED_GOOGLE" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
-                                "APP_CREATED_GOOGLE" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+                                "APP_CREATED_GOOGLE" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
                                 "IMPORTED_LOCAL" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
                                 "APP_CREATED_LOCAL" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
                                 else -> AppPalette.TagFallbackSoft to AppPalette.TextSoft
