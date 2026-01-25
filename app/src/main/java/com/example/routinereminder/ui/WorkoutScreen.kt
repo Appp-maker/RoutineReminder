@@ -692,8 +692,8 @@ fun WorkoutScreen(
                             },
                             enabled = canGoPreviousPlan,
                             colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.secondary,
-                                disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                                contentColor = MaterialTheme.colorScheme.primary,
+                                disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                             ),
                             modifier = Modifier.size(48.dp)
                         ) {
@@ -767,8 +767,8 @@ fun WorkoutScreen(
                             },
                             enabled = canGoNextPlan,
                             colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.secondary,
-                                disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                                contentColor = MaterialTheme.colorScheme.primary,
+                                disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                             ),
                             modifier = Modifier.size(48.dp)
                         ) {
@@ -780,7 +780,7 @@ fun WorkoutScreen(
                         IconButton(
                             onClick = { navController.navigate("settings/workout") },
                             colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.secondary
+                                contentColor = MaterialTheme.colorScheme.primary
                             ),
                             modifier = Modifier.size(48.dp)
                         ) {
