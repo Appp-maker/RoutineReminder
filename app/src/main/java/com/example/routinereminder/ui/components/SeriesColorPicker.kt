@@ -39,7 +39,7 @@ import com.example.routinereminder.data.SERIES_COLOR_OPTIONS
 import kotlin.math.roundToInt
 
 val SeriesColorOptions = SERIES_COLOR_OPTIONS.map { Color(it) }
-val EventFoodColorOptions = listOf(Color.Transparent) + SeriesColorOptions
+val EventFoodColorOptions = SeriesColorOptions
 
 fun defaultSeriesColorArgb(): Int = DEFAULT_SERIES_COLOR_ARGB
 fun isNoEventFoodColor(colorArgb: Int): Boolean = colorArgb == NO_EVENT_FOOD_COLOR_ARGB
@@ -77,34 +77,15 @@ fun SeriesColorPicker(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            colorOptions.forEachIndexed { index, color ->
+            colorOptions.forEach { color ->
                 val isSelected = color.toArgb() == selectedColor.toArgb()
-                val swatch = @Composable {
-                    SeriesColorSwatch(
-                        color = color,
-                        size = 30.dp,
-                        isSelected = isSelected,
-                        enabled = enabled,
-                        modifier = Modifier.clickable(enabled = enabled) { onColorSelected(color) }
-                    )
-                }
-                if (index == 0 && color.alpha == 0f) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        swatch()
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.event_food_no_color_label),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (enabled) {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            }
-                        )
-                    }
-                } else {
-                    swatch()
-                }
+                SeriesColorSwatch(
+                    color = color,
+                    size = 30.dp,
+                    isSelected = isSelected,
+                    enabled = enabled,
+                    modifier = Modifier.clickable(enabled = enabled) { onColorSelected(color) }
+                )
             }
         }
         if (allowCustomColor) {
