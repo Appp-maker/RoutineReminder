@@ -43,6 +43,10 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,16 +64,10 @@ fun RichTextEditor(
     var colorMenuExpanded by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
     val colorOptions = listOf(
-        ColorOption("Crimson", Color(0xFFD32F2F)),
-        ColorOption("Orange", Color(0xFFF57C00)),
-        ColorOption("Amber", Color(0xFFFFA000)),
-        ColorOption("Lime", Color(0xFF7CB342)),
-        ColorOption("Teal", Color(0xFF00796B)),
-        ColorOption("Sky", Color(0xFF0288D1)),
-        ColorOption("Indigo", Color(0xFF303F9F)),
-        ColorOption("Violet", Color(0xFF7B1FA2))
+        ColorOption("Primary", colorScheme.primary),
+        ColorOption("Secondary", colorScheme.secondary)
     )
-    val colorVisualTransformation = remember { ColorTagVisualTransformation() }
+    val richTextVisualTransformation = remember { RichTextVisualTransformation() }
     val cursorIndex = fieldValue.selection.min
     val activeBold = fieldValue.isCursorWithinInlineTag("**", "**")
     val activeItalic = fieldValue.isCursorWithinInlineTag("*", "*")
@@ -213,7 +211,7 @@ fun RichTextEditor(
                     modifier = textFieldModifier,
                     minLines = minLines,
                     singleLine = singleLine,
-                    visualTransformation = colorVisualTransformation
+                    visualTransformation = richTextVisualTransformation
                 )
             } else {
                 TextField(
@@ -227,7 +225,7 @@ fun RichTextEditor(
                     modifier = textFieldModifier,
                     minLines = minLines,
                     singleLine = singleLine,
-                    visualTransformation = colorVisualTransformation
+                    visualTransformation = richTextVisualTransformation
                 )
             }
         }
@@ -299,6 +297,10 @@ private data class ColorTagRange(
 
 private const val COLOR_TAG_CLOSE = "[/color]"
 private val COLOR_HEX_REGEX = Regex("^[0-9a-fA-F]{6}$")
+private val markdownTokenRegex = Regex(
+    "\\[color=#[0-9a-fA-F]{6}].+?\\[/color]|`[^`]+`|\\*\\*[^*]+\\*\\*|__[^_]+__|~~[^~]+~~|\\*[^*]+\\*|_[^_]+_",
+    setOf(RegexOption.DOT_MATCHES_ALL)
+)
 
 private fun Color.toHexString(): String {
     val rgb = toArgb() and 0xFFFFFF
@@ -470,52 +472,55 @@ private fun TextFieldValue.normalizeColorTagsForNewlines(): TextFieldValue {
     )
 }
 
-private class ColorTagVisualTransformation : VisualTransformation {
+private data class MarkdownToken(
+    val start: Int,
+    val end: Int,
+    val contentStart: Int,
+    val contentEnd: Int,
+    val style: SpanStyle
+)
+
+private class RichTextVisualTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
-        val (annotatedText, offsetMapping) = buildColorAnnotatedString(text.text)
+        val (annotatedText, offsetMapping) = buildRichAnnotatedString(text.text)
         return TransformedText(annotatedText, offsetMapping)
     }
 }
 
-private fun buildColorAnnotatedString(text: String): Pair<AnnotatedString, OffsetMapping> {
+private fun buildRichAnnotatedString(text: String): Pair<AnnotatedString, OffsetMapping> {
     val originalLength = text.length
     val originalToTransformed = IntArray(originalLength + 1)
     val transformedToOriginal = mutableListOf(0)
     var outputLength = 0
     var index = 0
-    var currentColor: Color? = null
+    val tokens = parseMarkdownTokens(text)
+    var tokenIndex = 0
 
     val annotatedText = androidx.compose.ui.text.buildAnnotatedString {
         while (index < text.length) {
-            val colorTagStart = parseColorTagStart(text, index)
-            if (colorTagStart != null) {
-                val (hex, nextIndex) = colorTagStart
-                for (i in index until nextIndex) {
+            val token = tokens.getOrNull(tokenIndex)
+            if (token != null && token.start == index) {
+                for (i in token.start until token.contentStart) {
                     originalToTransformed[i] = outputLength
                 }
-                currentColor = Color(android.graphics.Color.parseColor("#$hex"))
-                index = nextIndex
-                continue
-            }
-
-            if (text.startsWith(COLOR_TAG_CLOSE, index)) {
-                for (i in index until index + COLOR_TAG_CLOSE.length) {
+                withStyle(token.style) {
+                    for (i in token.contentStart until token.contentEnd) {
+                        originalToTransformed[i] = outputLength
+                        append(text[i])
+                        outputLength += 1
+                        transformedToOriginal.add(i + 1)
+                    }
+                }
+                for (i in token.contentEnd until token.end) {
                     originalToTransformed[i] = outputLength
                 }
-                currentColor = null
-                index += COLOR_TAG_CLOSE.length
+                index = token.end
+                tokenIndex += 1
                 continue
             }
 
             originalToTransformed[index] = outputLength
-            val currentChar = text[index]
-            if (currentColor != null) {
-                withStyle(SpanStyle(color = currentColor)) {
-                    append(currentChar)
-                }
-            } else {
-                append(currentChar)
-            }
+            append(text[index])
             outputLength += 1
             transformedToOriginal.add(index + 1)
             index += 1
@@ -544,4 +549,81 @@ private fun buildColorAnnotatedString(text: String): Pair<AnnotatedString, Offse
     }
 
     return annotatedText to offsetMapping
+}
+
+private fun parseMarkdownTokens(text: String): List<MarkdownToken> {
+    return markdownTokenRegex.findAll(text).mapNotNull { match ->
+        val token = match.value
+        val start = match.range.first
+        val end = match.range.last + 1
+        when {
+            token.startsWith("**") && token.endsWith("**") -> {
+                MarkdownToken(
+                    start = start,
+                    end = end,
+                    contentStart = start + 2,
+                    contentEnd = end - 2,
+                    style = SpanStyle(fontWeight = FontWeight.Bold)
+                )
+            }
+            token.startsWith("__") && token.endsWith("__") -> {
+                MarkdownToken(
+                    start = start,
+                    end = end,
+                    contentStart = start + 2,
+                    contentEnd = end - 2,
+                    style = SpanStyle(fontWeight = FontWeight.Bold)
+                )
+            }
+            token.startsWith("[color=#") && token.endsWith("[/color]") -> {
+                val colorEndIndex = token.indexOf(']')
+                if (colorEndIndex == -1) return@mapNotNull null
+                val colorHex = token.substring(8, colorEndIndex)
+                MarkdownToken(
+                    start = start,
+                    end = end,
+                    contentStart = start + colorEndIndex + 1,
+                    contentEnd = end - COLOR_TAG_CLOSE.length,
+                    style = SpanStyle(color = Color(android.graphics.Color.parseColor("#$colorHex")))
+                )
+            }
+            token.startsWith("~~") && token.endsWith("~~") -> {
+                MarkdownToken(
+                    start = start,
+                    end = end,
+                    contentStart = start + 2,
+                    contentEnd = end - 2,
+                    style = SpanStyle(textDecoration = TextDecoration.LineThrough)
+                )
+            }
+            token.startsWith("`") && token.endsWith("`") -> {
+                MarkdownToken(
+                    start = start,
+                    end = end,
+                    contentStart = start + 1,
+                    contentEnd = end - 1,
+                    style = SpanStyle(fontFamily = FontFamily.Monospace)
+                )
+            }
+            token.startsWith("*") && token.endsWith("*") -> {
+                MarkdownToken(
+                    start = start,
+                    end = end,
+                    contentStart = start + 1,
+                    contentEnd = end - 1,
+                    style = SpanStyle(fontStyle = FontStyle.Italic)
+                )
+            }
+            token.startsWith("_") && token.endsWith("_") -> {
+                MarkdownToken(
+                    start = start,
+                    end = end,
+                    contentStart = start + 1,
+                    contentEnd = end - 1,
+                    style = SpanStyle(fontStyle = FontStyle.Italic)
+                )
+            }
+            else -> null
+        }
+    }.toList()
 }
