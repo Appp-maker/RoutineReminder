@@ -405,14 +405,20 @@ fun EditItemDialog(
                     )
                     Spacer(Modifier.height(16.dp))
 
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { isOneTime = !isOneTime }) {
-                        Checkbox(checked = isOneTime, onCheckedChange = {
-                            isOneTime = it
-                            if (!it && selectedRepeatDays.isEmpty()) {
-                               selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { isOneTime = !isOneTime }
+                    ) {
+                        Checkbox(
+                            checked = !isOneTime,
+                            onCheckedChange = { isRepeating ->
+                                isOneTime = !isRepeating
+                                if (isRepeating && selectedRepeatDays.isEmpty()) {
+                                    selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
+                                }
                             }
-                        })
-                        Text("One-time appointment")
+                        )
+                        Text(stringResource(R.string.event_repeats_weekly_label))
                     }
                     Spacer(Modifier.height(8.dp))
 
