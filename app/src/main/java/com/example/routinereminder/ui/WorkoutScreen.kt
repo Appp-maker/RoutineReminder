@@ -717,46 +717,79 @@ fun WorkoutScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(horizontal = 8.dp)
                             )
-                            DropdownMenu(
-                                expanded = planMenuExpanded,
-                                onDismissRequest = { planMenuExpanded = false }
-                            ) {
-                                if (uiState.plans.isEmpty()) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.workout_plan_empty_menu)) },
-                                        onClick = { planMenuExpanded = false }
-                                    )
-                                } else {
-                                    uiState.plans.forEach { plan ->
-                                        DropdownMenuItem(
-                                            text = { Text(plan.name) },
-                                            trailingIcon = {
-                                                IconButton(onClick = {
-                                                    planMenuExpanded = false
-                                                    planToDelete = plan
-                                                }) {
-                                                    Icon(
-                                                        Icons.Filled.Delete,
-                                                        contentDescription = stringResource(R.string.workout_plan_delete_action)
-                                                    )
-                                                }
-                                            },
-                                            onClick = {
-                                                viewModel.selectPlan(plan.id)
-                                                planMenuExpanded = false
-                                            }
+                        }
+                        if (planMenuExpanded) {
+                            Dialog(onDismissRequest = { planMenuExpanded = false }) {
+                                Surface(
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    color = MaterialTheme.colorScheme.surface,
+                                    tonalElevation = 6.dp,
+                                    shadowElevation = 8.dp
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .width(320.dp)
+                                            .padding(20.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.workout_plan_select_placeholder),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
+                                        Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                                        if (uiState.plans.isEmpty()) {
+                                            Text(
+                                                text = stringResource(R.string.workout_plan_empty_menu),
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        } else {
+                                            uiState.plans.forEach { plan ->
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            viewModel.selectPlan(plan.id)
+                                                            planMenuExpanded = false
+                                                        }
+                                                        .padding(vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = plan.name,
+                                                        modifier = Modifier.weight(1f),
+                                                        color = MaterialTheme.colorScheme.secondary,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    IconButton(onClick = {
+                                                        planMenuExpanded = false
+                                                        planToDelete = plan
+                                                    }) {
+                                                        Icon(
+                                                            Icons.Filled.Delete,
+                                                            contentDescription = stringResource(R.string.workout_plan_delete_action),
+                                                            tint = MaterialTheme.colorScheme.tertiary
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                                        TextButton(
+                                            onClick = {
+                                                planMenuExpanded = false
+                                                newPlanName = ""
+                                                showNewPlanDialog = true
+                                            }
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.workout_plan_new_menu),
+                                                color = MaterialTheme.colorScheme.tertiary
+                                            )
+                                        }
                                     }
                                 }
-                                Divider()
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.workout_plan_new_menu)) },
-                                    onClick = {
-                                        planMenuExpanded = false
-                                        newPlanName = ""
-                                        showNewPlanDialog = true
-                                    }
-                                )
                             }
                         }
                         IconButton(
