@@ -429,18 +429,22 @@ fun EditItemDialog(
                     Spacer(Modifier.height(16.dp))
 
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable { isOneTime = !isOneTime }
                     ) {
-                        Checkbox(
-                            checked = !isOneTime,
-                            onCheckedChange = { isRepeating ->
-                                isOneTime = !isRepeating
-                                if (isRepeating && selectedRepeatDays.isEmpty()) {
-                                    selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
-                                }
-                            }
-                        )
+                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                            Checkbox(
+                                checked = !isOneTime,
+                                onCheckedChange = { isRepeating ->
+                                    isOneTime = !isRepeating
+                                    if (isRepeating && selectedRepeatDays.isEmpty()) {
+                                        selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
+                                    }
+                                },
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
                         Text(stringResource(R.string.event_repeats_weekly_label))
                     }
                     Spacer(Modifier.height(8.dp))
@@ -521,18 +525,22 @@ fun EditItemDialog(
                     Spacer(Modifier.height(16.dp))
 
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable(enabled = !useGoogleBackupMode) {
                             if (!useGoogleBackupMode) {
                                 addToCalendar = !addToCalendar
                             }
                         }
                     ) {
-                        Checkbox(
-                            checked = addToCalendar,
-                            onCheckedChange = { if (!useGoogleBackupMode) addToCalendar = it },
-                            enabled = !useGoogleBackupMode
-                        )
+                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                            Checkbox(
+                                checked = addToCalendar,
+                                onCheckedChange = { if (!useGoogleBackupMode) addToCalendar = it },
+                                enabled = !useGoogleBackupMode,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
                         Text(
                             text = "Calendar entry",
                             color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else LocalContentColor.current
@@ -595,25 +603,39 @@ fun EditItemDialog(
                     Text("Notification options:", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(8.dp))
 
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { notifyEnabled = !notifyEnabled }) {
-                        Checkbox(checked = notifyEnabled, onCheckedChange = { notifyEnabled = it })
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.clickable { notifyEnabled = !notifyEnabled }
+                    ) {
+                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                            Checkbox(
+                                checked = notifyEnabled,
+                                onCheckedChange = { notifyEnabled = it },
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
                         Text("System notification")
                     }
                     Spacer(Modifier.height(8.dp))
 
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable(enabled = notifyEnabled) {
                             if (notifyEnabled) {
                                 showDetailsInNotification = !showDetailsInNotification
                             }
                         }
                     ) {
-                        Checkbox(
-                            checked = showDetailsInNotification,
-                            onCheckedChange = { if (notifyEnabled) showDetailsInNotification = it },
-                            enabled = notifyEnabled
-                        )
+                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                            Checkbox(
+                                checked = showDetailsInNotification,
+                                onCheckedChange = { if (notifyEnabled) showDetailsInNotification = it },
+                                enabled = notifyEnabled,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
                         Text(
                             text = "Show details in notification",
                             color = if (notifyEnabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
