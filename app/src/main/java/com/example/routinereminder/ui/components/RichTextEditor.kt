@@ -31,17 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-
-private val colorOptions = listOf(
-    ColorOption("Red", "D32F2F"),
-    ColorOption("Orange", "F57C00"),
-    ColorOption("Green", "388E3C"),
-    ColorOption("Blue", "1976D2"),
-    ColorOption("Purple", "7B1FA2")
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +51,12 @@ fun RichTextEditor(
     var fieldValue by remember { mutableStateOf(TextFieldValue(value)) }
     var isFocused by remember { mutableStateOf(false) }
     var colorMenuExpanded by remember { mutableStateOf(false) }
+    val colorOptions = remember(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary) {
+        listOf(
+            ColorOption("Primary", MaterialTheme.colorScheme.primary),
+            ColorOption("Secondary", MaterialTheme.colorScheme.secondary)
+        )
+    }
 
     LaunchedEffect(value) {
         if (value != fieldValue.text) {
@@ -173,8 +173,9 @@ fun RichTextEditor(
                 OutlinedTextField(
                     value = fieldValue,
                     onValueChange = {
-                        fieldValue = it
-                        onValueChange(it.text)
+                        val normalized = it.normalizeColorTagsForNewlines()
+                        fieldValue = normalized
+                        onValueChange(normalized.text)
                     },
                     label = { Text(label) },
                     modifier = textFieldModifier,
@@ -185,8 +186,9 @@ fun RichTextEditor(
                 TextField(
                     value = fieldValue,
                     onValueChange = {
-                        fieldValue = it
-                        onValueChange(it.text)
+                        val normalized = it.normalizeColorTagsForNewlines()
+                        fieldValue = normalized
+                        onValueChange(normalized.text)
                     },
                     label = { Text(label) },
                     modifier = textFieldModifier,
@@ -245,7 +247,88 @@ private fun TextFieldValue.applyCheckboxToggle(): TextFieldValue {
 
 private data class ColorOption(
     val name: String,
-    val hex: String
+    val color: Color
 ) {
-    val color = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor("#$hex"))
+    val hex: String = color.toHexString()
+}
+
+private const val COLOR_TAG_CLOSE = "[/color]"
+private val COLOR_HEX_REGEX = Regex("^[0-9a-fA-F]{6}$")
+
+private fun Color.toHexString(): String {
+    val rgb = toArgb() and 0xFFFFFF
+    return String.format("%06X", rgb)
+}
+
+private fun parseColorTagStart(text: String, index: Int): Pair<String, Int>? {
+    if (!text.startsWith("[color=#", index)) return null
+    val colorEnd = text.indexOf(']', startIndex = index + 8)
+    if (colorEnd == -1) return null
+    val colorHex = text.substring(index + 8, colorEnd)
+    if (!COLOR_HEX_REGEX.matches(colorHex)) return null
+    return colorHex to (colorEnd + 1)
+}
+
+private fun TextFieldValue.normalizeColorTagsForNewlines(): TextFieldValue {
+    val text = text
+    var openColorHex: String? = null
+    val builder = StringBuilder(text.length)
+    val selectionStart = selection.min
+    val selectionEnd = selection.max
+    var newSelectionStart = selectionStart
+    var newSelectionEnd = selectionEnd
+    var index = 0
+
+    while (index < text.length) {
+        val colorTagStart = parseColorTagStart(text, index)
+        if (colorTagStart != null) {
+            val (hex, nextIndex) = colorTagStart
+            openColorHex = hex
+            builder.append(text.substring(index, nextIndex))
+            index = nextIndex
+            continue
+        }
+
+        if (text.startsWith(COLOR_TAG_CLOSE, index)) {
+            openColorHex = null
+            builder.append(COLOR_TAG_CLOSE)
+            index += COLOR_TAG_CLOSE.length
+            continue
+        }
+
+        val currentChar = text[index]
+        if (currentChar == '\n' && openColorHex != null) {
+            builder.append(COLOR_TAG_CLOSE)
+            if (index <= selectionStart) {
+                newSelectionStart += COLOR_TAG_CLOSE.length
+            }
+            if (index <= selectionEnd) {
+                newSelectionEnd += COLOR_TAG_CLOSE.length
+            }
+            builder.append('\n')
+            val reopenTag = "[color=#${openColorHex}]"
+            builder.append(reopenTag)
+            if (index < selectionStart) {
+                newSelectionStart += reopenTag.length
+            }
+            if (index < selectionEnd) {
+                newSelectionEnd += reopenTag.length
+            }
+            index += 1
+            continue
+        }
+
+        builder.append(currentChar)
+        index += 1
+    }
+
+    val normalizedText = builder.toString()
+    if (normalizedText == text) return this
+    return copy(
+        text = normalizedText,
+        selection = TextRange(
+            newSelectionStart.coerceIn(0, normalizedText.length),
+            newSelectionEnd.coerceIn(0, normalizedText.length)
+        )
+    )
 }
