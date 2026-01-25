@@ -111,6 +111,7 @@ import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.SeriesColorDot
+import com.example.routinereminder.ui.components.isNoEventFoodColor
 import com.example.routinereminder.ui.components.resolveEventFoodColor
 import com.example.routinereminder.ui.components.SettingsIconButton
 import com.example.routinereminder.ui.theme.AppPalette
@@ -1382,6 +1383,7 @@ fun ScheduleItemView(
         eventSetColors.getOrNull(setId - 1)
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
+    val showSeriesDot = !isNoEventFoodColor(resolvedColorArgb)
 
 
 // Base text color logic
@@ -1436,12 +1438,14 @@ fun ScheduleItemView(
             verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth()
         ) {
-            SeriesColorDot(
-                color = seriesColor.copy(alpha = doneAlpha),
-                modifier = Modifier.padding(top = 6.dp)
-            )
+            if (showSeriesDot) {
+                SeriesColorDot(
+                    color = seriesColor.copy(alpha = doneAlpha),
+                    modifier = Modifier.padding(top = 6.dp)
+                )
 
-            Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+            }
 
             // LEFT COLUMN: start time + ONE TIME / REPEATS under it
             Column(

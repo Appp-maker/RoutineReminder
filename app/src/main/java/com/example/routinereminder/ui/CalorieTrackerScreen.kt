@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.routinereminder.ui.components.isNoEventFoodColor
 import com.example.routinereminder.ui.components.resolveEventFoodColor
 import androidx.compose.ui.unit.sp
 import com.example.routinereminder.ui.theme.AppPalette
@@ -848,10 +849,12 @@ fun MealSlotDetail(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { onFoodClick(food) }
                     ) {
-                        SeriesColorDot(
-                            color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
+                        if (!isNoEventFoodColor(food.colorArgb)) {
+                            SeriesColorDot(
+                                color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                        }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(food.foodProduct.name, color = AppPalette.TextInverse)
                             Text(
@@ -957,10 +960,12 @@ fun AllFoodsList(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { onFoodClick(food) }
                         ) {
-                            SeriesColorDot(
-                                color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
+                            if (!isNoEventFoodColor(food.colorArgb)) {
+                                SeriesColorDot(
+                                    color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(food.foodProduct.name, color = AppPalette.TextInverse)
                                 Text(
@@ -1052,10 +1057,12 @@ fun ExpandableRecipeRow(
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SeriesColorDot(
-                color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
-                modifier = Modifier.padding(end = 8.dp)
-            )
+            if (!isNoEventFoodColor(food.colorArgb)) {
+                SeriesColorDot(
+                    color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(recipeName, color = AppPalette.TextInverse, fontSize = 16.sp)
                 Text(
@@ -1304,10 +1311,12 @@ fun LoggedFoodsList(
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SeriesColorDot(
-                    color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
-                    modifier = Modifier.padding(end = 8.dp)
-                )
+                if (!isNoEventFoodColor(food.colorArgb)) {
+                    SeriesColorDot(
+                        color = resolveEventFoodColor(food.colorArgb, MaterialTheme.colorScheme.outlineVariant),
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(food.foodProduct.name, color = AppPalette.TextInverse)
                     Text(
