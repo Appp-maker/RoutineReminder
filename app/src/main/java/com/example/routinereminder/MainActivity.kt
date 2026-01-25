@@ -1597,11 +1597,17 @@ fun ScheduleItemView(
                         )
                     }
                 }
-                Text(
-                    text = if (isExpanded) "Double tap to collapse description." else "Double tap to expand description.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
+                if (checklistLines.size > 3) {
+                    Text(
+                        text = if (isExpanded) {
+                            "Double tap to collapse description."
+                        } else {
+                            "Double tap to expand description."
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
             }
         }
     }
