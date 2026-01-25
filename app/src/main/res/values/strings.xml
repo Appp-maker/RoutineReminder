@@ -71,7 +71,7 @@
     <string name="settings_default_events_edit_specific_time">Edit time</string>
     <string name="settings_default_events_duration">Duration</string>
     <string name="settings_default_events_one_time_appointment">One-time appointment</string>
-    <string name="event_repeats_weekly_label">Repeats weekly</string>
+    <string name="event_repeats_weekly_label">Repeat event</string>
     <string name="settings_default_events_create_calendar_entry">Create calendar entry</string>
     <string name="settings_default_events_target_calendar_new_events">Target calendar for new events:</string>
     <string name="settings_default_events_target_calendar_local_device">Local device calendar</string>
