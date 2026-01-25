@@ -63,6 +63,7 @@
 
     <!-- Default Events Settings -->
     <string name="settings_default_events_title">Default Event Settings</string>
+    <string name="settings_default_events_shortcut">Defaults</string>
     <string name="settings_default_events_start_time">Start Time</string>
     <string name="settings_start_time_option_current_time">Current time</string>
     <string name="settings_start_time_option_specific_time">Specific time</string>
