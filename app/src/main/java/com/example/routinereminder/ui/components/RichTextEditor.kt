@@ -18,6 +18,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -59,10 +60,22 @@ fun RichTextEditor(
     var colorMenuExpanded by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
     val colorOptions = listOf(
-        ColorOption("Primary", colorScheme.primary),
-        ColorOption("Secondary", colorScheme.secondary)
+        ColorOption("Crimson", Color(0xFFD32F2F)),
+        ColorOption("Orange", Color(0xFFF57C00)),
+        ColorOption("Amber", Color(0xFFFFA000)),
+        ColorOption("Lime", Color(0xFF7CB342)),
+        ColorOption("Teal", Color(0xFF00796B)),
+        ColorOption("Sky", Color(0xFF0288D1)),
+        ColorOption("Indigo", Color(0xFF303F9F)),
+        ColorOption("Violet", Color(0xFF7B1FA2))
     )
     val colorVisualTransformation = remember { ColorTagVisualTransformation() }
+    val cursorIndex = fieldValue.selection.min
+    val activeBold = fieldValue.isCursorWithinInlineTag("**", "**")
+    val activeItalic = fieldValue.isCursorWithinInlineTag("*", "*")
+    val activeColor = fieldValue.findEnclosingColorTag(cursorIndex)
+    val activeActionColor = MaterialTheme.colorScheme.secondary
+    val inactiveActionColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     LaunchedEffect(value) {
         if (value != fieldValue.text) {
@@ -100,10 +113,10 @@ fun RichTextEditor(
                     ) {
                         IconButton(
                             onClick = {
-                                fieldValue = fieldValue.applyCheckboxToggle().also {
-                                    onValueChange(it.text)
-                                }
-                            }
+                                fieldValue = fieldValue.applyCheckboxToggle()
+                                    .also { onValueChange(it.text) }
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(contentColor = inactiveActionColor)
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.CheckBox,
@@ -112,10 +125,12 @@ fun RichTextEditor(
                         }
                         IconButton(
                             onClick = {
-                                fieldValue = fieldValue.wrapSelection("**", "**").also {
-                                    onValueChange(it.text)
-                                }
-                            }
+                                fieldValue = fieldValue.toggleInlineFormatting("**", "**")
+                                    .also { onValueChange(it.text) }
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = if (activeBold) activeActionColor else inactiveActionColor
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.FormatBold,
@@ -124,10 +139,12 @@ fun RichTextEditor(
                         }
                         IconButton(
                             onClick = {
-                                fieldValue = fieldValue.wrapSelection("*", "*").also {
-                                    onValueChange(it.text)
-                                }
-                            }
+                                fieldValue = fieldValue.toggleInlineFormatting("*", "*")
+                                    .also { onValueChange(it.text) }
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = if (activeItalic) activeActionColor else inactiveActionColor
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.FormatItalic,
@@ -135,7 +152,10 @@ fun RichTextEditor(
                             )
                         }
                         IconButton(
-                            onClick = { colorMenuExpanded = true }
+                            onClick = { colorMenuExpanded = true },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = if (activeColor != null) activeActionColor else inactiveActionColor
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.FormatColorText,
@@ -147,10 +167,14 @@ fun RichTextEditor(
                             onDismissRequest = { colorMenuExpanded = false }
                         ) {
                             colorOptions.forEach { option ->
+                                val isActiveOption = activeColor?.hex?.equals(option.hex, ignoreCase = true) == true
                                 DropdownMenuItem(
                                     text = {
                                         Row {
-                                            Text(option.name)
+                                            Text(
+                                                option.name,
+                                                color = if (isActiveOption) activeActionColor else MaterialTheme.colorScheme.onSurface
+                                            )
                                             Spacer(Modifier.width(8.dp))
                                             Text(
                                                 text = "●",
@@ -160,12 +184,14 @@ fun RichTextEditor(
                                         }
                                     },
                                     onClick = {
-                                        fieldValue = fieldValue.wrapSelection(
-                                            "[color=#${option.hex}]",
-                                            "[/color]"
-                                        ).also {
-                                            onValueChange(it.text)
-                                        }
+                                        fieldValue = if (isActiveOption && activeColor != null) {
+                                            fieldValue.moveCursorToIndex(activeColor.end + COLOR_TAG_CLOSE.length)
+                                        } else {
+                                            fieldValue.wrapSelection(
+                                                "[color=#${option.hex}]",
+                                                "[/color]"
+                                            )
+                                        }.also { onValueChange(it.text) }
                                         colorMenuExpanded = false
                                     }
                                 )
@@ -253,12 +279,23 @@ private fun TextFieldValue.applyCheckboxToggle(): TextFieldValue {
     }
 }
 
+private data class InlineTagRange(
+    val start: Int,
+    val end: Int
+)
+
 private data class ColorOption(
     val name: String,
     val color: Color
 ) {
     val hex: String = color.toHexString()
 }
+
+private data class ColorTagRange(
+    val hex: String,
+    val start: Int,
+    val end: Int
+)
 
 private const val COLOR_TAG_CLOSE = "[/color]"
 private val COLOR_HEX_REGEX = Regex("^[0-9a-fA-F]{6}$")
@@ -275,6 +312,98 @@ private fun parseColorTagStart(text: String, index: Int): Pair<String, Int>? {
     val colorHex = text.substring(index + 8, colorEnd)
     if (!COLOR_HEX_REGEX.matches(colorHex)) return null
     return colorHex to (colorEnd + 1)
+}
+
+private fun TextFieldValue.isCursorWithinInlineTag(prefix: String, suffix: String): Boolean {
+    return findEnclosingInlineTag(text, selection.min, prefix, suffix) != null
+}
+
+private fun TextFieldValue.toggleInlineFormatting(prefix: String, suffix: String): TextFieldValue {
+    val text = text
+    val selectionStart = selection.min
+    val selectionEnd = selection.max
+    if (!selection.collapsed) {
+        val selectedText = text.substring(selectionStart, selectionEnd)
+        val hasWrapper = selectedText.startsWith(prefix) && selectedText.endsWith(suffix)
+        return if (hasWrapper) {
+            val unwrapped = selectedText.substring(prefix.length, selectedText.length - suffix.length)
+            val newText = text.substring(0, selectionStart) + unwrapped + text.substring(selectionEnd)
+            copy(
+                text = newText,
+                selection = TextRange(selectionStart, selectionStart + unwrapped.length)
+            )
+        } else {
+            wrapSelection(prefix, suffix)
+        }
+    }
+
+    val enclosing = findEnclosingInlineTag(text, selectionStart, prefix, suffix)
+    return if (enclosing != null) {
+        val newCursor = (enclosing.end + suffix.length).coerceAtMost(text.length)
+        copy(selection = TextRange(newCursor))
+    } else {
+        val newText = text.substring(0, selectionStart) + prefix + suffix + text.substring(selectionEnd)
+        val newCursor = selectionStart + prefix.length
+        copy(text = newText, selection = TextRange(newCursor))
+    }
+}
+
+private fun TextFieldValue.moveCursorToIndex(index: Int): TextFieldValue {
+    val clamped = index.coerceIn(0, text.length)
+    return copy(selection = TextRange(clamped))
+}
+
+private fun findEnclosingInlineTag(
+    text: String,
+    cursor: Int,
+    prefix: String,
+    suffix: String
+): InlineTagRange? {
+    if (cursor < 0 || cursor > text.length) return null
+    val openIndex = text.lastIndexOf(prefix, startIndex = (cursor - 1).coerceAtLeast(0))
+    if (openIndex == -1) return null
+    if (prefix == "*" && suffix == "*") {
+        if ((openIndex > 0 && text[openIndex - 1] == '*') || (openIndex + 1 < text.length && text[openIndex + 1] == '*')) {
+            return null
+        }
+    }
+    val closeIndex = text.indexOf(suffix, startIndex = cursor)
+    if (closeIndex == -1) return null
+    if (prefix == "*" && suffix == "*") {
+        if ((closeIndex > 0 && text[closeIndex - 1] == '*') || (closeIndex + 1 < text.length && text[closeIndex + 1] == '*')) {
+            return null
+        }
+    }
+    if (openIndex + prefix.length > cursor) return null
+    return InlineTagRange(openIndex, closeIndex)
+}
+
+private fun TextFieldValue.findEnclosingColorTag(cursor: Int): ColorTagRange? {
+    var index = 0
+    var openHex: String? = null
+    var openIndex = 0
+    val text = text
+    while (index < text.length && index < cursor) {
+        val colorStart = parseColorTagStart(text, index)
+        if (colorStart != null) {
+            val (hex, nextIndex) = colorStart
+            openHex = hex
+            openIndex = index
+            index = nextIndex
+            continue
+        }
+        if (text.startsWith(COLOR_TAG_CLOSE, index)) {
+            openHex = null
+            index += COLOR_TAG_CLOSE.length
+            continue
+        }
+        index += 1
+    }
+
+    if (openHex == null) return null
+    val closeIndex = text.indexOf(COLOR_TAG_CLOSE, startIndex = cursor)
+    if (closeIndex == -1) return null
+    return ColorTagRange(openHex, openIndex, closeIndex)
 }
 
 private fun TextFieldValue.normalizeColorTagsForNewlines(): TextFieldValue {
