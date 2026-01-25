@@ -1001,7 +1001,7 @@ private fun ScheduleItemListContent(
 
 @Composable
 private fun NowIndicatorRow() {
-    val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    val lineColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
