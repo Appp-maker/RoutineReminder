@@ -430,6 +430,7 @@ fun MapScreen(
         // -----------------------------
         val last = trailPoints.lastOrNull()
         var allowTrailUpdate = true
+        var resetAfterSpike = false
         if (last != null) {
             val delta = haversineMeters(last, newPoint)
 
@@ -439,7 +440,10 @@ fun MapScreen(
             if (delta < minMovementMeters) allowTrailUpdate = false
 
             // Ignore giant GPS spikes
-            if (delta > 120.0) allowTrailUpdate = false
+            if (delta > 120.0) {
+                allowTrailUpdate = false
+                resetAfterSpike = true
+            }
         }
 
         // Continue with original code here
@@ -458,6 +462,17 @@ fun MapScreen(
         )
 
         // trail update
+        if (resetAfterSpike) {
+            val updatedTrail = if (trailPoints.isEmpty()) {
+                listOf(newPoint)
+            } else {
+                trailPoints.dropLast(1) + newPoint
+            }
+            viewModel.setTrailPoints(updatedTrail)
+            val line = LineString.fromLngLats(updatedTrail)
+            val trailSource = s.getSourceAs("trail-source") as? GeoJsonSource
+            trailSource?.setGeoJson(Feature.fromGeometry(line))
+        }
         if (allowTrailUpdate && (last == null || last != newPoint)) {
             val newDistance = if (last != null) {
                 distanceMeters + haversineMeters(last, newPoint)
