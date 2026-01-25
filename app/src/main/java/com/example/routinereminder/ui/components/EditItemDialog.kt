@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,6 +50,7 @@ fun EditItemDialog(
     useGoogleBackupMode: Boolean, // Added parameter
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
+    onOpenDefaultSettings: () -> Unit,
     onDismissRequest: () -> Unit,
     onSave: (ScheduleItem) -> Unit
 ) {
@@ -252,13 +254,34 @@ fun EditItemDialog(
             Scaffold(
                 topBar = {
                     TopAppBar(
-                        title = { Text(if (isNewItem) "Create New Entry" else "Edit Entry") },
+                        title = {
+                            Text(
+                                text = if (isNewItem) "Create New Entry" else "Edit Entry",
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        },
                         navigationIcon = {
                             IconButton(onClick = onDismissRequest) {
                                 Icon(Icons.Filled.Close, contentDescription = "Close")
                             }
                         },
                         actions = {
+                            if (isNewItem) {
+                                TextButton(
+                                    onClick = onOpenDefaultSettings,
+                                    colors = ButtonDefaults.textButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.secondary
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Settings,
+                                        contentDescription = stringResource(R.string.settings_default_events_shortcut),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(stringResource(R.string.settings_default_events_shortcut))
+                                }
+                            }
                             TextButton(onClick = saveEntryAction) {
                                 Text("SAVE")
                             }

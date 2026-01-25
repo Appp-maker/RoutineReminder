@@ -616,6 +616,10 @@ fun WorkoutScreen(
             useGoogleBackupMode = useGoogleBackupMode,
             eventSetNames = eventSetNames,
             eventSetColors = eventSetColors,
+            onOpenDefaultSettings = {
+                planToSchedule = null
+                navController.navigate("settings/routine?category=default_events")
+            },
             onDismissRequest = { planToSchedule = null },
             onSave = { item ->
                 mainViewModel.upsertScheduleItem(item)
