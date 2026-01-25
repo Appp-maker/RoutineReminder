@@ -140,6 +140,9 @@
     <string name="map_weather_snow">Snow</string>
     <string name="map_weather_thunder">Thunderstorm</string>
     <string name="map_weather_unknown">Weather</string>
+    <string name="map_weather_loading">Fetching weather…</string>
+    <string name="map_weather_waiting_location">Waiting for location…</string>
+    <string name="map_weather_unavailable">Weather unavailable</string>
 
     <!-- Tabs -->
     <string name="tab_events">Events</string>
