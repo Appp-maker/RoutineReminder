@@ -1779,7 +1779,7 @@ private fun WeatherSummaryCard(
     isLoading: Boolean,
     statusText: String?
 ) {
-    val statusColor = if (isLoading) AppPalette.TextMuted else AppPalette.TextSecondary
+    val statusColor = MaterialTheme.colorScheme.onSurfaceVariant
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = AppPalette.SurfaceElevated)
@@ -1790,7 +1790,7 @@ private fun WeatherSummaryCard(
             Text(
                 text = stringResource(R.string.map_weather_title),
                 style = MaterialTheme.typography.labelSmall,
-                color = AppPalette.AccentStrong
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1811,12 +1811,12 @@ private fun WeatherSummaryCard(
                     Text(
                         text = weatherDescription,
                         style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.AccentSecondary
+                        color = MaterialTheme.colorScheme.secondary
                     )
                     Text(
                         text = stringResource(R.string.map_weather_humidity, humidityText),
                         style = MaterialTheme.typography.bodySmall,
-                        color = AppPalette.Accent
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                     if (statusText != null) {
                         Text(
@@ -1905,8 +1905,8 @@ private fun ModeChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val bg = if (selected) AppPalette.AccentStrong else AppPalette.SurfaceAlt
-    val fg = if (selected) AppPalette.TextInverse else AppPalette.TextSecondary
+    val bg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+    val fg = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         modifier = Modifier
             .background(bg, RoundedCornerShape(24.dp))

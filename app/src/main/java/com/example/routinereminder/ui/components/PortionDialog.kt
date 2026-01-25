@@ -61,8 +61,6 @@ private val Bg = AppPalette.Surface
 private val Track = AppPalette.SurfaceTrack
 private val TextPrimary = AppPalette.TextPrimary
 private val TextSecondary = AppPalette.TextSecondary
-private val AccentBlue = AppPalette.Info
-private val DangerRed = AppPalette.DangerAccent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,6 +105,8 @@ fun PortionDialog(
         unfocusedLabelColor = TextSecondary,
         cursorColor = MaterialTheme.colorScheme.primary
     )
+    val accentColor = MaterialTheme.colorScheme.secondary
+    val dangerColor = MaterialTheme.colorScheme.error
 
     // ==== Initialize state from existing entry if available ====
     val initialIsOneTime = existingLoggedFood?.isOneTime ?: true
@@ -507,7 +507,7 @@ fun PortionDialog(
                             Checkbox(
                                 checked = isOneTime,
                                 onCheckedChange = { isOneTime = it },
-                                colors = CheckboxDefaults.colors(checkedColor = AccentBlue)
+                                colors = CheckboxDefaults.colors(checkedColor = accentColor)
                             )
                             Text("One-time only", color = TextPrimary)
                         }
@@ -524,7 +524,7 @@ fun PortionDialog(
                                 DayOfWeek.values().forEach { day ->
                                     val selected = selectedDays.contains(day)
                                     Surface(
-                                        color = if (selected) AccentBlue else Track,
+                                        color = if (selected) accentColor else Track,
                                         shape = RoundedCornerShape(50),
                                         modifier = Modifier
                                             .clickable {
@@ -556,7 +556,7 @@ fun PortionDialog(
                             )
 
                             Spacer(Modifier.height(8.dp))
-                            Text("Start anchor date: $startDate", color = AccentBlue)
+                            Text("Start anchor date: $startDate", color = accentColor)
                         }
 
                         Spacer(Modifier.height(16.dp))
@@ -623,7 +623,7 @@ fun PortionDialog(
                         },
                         enabled = saveEnabled,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = AccentBlue,
+                            containerColor = accentColor,
                             disabledContainerColor = AppPalette.TextMuted
                         )
                     ) {
@@ -664,7 +664,7 @@ private fun CaloriesOverview(current: Double, target: Double, delta: Double) {
         Text("Calories", color = TextSecondary, fontSize = 13.sp)
         Spacer(Modifier.height(4.dp))
         // Simple linear progress (keeps visuals consistent)
-        LinearBar(progress = progressAfter, trackColor = Track, fillColor = AccentBlue)
+        LinearBar(progress = progressAfter, trackColor = Track, fillColor = accentColor)
 
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -675,7 +675,7 @@ private fun CaloriesOverview(current: Double, target: Double, delta: Double) {
             )
             Text(
                 text = (if (delta >= 0) "+${delta.round()}" else "${delta.round()}"),
-                color = AccentBlue,
+                color = accentColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -699,7 +699,7 @@ private fun NutrientTile(
         else -> min(after / target, 1.0).toFloat()
     }
     val overTarget = (!lowerIsBetter && after > target) || (lowerIsBetter && after > target)
-    val barColor = if (overTarget) DangerRed else AccentBlue
+    val barColor = if (overTarget) dangerColor else accentColor
 
     Column(
         modifier = Modifier
@@ -731,7 +731,7 @@ private fun NutrientTile(
                 // RIGHT = "/ target unit" (white)
                 Text(
                     text = "+${current.round()} $unit",
-                    color = AccentBlue,
+                    color = accentColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -747,7 +747,7 @@ private fun NutrientTile(
             if (!customMode) {
                 Text(
                     text = (if (delta >= 0) "+${delta.round()}" else "${delta.round()}") + " " + unit,
-                    color = AccentBlue,
+                    color = accentColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.End,
@@ -893,7 +893,7 @@ private fun EditableNutrientRow(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     (if (delta >= 0) "+${delta.round()}" else "${delta.round()}") + " $unit",
-                    color = AccentBlue,
+                    color = accentColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )

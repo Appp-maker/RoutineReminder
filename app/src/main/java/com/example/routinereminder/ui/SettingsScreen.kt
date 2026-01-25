@@ -185,7 +185,6 @@ fun SettingsScreen(
     val eventSetColorInputs = remember { mutableStateListOf<Int>() }
     var primaryColorInput by remember { mutableStateOf(appThemeColors.primary) }
     var secondaryColorInput by remember { mutableStateOf(appThemeColors.secondary) }
-    var tertiaryColorInput by remember { mutableStateOf(appThemeColors.tertiary) }
     var defaultActiveSetSelections by remember { mutableStateOf<Map<DayOfWeek, Set<Int>>>(emptyMap()) }
 
 
@@ -263,7 +262,6 @@ fun SettingsScreen(
     LaunchedEffect(appThemeColors) {
         primaryColorInput = appThemeColors.primary
         secondaryColorInput = appThemeColors.secondary
-        tertiaryColorInput = appThemeColors.tertiary
     }
 
     LaunchedEffect(defaultActiveSetsByWeekday) {
@@ -499,7 +497,7 @@ fun SettingsScreen(
                             AppThemeColors(
                                 primary = primaryColorInput,
                                 secondary = secondaryColorInput,
-                                tertiary = tertiaryColorInput
+                                tertiary = secondaryColorInput
                             )
                         )
                         viewModel.saveDefaultActiveSetsByWeekday(defaultActiveSetSelections)
@@ -781,10 +779,8 @@ fun SettingsScreen(
                         calendarEventCounts = calendarEventCounts,
                         primaryColor = primaryColorInput,
                         secondaryColor = secondaryColorInput,
-                        tertiaryColor = tertiaryColorInput,
                         onPrimaryColorChange = { primaryColorInput = it; justSavedSuccessfully = false },
-                        onSecondaryColorChange = { secondaryColorInput = it; justSavedSuccessfully = false },
-                        onTertiaryColorChange = { tertiaryColorInput = it; justSavedSuccessfully = false }
+                        onSecondaryColorChange = { secondaryColorInput = it; justSavedSuccessfully = false }
                     )
                 }
             }
@@ -1850,10 +1846,8 @@ private fun AppSettingsSection(
     calendarEventCounts: CalendarEventCounts,
     primaryColor: Int,
     secondaryColor: Int,
-    tertiaryColor: Int,
     onPrimaryColorChange: (Int) -> Unit,
-    onSecondaryColorChange: (Int) -> Unit,
-    onTertiaryColorChange: (Int) -> Unit
+    onSecondaryColorChange: (Int) -> Unit
 ) {
     var backupSyncHoursInputText by remember { mutableStateOf("1") }
     var backupSyncMinutesInputText by remember { mutableStateOf("0") }
@@ -1944,12 +1938,6 @@ private fun AppSettingsSection(
                         label = stringResource(R.string.settings_app_theme_secondary_label),
                         selectedColor = Color(secondaryColor),
                         onColorSelected = { onSecondaryColorChange(it.toArgb()) }
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    SeriesColorPicker(
-                        label = stringResource(R.string.settings_app_theme_tertiary_label),
-                        selectedColor = Color(tertiaryColor),
-                        onColorSelected = { onTertiaryColorChange(it.toArgb()) }
                     )
                 }
             }

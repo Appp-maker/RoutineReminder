@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.routinereminder.data.model.SessionStats
-import com.example.routinereminder.ui.theme.AppPalette
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -311,7 +310,7 @@ fun HistoryItem(
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = "Share",
-                        tint = AppPalette.AccentCyan
+                        tint = MaterialTheme.colorScheme.secondary
                     )
                 }
 
@@ -319,7 +318,7 @@ fun HistoryItem(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
-                        tint = AppPalette.Danger
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }
