@@ -176,7 +176,7 @@ fun RichTextEditor(
                                     },
                                     onClick = {
                                         fieldValue = if (isActiveOption && activeColor != null) {
-                                            fieldValue.moveCursorToIndex(activeColor.end + COLOR_TAG_CLOSE.length)
+                                            fieldValue.removeEnclosingColorTag(activeColor)
                                         } else {
                                             fieldValue.wrapSelection(
                                                 "[color=#${option.hex}]",
@@ -318,8 +318,7 @@ private fun TextFieldValue.toggleInlineFormatting(prefix: String, suffix: String
 
     val enclosing = findEnclosingInlineTag(text, selectionStart, prefix, suffix)
     return if (enclosing != null) {
-        val newCursor = (enclosing.end + suffix.length).coerceAtMost(text.length)
-        copy(selection = TextRange(newCursor))
+        removeEnclosingInlineTag(enclosing, prefix, suffix)
     } else {
         val newText = text.substring(0, selectionStart) + prefix + suffix + text.substring(selectionEnd)
         val newCursor = selectionStart + prefix.length
@@ -327,9 +326,43 @@ private fun TextFieldValue.toggleInlineFormatting(prefix: String, suffix: String
     }
 }
 
-private fun TextFieldValue.moveCursorToIndex(index: Int): TextFieldValue {
-    val clamped = index.coerceIn(0, text.length)
-    return copy(selection = TextRange(clamped))
+private fun TextFieldValue.removeEnclosingInlineTag(
+    enclosing: InlineTagRange,
+    prefix: String,
+    suffix: String
+): TextFieldValue {
+    val start = enclosing.start
+    val end = enclosing.end
+    val text = text
+    val before = text.substring(0, start)
+    val inner = text.substring(start + prefix.length, end)
+    val after = text.substring(end + suffix.length)
+    val newText = before + inner + after
+    val newCursor = (selection.min - prefix.length).coerceIn(0, newText.length)
+    return copy(text = newText, selection = TextRange(newCursor))
+}
+
+private fun TextFieldValue.removeEnclosingColorTag(colorTag: ColorTagRange): TextFieldValue {
+    val text = text
+    val colorStart = parseColorTagStart(text, colorTag.start) ?: return this
+    val (_, openEnd) = colorStart
+    val closeStart = colorTag.end
+    val closeEnd = closeStart + COLOR_TAG_CLOSE.length
+    if (openEnd > text.length || closeEnd > text.length) return this
+    val newText = text.removeRange(closeStart, closeEnd).removeRange(colorTag.start, openEnd)
+    fun adjustOffset(offset: Int): Int {
+        var updated = offset
+        if (offset > closeStart) updated -= COLOR_TAG_CLOSE.length
+        if (offset > openEnd) updated -= (openEnd - colorTag.start)
+        return updated.coerceIn(0, newText.length)
+    }
+    return copy(
+        text = newText,
+        selection = TextRange(
+            adjustOffset(selection.min),
+            adjustOffset(selection.max)
+        )
+    )
 }
 
 private fun findEnclosingInlineTag(
