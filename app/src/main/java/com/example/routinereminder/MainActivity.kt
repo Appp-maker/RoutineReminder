@@ -110,7 +110,6 @@ import com.example.routinereminder.ui.bundle.BundleDetailScreen
 import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 
 import com.example.routinereminder.ui.components.EditItemDialog
-import com.example.routinereminder.ui.components.SeriesColorDot
 import com.example.routinereminder.ui.components.isNoEventFoodColor
 import com.example.routinereminder.ui.components.resolveEventFoodColor
 import com.example.routinereminder.ui.components.SettingsIconButton
@@ -1387,7 +1386,7 @@ fun ScheduleItemView(
         eventSetColors.getOrNull(setId - 1)
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
-    val showSeriesDot = !isNoEventFoodColor(resolvedColorArgb)
+    val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
 
 
 // Base text color logic
@@ -1401,8 +1400,13 @@ fun ScheduleItemView(
     val doneAlpha = if (isDoneToday) 0.4f else 1f
     val doneDecoration = if (isDoneToday) TextDecoration.LineThrough else TextDecoration.None
 
+    val titleTextColor = when {
+        isDoneToday -> baseTextColor.copy(alpha = doneAlpha)
+        isEffectivelyPastNow -> baseTextColor.copy(alpha = doneAlpha)
+        else -> MaterialTheme.colorScheme.primary.copy(alpha = doneAlpha)
+    }
     val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
-        color = baseTextColor.copy(alpha = doneAlpha),
+        color = titleTextColor,
         textDecoration = doneDecoration
     )
 
@@ -1442,14 +1446,20 @@ fun ScheduleItemView(
             verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth()
         ) {
-            if (showSeriesDot) {
-                SeriesColorDot(
-                    color = seriesColor.copy(alpha = doneAlpha),
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
+            val indicatorColor = if (showSeriesColor) {
+                seriesColor
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             }
+            Box(
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .width(4.dp)
+                    .height(20.dp)
+                    .background(indicatorColor.copy(alpha = doneAlpha), shape = MaterialTheme.shapes.extraSmall)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             // LEFT COLUMN: start time + ONE TIME / REPEATS under it
             Column(
