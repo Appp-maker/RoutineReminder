@@ -51,12 +51,11 @@ fun RichTextEditor(
     var fieldValue by remember { mutableStateOf(TextFieldValue(value)) }
     var isFocused by remember { mutableStateOf(false) }
     var colorMenuExpanded by remember { mutableStateOf(false) }
-    val colorOptions = remember(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary) {
-        listOf(
-            ColorOption("Primary", MaterialTheme.colorScheme.primary),
-            ColorOption("Secondary", MaterialTheme.colorScheme.secondary)
-        )
-    }
+    val colorScheme = MaterialTheme.colorScheme
+    val colorOptions = listOf(
+        ColorOption("Primary", colorScheme.primary),
+        ColorOption("Secondary", colorScheme.secondary)
+    )
 
     LaunchedEffect(value) {
         if (value != fieldValue.text) {
