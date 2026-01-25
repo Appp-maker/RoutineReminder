@@ -226,7 +226,7 @@ private fun SeriesColorSwatch(
 ) {
     val borderWidth = if (isSelected) 2.dp else 1.dp
     val borderColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary
+        MaterialTheme.colorScheme.secondary
     } else {
         MaterialTheme.colorScheme.outlineVariant
     }
@@ -265,7 +265,7 @@ private fun CustomColorSwatch(
 ) {
     val borderWidth = if (isSelected) 2.dp else 1.dp
     val borderColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary
+        MaterialTheme.colorScheme.secondary
     } else {
         MaterialTheme.colorScheme.outlineVariant
     }

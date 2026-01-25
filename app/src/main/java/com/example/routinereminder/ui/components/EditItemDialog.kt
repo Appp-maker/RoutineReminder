@@ -451,8 +451,8 @@ fun EditItemDialog(
                                         }
                                     },
                                     colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                        containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                                        contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
                                     ),
                                     modifier = Modifier.weight(1f).height(40.dp),
                                     contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
