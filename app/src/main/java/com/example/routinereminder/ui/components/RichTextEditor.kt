@@ -69,7 +69,7 @@ fun RichTextEditor(
     )
     val richTextVisualTransformation = remember { RichTextVisualTransformation() }
     val cursorIndex = fieldValue.selection.min
-    val activeBold = fieldValue.isCursorWithinInlineTag("**", "**")
+    val activeBold = fieldValue.isCursorWithinInlineTag("__", "__")
     val activeItalic = fieldValue.isCursorWithinInlineTag("*", "*")
     val activeColor = fieldValue.findEnclosingColorTag(cursorIndex)
     val activeActionColor = MaterialTheme.colorScheme.secondary
@@ -123,7 +123,7 @@ fun RichTextEditor(
                         }
                         IconButton(
                             onClick = {
-                                fieldValue = fieldValue.toggleInlineFormatting("**", "**")
+                                fieldValue = fieldValue.toggleInlineFormatting("__", "__")
                                     .also { onValueChange(it.text) }
                             },
                             colors = IconButtonDefaults.iconButtonColors(
