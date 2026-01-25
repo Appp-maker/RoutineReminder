@@ -37,7 +37,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
@@ -46,7 +45,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -100,6 +98,7 @@ import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
 import com.example.routinereminder.data.workout.WorkoutPlan
 import com.example.routinereminder.data.workout.WorkoutPlanExercise
+import com.example.routinereminder.ui.components.SettingsIconButton
 import com.example.routinereminder.ui.components.EditItemDialog
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -682,7 +681,9 @@ fun WorkoutScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
                     ) {
                         IconButton(
                             onClick = {
@@ -691,10 +692,6 @@ fun WorkoutScreen(
                                 }
                             },
                             enabled = canGoPreviousPlan,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.secondary,
-                                disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                            ),
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
@@ -799,10 +796,6 @@ fun WorkoutScreen(
                                 }
                             },
                             enabled = canGoNextPlan,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.secondary,
-                                disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                            ),
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
@@ -810,18 +803,7 @@ fun WorkoutScreen(
                                 contentDescription = stringResource(R.string.workout_plan_select_prompt)
                             )
                         }
-                        IconButton(
-                            onClick = { navController.navigate("settings/workout") },
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.secondary
-                            ),
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                Icons.Filled.Settings,
-                                contentDescription = stringResource(R.string.settings_action_open)
-                            )
-                        }
+                        SettingsIconButton(onClick = { navController.navigate("settings/workout") })
                     }
                 }
             }
