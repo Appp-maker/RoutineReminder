@@ -1728,7 +1728,8 @@ private fun EventSetsSettingsSection(
             selectedColor = Color(currentColor),
             onColorSelected = { onEventSetColorChange(index, it.toArgb()) },
             modifier = Modifier.padding(bottom = 12.dp),
-            colorOptions = SeriesColorOptions
+            colorOptions = SeriesColorOptions,
+            allowCustomColor = false
         )
     }
 
@@ -1934,13 +1935,15 @@ private fun AppSettingsSection(
                     SeriesColorPicker(
                         label = stringResource(R.string.settings_app_theme_primary_label),
                         selectedColor = Color(primaryColor),
-                        onColorSelected = { onPrimaryColorChange(it.toArgb()) }
+                        onColorSelected = { onPrimaryColorChange(it.toArgb()) },
+                        allowCustomColor = false
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     SeriesColorPicker(
                         label = stringResource(R.string.settings_app_theme_secondary_label),
                         selectedColor = Color(secondaryColor),
-                        onColorSelected = { onSecondaryColorChange(it.toArgb()) }
+                        onColorSelected = { onSecondaryColorChange(it.toArgb()) },
+                        allowCustomColor = false
                     )
                 }
             }

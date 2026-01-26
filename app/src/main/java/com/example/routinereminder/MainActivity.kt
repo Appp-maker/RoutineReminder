@@ -1566,7 +1566,7 @@ fun ScheduleItemView(
             val checklistLines = remember(notesText) { parseChecklistLines(notesText) }
             val visibleChecklistLines = if (isExpanded) checklistLines else checklistLines.take(3)
             val checklistTextIndent = 24.dp
-            val descriptionTextColor = baseTextColor.copy(alpha = doneAlpha)
+            val descriptionTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = doneAlpha)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
