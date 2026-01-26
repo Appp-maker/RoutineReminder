@@ -74,7 +74,7 @@ enum class StartTimeOption {
 
     companion object {
         fun fromName(name: String?): StartTimeOption {
-            return entries.find { it.name == name } ?: SPECIFIC_TIME
+            return entries.find { it.name == name } ?: NEXT_FULL_HOUR
         }
     }
 }
