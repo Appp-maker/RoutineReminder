@@ -1,7 +1,14 @@
 package com.example.routinereminder.ui.bundle
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,6 +22,7 @@ import com.example.routinereminder.ui.Screen
 import com.example.routinereminder.ui.components.RichTextEditor
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun CreateBundleScreen(
     navController: NavController
 ) {
@@ -104,61 +112,6 @@ fun CreateBundleScreen(
                 style = MaterialTheme.typography.bodySmall
             )
         }
-
-        Spacer(Modifier.height(16.dp))
-
-        val customPortionValue = customPortionGrams.toDoubleOrNull()
-        val canSavePortion = portionType == PORTION_TYPE_GRAMS ||
-            (customPortionValue != null && customPortionValue > 0)
-        val canCreate = name.isNotBlank() && canSavePortion
-
-        Spacer(Modifier.height(16.dp))
-
-        Text(
-            text = "Ingredients",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.secondary
-        )
-        Spacer(Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedButton(
-                modifier = Modifier.weight(1f),
-                enabled = canCreate,
-                onClick = {
-                    viewModel.createBundleAndReturnId(
-                        name = name,
-                        description = description,
-                        portionType = portionType,
-                        customPortionGrams = customPortionValue
-                    ) { bundleId ->
-                        navController.navigate(Screen.BundleDetail.route(bundleId, edit = true)) {
-                            popUpTo(Screen.BundleList.route)
-                        }
-                    }
-                }
-            ) {
-                Text("Add ingredient")
-            }
-
-            Button(
-                modifier = Modifier.weight(1f),
-                enabled = canCreate,
-                onClick = {
-                    viewModel.createBundle(
-                        name = name,
-                        description = description,
-                        portionType = portionType,
-                        customPortionGrams = customPortionValue
-                    )
-                    navController.popBackStack() // go back to list
-                }
-            ) {
-                Text("Save")
-            }
-        }
+    }
     }
 }
