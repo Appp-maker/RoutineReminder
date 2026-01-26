@@ -22,7 +22,10 @@ import com.example.routinereminder.location.TrackingService
 import com.example.routinereminder.util.NotificationScheduler
 import com.example.routinereminder.util.CalendarSyncManager
 import com.example.routinereminder.util.CalendarMeta
+import com.example.routinereminder.util.ExportImportUtil
 import com.example.routinereminder.workers.ExerciseDbDownloadWorker
+import com.example.routinereminder.sync.DriveAppDataProvider
+import com.example.routinereminder.sync.SyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +46,7 @@ import kotlin.math.roundToInt
 import java.util.UUID
 import org.maplibre.geojson.Point
 import android.content.Context
+import android.net.Uri
 
 data class CalendarInfo(val id: String, val displayName: String, val accountName: String)
 
@@ -129,6 +133,12 @@ class MainViewModel @Inject constructor(
     private val _routineInsights = MutableStateFlow<RoutineInsights?>(null)
     val routineInsights: StateFlow<RoutineInsights?> = _routineInsights.asStateFlow()
 
+    private val _driveBackupUri = MutableStateFlow<String?>(null)
+    val driveBackupUri: StateFlow<String?> = _driveBackupUri.asStateFlow()
+
+    private val _hasCompletedOnboarding = MutableStateFlow(false)
+    val hasCompletedOnboarding: StateFlow<Boolean> = _hasCompletedOnboarding.asStateFlow()
+
     private val _eventSetNames = MutableStateFlow(
         List(SettingsRepository.MAX_EVENT_SETS) { index ->
             "Set ${('A' + index)}"
@@ -194,6 +204,9 @@ class MainViewModel @Inject constructor(
 
     private var trailJob: Job? = null
     private var splitJob: Job? = null
+
+    private val exportImportUtil = ExportImportUtil(database)
+    private val syncManager = SyncManager(application, database)
 
     init {
         viewModelScope.launch {
@@ -288,6 +301,16 @@ class MainViewModel @Inject constructor(
             settingsRepository.getRoutineInsightsEnabled().collectLatest { enabled ->
                 _routineInsightsEnabled.value = enabled
                 refreshRoutineInsights()
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getDriveBackupUri().collectLatest { uri ->
+                _driveBackupUri.value = uri
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getHasCompletedOnboarding().collectLatest { completed ->
+                _hasCompletedOnboarding.value = completed
             }
         }
         viewModelScope.launch {
@@ -860,6 +883,45 @@ class MainViewModel @Inject constructor(
             _selectedGoogleAccountName.value = accountName
             android.util.Log.d("MainViewModel", "StateFlow updated: ${_selectedGoogleAccountName.value}")
         }
+    }
+
+    fun updateDriveBackupUri(uri: String?) {
+        viewModelScope.launch {
+            settingsRepository.saveDriveBackupUri(uri)
+        }
+    }
+
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            settingsRepository.saveHasCompletedOnboarding(true)
+        }
+    }
+
+    suspend fun exportDataToUri(context: Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            context.contentResolver.openOutputStream(uri, "wt")?.use { stream ->
+                exportImportUtil.exportAllDataToStream(stream)
+            } ?: return@runCatching false
+            true
+        }.getOrElse { false }
+    }
+
+    suspend fun importDataFromUri(context: Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                exportImportUtil.importAllDataFromStream(stream)
+            } ?: return@runCatching false
+        }.getOrElse { false }
+    }
+
+    suspend fun backupToDrive(context: Context, uri: Uri): Boolean {
+        syncManager.setCloudProvider(DriveAppDataProvider(context, uri))
+        return syncManager.performBackup()
+    }
+
+    suspend fun restoreFromDrive(context: Context, uri: Uri): Boolean {
+        syncManager.setCloudProvider(DriveAppDataProvider(context, uri))
+        return syncManager.performRestore()
     }
 
 

@@ -68,6 +68,8 @@ sealed class Screen(
         fun route(sessionId: String) = "share_preview/$sessionId"
     }
 
+    object Onboarding : Screen("onboarding")
+
     companion object {
         val bottomBarScreens = listOf(
             RoutineReminder,
@@ -88,7 +90,8 @@ sealed class Screen(
             BundleList,
             CreateBundle,
             Settings,
-            SharePreview
+            SharePreview,
+            Onboarding
         )
 
     }

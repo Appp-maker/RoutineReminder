@@ -106,6 +106,7 @@ import com.example.routinereminder.ui.SettingsCategory
 import com.example.routinereminder.ui.SettingsScreen
 import com.example.routinereminder.ui.WorkoutScreen
 import com.example.routinereminder.ui.WorkoutSessionScreen
+import com.example.routinereminder.ui.OnboardingScreen
 import com.example.routinereminder.ui.bundle.BundleDetailScreen
 import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 
@@ -293,6 +294,7 @@ fun MainAppUI(
         val enabledTabScreens = enabledTabs.map { it.screen }
         val mainTabRoutes = allTabScreens.map { it.route }
         val enabledTabRoutes = enabledTabScreens.map { it.route }
+        val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsState()
 
         val showBottomBar = enabledTabScreens.size > 1 && currentBaseRoute in enabledTabRoutes
 
@@ -477,9 +479,29 @@ fun MainAppUI(
                     // ✅ NavHost defines all your routes
                     NavHost(
                         navController = navController,
-                        startDestination = enabledTabRoutes.firstOrNull()
-                            ?: Screen.RoutineReminder.route
+                        startDestination = if (hasCompletedOnboarding) {
+                            enabledTabRoutes.firstOrNull() ?: Screen.RoutineReminder.route
+                        } else {
+                            Screen.Onboarding.route
+                        }
                     ) {
+                        composable(Screen.Onboarding.route) {
+                            val scope = rememberCoroutineScope()
+                            OnboardingScreen(
+                                onContinue = {
+                                    viewModel.completeOnboarding()
+                                    val destination = enabledTabRoutes.firstOrNull() ?: Screen.RoutineReminder.route
+                                    navController.navigate(destination) {
+                                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                    }
+                                },
+                                onConnectGoogleAccount = {
+                                    scope.launch {
+                                        viewModel.triggerGoogleAccountSelectionFlow.send(Unit)
+                                    }
+                                }
+                            )
+                        }
                         composable(Screen.RoutineReminder.route) {
                             MainScreenContent(
                                 items = scheduleItems,
