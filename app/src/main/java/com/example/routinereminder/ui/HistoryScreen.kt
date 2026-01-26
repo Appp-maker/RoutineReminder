@@ -41,7 +41,7 @@ fun HistoryScreen(navController: NavController) {
                 title = {
                     Text(
                         "History",
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
@@ -101,8 +101,7 @@ private fun AnalyticsSummary(sessions: List<SessionStats>) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Analytics",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.titleMedium
             )
             if (sessions.isEmpty()) {
                 Text(
@@ -133,8 +132,7 @@ private fun AnalyticsSummary(sessions: List<SessionStats>) {
 private fun SummarySection(title: String, summaries: List<PeriodSummary>) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.secondary
+        style = MaterialTheme.typography.titleSmall
     )
     if (summaries.isEmpty()) {
         Text(
