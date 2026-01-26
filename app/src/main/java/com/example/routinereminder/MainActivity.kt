@@ -869,7 +869,6 @@ fun DateDisplayHeader(
         Text(
             text = currentDate.format(formatter),
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .weight(1f)
                 .clickable { onDateTextClick() },
@@ -1056,7 +1055,6 @@ fun UnifiedDateHeader(
         Text(
             text = currentDate.format(formatter),
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .weight(1f)
                 .clickable { onDateTextClick() },

@@ -407,7 +407,6 @@ fun CalorieTrackerScreen(
             Text(
                 text = currentDate.format(formatter),
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .weight(1f)
                     .clickable { onDateTextClick() },
