@@ -97,6 +97,8 @@
     <string name="settings_app_about_body">RoutineReminder helps you build routines, log workouts, and schedule workout plans.</string>
     <string name="settings_app_credits_body">Exercise data powered by ExerciseDB (exercisedb.dev). Thanks to the ExerciseDB contributors for maintaining the public dataset.</string>
     <string name="settings_app_legal_body">Workout exercise data is provided by ExerciseDB and remains property of its respective owners. Usage requires attribution only; no login or payment is required. Please review ExerciseDB terms for updates.</string>
+    <string name="settings_routine_insights_title">Routine insights</string>
+    <string name="settings_routine_insights_description">Show weekly adherence, streaks, and a consistency score on the Routine tab.</string>
     <string name="settings_calorie_track_consumed">Track consumed foods with checkboxes</string>
     <string name="settings_calorie_track_consumed_hint">When enabled, calories start at 0 until you check foods as consumed.</string>
     <string name="settings_event_sets_title">Event Sets</string>
@@ -131,6 +133,11 @@
     <string name="event_sets_manual_override">Manually set for this day</string>
     <string name="event_sets_dialog_settings_action">Event set settings</string>
     <string name="event_sets_dialog_done">Done</string>
+    <string name="routine_insights_title">Consistency insights</string>
+    <string name="routine_insights_summary">%1$d/%2$d routines completed this week</string>
+    <string name="routine_insights_weekly_adherence">Weekly adherence</string>
+    <string name="routine_insights_consistency_score">Consistency score</string>
+    <string name="routine_insights_current_streak">Current streak</string>
     <string name="map_calories_log_empty_toast">No run calories saved for today yet.</string>
     <string name="map_weather_title">Weather</string>
     <string name="map_weather_temperature">Temperature</string>

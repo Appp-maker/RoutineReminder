@@ -39,6 +39,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlin.math.roundToInt
 import java.util.UUID
 import org.maplibre.geojson.Point
 import android.content.Context
@@ -121,6 +122,12 @@ class MainViewModel @Inject constructor(
 
     private val _foodConsumedTrackingEnabled = MutableStateFlow(false)
     val foodConsumedTrackingEnabled: StateFlow<Boolean> = _foodConsumedTrackingEnabled.asStateFlow()
+
+    private val _routineInsightsEnabled = MutableStateFlow(false)
+    val routineInsightsEnabled: StateFlow<Boolean> = _routineInsightsEnabled.asStateFlow()
+
+    private val _routineInsights = MutableStateFlow<RoutineInsights?>(null)
+    val routineInsights: StateFlow<RoutineInsights?> = _routineInsights.asStateFlow()
 
     private val _eventSetNames = MutableStateFlow(
         List(SettingsRepository.MAX_EVENT_SETS) { index ->
@@ -278,6 +285,12 @@ class MainViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            settingsRepository.getRoutineInsightsEnabled().collectLatest { enabled ->
+                _routineInsightsEnabled.value = enabled
+                refreshRoutineInsights()
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.getEventSetNames().collectLatest { names ->
                 _eventSetNames.value = names
             }
@@ -314,6 +327,7 @@ class MainViewModel @Inject constructor(
 
         applyDefaultActiveSetsForDate(_selectedDate.value)
         refreshScheduleItems()
+        refreshRoutineInsights()
     }
 
     private fun trackTrailForSession(sessionId: String?) {
@@ -491,6 +505,7 @@ class MainViewModel @Inject constructor(
         applyDefaultActiveSetsForDate(date)
         refreshScheduleItems()
         refreshDoneStatesForDate(date.toEpochDay())
+        refreshRoutineInsights()
     }
 
 
@@ -500,6 +515,7 @@ class MainViewModel @Inject constructor(
         applyDefaultActiveSetsForDate(newDate)
         refreshScheduleItems()
         refreshDoneStatesForDate(newDate.toEpochDay())
+        refreshRoutineInsights()
     }
 
     fun selectNextDay() {
@@ -508,6 +524,7 @@ class MainViewModel @Inject constructor(
         applyDefaultActiveSetsForDate(newDate)
         refreshScheduleItems()
         refreshDoneStatesForDate(newDate.toEpochDay())
+        refreshRoutineInsights()
     }
 
     fun toggleActiveSet(setId: Int): Boolean {
@@ -729,6 +746,7 @@ class MainViewModel @Inject constructor(
 
 
             refreshDoneStatesForDate(day)
+            refreshRoutineInsights()
         }
     }
 
@@ -743,6 +761,7 @@ class MainViewModel @Inject constructor(
             }
 
             refreshDoneStatesForDate(day)
+            refreshRoutineInsights()
         }
     }
 
@@ -770,6 +789,12 @@ class MainViewModel @Inject constructor(
     fun updateSyncInterval(minutes: Long) {
         viewModelScope.launch {
             settingsRepository.saveSyncInterval(minutes)
+        }
+    }
+
+    fun updateRoutineInsightsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveRoutineInsightsEnabled(enabled)
         }
     }
 
@@ -902,8 +927,78 @@ class MainViewModel @Inject constructor(
                 withContext(Dispatchers.Main) {
                     _scheduleItems.value = filtered
                 }
+                refreshRoutineInsights()
             }
         }
+    }
+
+    private fun refreshRoutineInsights() {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!_routineInsightsEnabled.value) {
+                _routineInsights.value = null
+                return@launch
+            }
+            val items = scheduleDao.getAllOnce().map { it.toItem() }
+            val insights = calculateRoutineInsights(items, _selectedDate.value)
+            withContext(Dispatchers.Main) {
+                _routineInsights.value = insights
+            }
+        }
+    }
+
+    private suspend fun calculateRoutineInsights(
+        items: List<ScheduleItem>,
+        endDate: LocalDate
+    ): RoutineInsights {
+        val weeklyDays = (0..6).map { endDate.minusDays(it.toLong()) }
+        var totalScheduled = 0
+        var totalCompleted = 0
+        val dailyRatios = mutableListOf<Double>()
+
+        weeklyDays.forEach { day ->
+            val itemsForDay = items.filter { it.occursOnDate(day) }
+            if (itemsForDay.isEmpty()) return@forEach
+            val doneIds = scheduleDoneDao.getDoneStatesForDay(day.toEpochDay()).toSet()
+            val doneCount = itemsForDay.count { it.id in doneIds }
+            totalScheduled += itemsForDay.size
+            totalCompleted += doneCount
+            dailyRatios.add(doneCount.toDouble() / itemsForDay.size.toDouble())
+        }
+
+        val weeklyAdherencePercent = if (totalScheduled > 0) {
+            ((totalCompleted.toDouble() / totalScheduled.toDouble()) * 100).roundToInt()
+        } else {
+            0
+        }
+        val consistencyScorePercent = if (dailyRatios.isNotEmpty()) {
+            (dailyRatios.average() * 100).roundToInt()
+        } else {
+            0
+        }
+
+        var streakDays = 0
+        var dayOffset = 0L
+        while (true) {
+            val day = endDate.minusDays(dayOffset)
+            val itemsForDay = items.filter { it.occursOnDate(day) }
+            if (itemsForDay.isEmpty()) break
+            val doneIds = scheduleDoneDao.getDoneStatesForDay(day.toEpochDay()).toSet()
+            val doneCount = itemsForDay.count { it.id in doneIds }
+            if (doneCount == itemsForDay.size) {
+                streakDays += 1
+                dayOffset += 1
+            } else {
+                break
+            }
+        }
+
+        return RoutineInsights(
+            weeklyAdherencePercent = weeklyAdherencePercent,
+            consistencyScorePercent = consistencyScorePercent,
+            currentStreakDays = streakDays,
+            totalScheduled = totalScheduled,
+            totalCompleted = totalCompleted
+        )
     }
 
     private suspend fun updateNotificationsForSetSelection(
