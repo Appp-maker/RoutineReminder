@@ -65,6 +65,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val RECENT_CUSTOM_EVENT_COLORS = stringPreferencesKey("recent_custom_event_colors")
     val ROUTINE_INSIGHTS_ENABLED = booleanPreferencesKey("routine_insights_enabled")
     val EXAMPLE_DATA_SEEDED = booleanPreferencesKey("example_data_seeded")
+    val DRIVE_BACKUP_URI = stringPreferencesKey("drive_backup_uri")
+    val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -199,6 +201,34 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getRoutineInsightsEnabled(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[ROUTINE_INSIGHTS_ENABLED] ?: false
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveDriveBackupUri(uri: String?) {
+        dataStore.edit { preferences ->
+            if (uri.isNullOrBlank()) {
+                preferences.remove(DRIVE_BACKUP_URI)
+            } else {
+                preferences[DRIVE_BACKUP_URI] = uri
+            }
+        }
+    }
+
+    fun getDriveBackupUri(): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[DRIVE_BACKUP_URI]
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveHasCompletedOnboarding(completed: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[HAS_COMPLETED_ONBOARDING] = completed
+        }
+    }
+
+    fun getHasCompletedOnboarding(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[HAS_COMPLETED_ONBOARDING] ?: false
         }.distinctUntilChanged()
     }
 
