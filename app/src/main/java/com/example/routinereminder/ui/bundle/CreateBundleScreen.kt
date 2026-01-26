@@ -1,7 +1,11 @@
 package com.example.routinereminder.ui.bundle
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -38,79 +42,131 @@ fun CreateBundleScreen(
     var portionType by remember { mutableStateOf(PORTION_TYPE_GRAMS) }
     var customPortionGrams by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    val isPortionValid = portionType == PORTION_TYPE_GRAMS ||
+        (customPortionGrams.toDoubleOrNull()?.let { it > 0 } == true)
+    val canSave = name.trim().isNotBlank() && isPortionValid
 
-        Text(
-            text = "Create Recipe",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        RichTextEditor(
-            value = description,
-            onValueChange = { description = it },
-            label = "Description",
-            modifier = Modifier.fillMaxWidth(),
-            outlined = true
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        Text(
-            text = "Portion definition",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.secondary
-        )
-        Spacer(Modifier.height(4.dp))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = portionType == PORTION_TYPE_GRAMS,
-                    onClick = { portionType = PORTION_TYPE_GRAMS }
-                )
-                Spacer(Modifier.width(6.dp))
-                Text("Grams")
-            }
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = portionType == PORTION_TYPE_CUSTOM,
-                    onClick = { portionType = PORTION_TYPE_CUSTOM }
-                )
-                Spacer(Modifier.width(6.dp))
-                Text("Custom portion")
-            }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Create Recipe",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = {
+                            val customPortionValue = customPortionGrams.toDoubleOrNull()
+                            viewModel.createBundleAndReturnId(
+                                name = name,
+                                description = description,
+                                portionType = portionType,
+                                customPortionGrams = customPortionValue
+                            ) { bundleId ->
+                                navController.navigate("bundle/$bundleId?edit=true") {
+                                    popUpTo(Screen.CreateBundle.route) { inclusive = true }
+                                }
+                            }
+                        },
+                        enabled = canSave
+                    ) {
+                        Text("Save")
+                    }
+                }
+            )
         }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
+            Spacer(Modifier.height(12.dp))
 
-        if (portionType == PORTION_TYPE_CUSTOM) {
-            Spacer(Modifier.height(8.dp))
             OutlinedTextField(
-                value = customPortionGrams,
-                onValueChange = { customPortionGrams = it },
-                label = { Text("Grams per portion") },
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
                 modifier = Modifier.fillMaxWidth()
             )
-            Text(
-                text = "This defines how many grams one portion represents.",
-                style = MaterialTheme.typography.bodySmall
+
+            Spacer(Modifier.height(8.dp))
+
+            RichTextEditor(
+                value = description,
+                onValueChange = { description = it },
+                label = "Description",
+                modifier = Modifier.fillMaxWidth(),
+                outlined = true
             )
+
+            Spacer(Modifier.height(12.dp))
+
+            Text(
+                text = "Portion definition",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(Modifier.height(4.dp))
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = portionType == PORTION_TYPE_GRAMS,
+                        onClick = { portionType = PORTION_TYPE_GRAMS }
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text("Grams")
+                }
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = portionType == PORTION_TYPE_CUSTOM,
+                        onClick = { portionType = PORTION_TYPE_CUSTOM }
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text("Custom portion")
+                }
+            }
+
+            if (portionType == PORTION_TYPE_CUSTOM) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = customPortionGrams,
+                    onValueChange = { customPortionGrams = it },
+                    label = { Text("Grams per portion") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "This defines how many grams one portion represents.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (!isPortionValid) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Enter a gram value greater than zero.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         }
     }
 }
