@@ -712,7 +712,14 @@ fun MapScreen(
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(
+                    PaddingValues(
+                        start = 16.dp,
+                        top = 4.dp,
+                        end = 16.dp,
+                        bottom = 8.dp
+                    )
+                )
         ) {
             val temperatureText = weatherSnapshot?.let { "%.1f°".format(it.temperatureC) } ?: "--"
             val humidityText = weatherSnapshot?.let { "${it.humidityPercent}%" } ?: "--"
