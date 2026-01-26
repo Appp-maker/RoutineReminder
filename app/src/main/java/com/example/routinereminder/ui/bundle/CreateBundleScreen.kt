@@ -3,6 +3,7 @@ package com.example.routinereminder.ui.bundle
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,7 +32,11 @@ fun CreateBundleScreen(
 
     Column(modifier = Modifier.padding(16.dp)) {
 
-        Text("Create Recipe", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = "Create Recipe",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
 
         Spacer(Modifier.height(12.dp))
 
@@ -54,11 +59,18 @@ fun CreateBundleScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        Text("Portion definition", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Portion definition",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.secondary
+        )
         Spacer(Modifier.height(4.dp))
 
         Row(modifier = Modifier.fillMaxWidth()) {
-            Row(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 RadioButton(
                     selected = portionType == PORTION_TYPE_GRAMS,
                     onClick = { portionType = PORTION_TYPE_GRAMS }
@@ -66,7 +78,10 @@ fun CreateBundleScreen(
                 Spacer(Modifier.width(6.dp))
                 Text("Grams")
             }
-            Row(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 RadioButton(
                     selected = portionType == PORTION_TYPE_CUSTOM,
                     onClick = { portionType = PORTION_TYPE_CUSTOM }

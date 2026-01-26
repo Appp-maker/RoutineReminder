@@ -267,7 +267,11 @@ fun BundleDetailScreen(
 
             if (isEditing) {
                 Spacer(Modifier.height(12.dp))
-                Text("Portion definition", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "Portion definition",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
                 Spacer(Modifier.height(4.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
