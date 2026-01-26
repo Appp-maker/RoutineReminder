@@ -64,15 +64,15 @@ fun SeriesColorPicker(
 ) {
     var customColor by remember { mutableStateOf(selectedColor) }
     val isCustomSelected = colorOptions.none { it.toArgb() == selectedColor.toArgb() }
-    var showCustomPicker by remember { mutableStateOf(isCustomSelected && allowCustomColor) }
+    var showCustomPicker by remember { mutableStateOf(false) }
     val savedCustomHistory = remember(recentCustomColors) {
         recentCustomColors.filter { isCustomSeriesColor(it) }.distinct().take(10)
     }
 
     LaunchedEffect(selectedColor, allowCustomColor, colorOptions) {
         customColor = selectedColor
-        if (allowCustomColor && isCustomSelected) {
-            showCustomPicker = true
+        if (!allowCustomColor || !isCustomSelected) {
+            showCustomPicker = false
         }
     }
 
@@ -136,7 +136,7 @@ fun SeriesColorPicker(
                         enabled = enabled,
                         modifier = Modifier.clickable(enabled = enabled) {
                             customColor = color
-                            showCustomPicker = true
+                            showCustomPicker = false
                             onColorSelected(color)
                         }
                     )
