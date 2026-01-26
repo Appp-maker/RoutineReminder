@@ -374,7 +374,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
                 createCalendarEntry = preferences[DEFAULT_EVENT_CREATE_CALENDAR_ENTRY] ?: true,
                 systemNotification = preferences[DEFAULT_EVENT_SYSTEM_NOTIFICATION] ?: true,
                 showDetailsInNotification = preferences[DEFAULT_EVENT_SHOW_DETAILS_IN_NOTIFICATION] ?: true,
-                startTimeOptionName = preferences[START_TIME_OPTION_NAME] ?: "SPECIFIC_TIME",
+                startTimeOptionName = preferences[START_TIME_OPTION_NAME] ?: "NEXT_FULL_HOUR",
                 targetCalendarId = preferences[TARGET_CALENDAR_ID] ?: IMPORT_TARGET_CALENDAR_LOCAL
             )
         }
