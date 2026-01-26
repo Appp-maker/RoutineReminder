@@ -141,6 +141,27 @@ class BundleViewModel @Inject constructor(
         }
     }
 
+    fun createBundleAndReturnId(
+        name: String,
+        description: String,
+        portionType: String,
+        customPortionGrams: Double?,
+        onCreated: (Long) -> Unit
+    ) {
+        viewModelScope.launch {
+            val bundleId = database.foodBundleDao().insertBundle(
+                FoodBundle(
+                    name = name.trim(),
+                    description = description.trim(),
+                    portionType = portionType,
+                    customPortionGrams = customPortionGrams
+                )
+            )
+            loadBundles()
+            onCreated(bundleId)
+        }
+    }
+
     fun deleteBundle(bundle: FoodBundle) {
         viewModelScope.launch {
             database.foodBundleDao().deleteBundle(bundle)

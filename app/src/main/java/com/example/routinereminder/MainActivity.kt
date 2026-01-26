@@ -562,11 +562,19 @@ fun MainAppUI(
 //                            val bundleId = backStackEntry.arguments?.getString("bundleId")!!.toLong()
 //                            BundleDetailScreen(navController, bundleId)
 //                        }
-                        composable("bundle/{id}") { backStackEntry ->
+                        composable(
+                            route = "bundle/{id}?edit={edit}",
+                            arguments = listOf(
+                                navArgument("edit") { defaultValue = "false" }
+                            )
+                        ) { backStackEntry ->
                             val id = backStackEntry.arguments?.getString("id")?.toLong() ?: return@composable
+                            val startEditing =
+                                backStackEntry.arguments?.getString("edit")?.toBoolean() ?: false
                             BundleDetailScreen(
                                 navController = navController,
-                                bundleId = id
+                                bundleId = id,
+                                initialEditing = startEditing
                             )
                         }
 
@@ -576,19 +584,6 @@ fun MainAppUI(
                         composable(Screen.CreateBundle.route) {
                             CreateBundleScreen(navController)
                         }
-                        composable("bundle/{bundleId}") { backStackEntry ->
-                            val bundleId = backStackEntry.arguments
-                                ?.getString("bundleId")
-                                ?.toLongOrNull()
-                                ?: return@composable
-
-                            BundleDetailScreen(
-                                navController = navController,
-                                bundleId = bundleId
-                            )
-                        }
-
-
                       composable(
                           route = "calories?mode={mode}",
                           arguments = listOf(

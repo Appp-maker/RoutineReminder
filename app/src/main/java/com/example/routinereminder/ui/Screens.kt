@@ -53,7 +53,11 @@ sealed class Screen(
     object CreateBundle : Screen("bundle/create")
 
     object BundleDetail : Screen("bundle/{id}") {
-        fun route(id: Long) = "bundle/$id"
+        fun route(id: Long, edit: Boolean = false) = if (edit) {
+            "bundle/$id?edit=true"
+        } else {
+            "bundle/$id"
+        }
     }
 
     object Settings : Screen("settings/{from}") {

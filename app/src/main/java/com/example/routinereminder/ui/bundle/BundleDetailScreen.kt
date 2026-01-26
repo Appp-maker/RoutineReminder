@@ -44,10 +44,11 @@ import kotlinx.coroutines.launch
 fun BundleDetailScreen(
     navController: NavController,
     bundleId: Long,
+    initialEditing: Boolean = false,
     viewModel: BundleViewModel = hiltViewModel()
 ) {
     var bundleWithItems by remember { mutableStateOf<FoodBundleWithItems?>(null) }
-    var isEditing by remember { mutableStateOf(false) }
+    var isEditing by remember(bundleId, initialEditing) { mutableStateOf(initialEditing) }
 
     LaunchedEffect(navController, bundleId) {
         navController.currentBackStackEntryFlow.collect { entry ->
@@ -325,7 +326,8 @@ fun BundleDetailScreen(
 
         Text(
             text = "Ingredients",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.secondary
         )
 
         Spacer(Modifier.height(8.dp))
