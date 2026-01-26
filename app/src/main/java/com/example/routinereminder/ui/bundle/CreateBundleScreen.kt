@@ -1,7 +1,14 @@
 package com.example.routinereminder.ui.bundle
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -14,6 +21,7 @@ import com.example.routinereminder.ui.Screen
 import com.example.routinereminder.ui.components.RichTextEditor
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun CreateBundleScreen(
     navController: NavController
 ) {
@@ -29,9 +37,44 @@ fun CreateBundleScreen(
     var portionType by remember { mutableStateOf(PORTION_TYPE_GRAMS) }
     var customPortionGrams by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    val customPortionValue = customPortionGrams.toDoubleOrNull()
+    val canSavePortion = portionType == PORTION_TYPE_GRAMS ||
+        (customPortionValue != null && customPortionValue > 0)
 
-        Text("Create Recipe", style = MaterialTheme.typography.headlineMedium)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Create Recipe",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
+                actions = {
+                    TextButton(
+                        onClick = {
+                            viewModel.createBundle(
+                                name = name,
+                                description = description,
+                                portionType = portionType,
+                                customPortionGrams = customPortionValue
+                            )
+                            navController.popBackStack()
+                        },
+                        enabled = name.isNotBlank() && canSavePortion
+                    ) {
+                        Text("Save")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
 
         Spacer(Modifier.height(12.dp))
 
@@ -54,7 +97,11 @@ fun CreateBundleScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        Text("Portion definition", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Portion definition",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.secondary
+        )
         Spacer(Modifier.height(4.dp))
 
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -89,26 +136,6 @@ fun CreateBundleScreen(
                 style = MaterialTheme.typography.bodySmall
             )
         }
-
-        Spacer(Modifier.height(16.dp))
-
-        val customPortionValue = customPortionGrams.toDoubleOrNull()
-        val canSavePortion = portionType == PORTION_TYPE_GRAMS ||
-            (customPortionValue != null && customPortionValue > 0)
-
-        Button(
-            enabled = name.isNotBlank() && canSavePortion,
-            onClick = {
-                viewModel.createBundle(
-                    name = name,
-                    description = description,
-                    portionType = portionType,
-                    customPortionGrams = customPortionValue
-                )
-                navController.popBackStack() // go back to list
-            }
-        ) {
-            Text("Save")
-        }
+    }
     }
 }
