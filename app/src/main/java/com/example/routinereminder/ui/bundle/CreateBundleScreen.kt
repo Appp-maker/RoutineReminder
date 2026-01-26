@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -37,44 +38,13 @@ fun CreateBundleScreen(
     var portionType by remember { mutableStateOf(PORTION_TYPE_GRAMS) }
     var customPortionGrams by remember { mutableStateOf("") }
 
-    val customPortionValue = customPortionGrams.toDoubleOrNull()
-    val canSavePortion = portionType == PORTION_TYPE_GRAMS ||
-        (customPortionValue != null && customPortionValue > 0)
+    Column(modifier = Modifier.padding(16.dp)) {
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Create Recipe",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            viewModel.createBundle(
-                                name = name,
-                                description = description,
-                                portionType = portionType,
-                                customPortionGrams = customPortionValue
-                            )
-                            navController.popBackStack()
-                        },
-                        enabled = name.isNotBlank() && canSavePortion
-                    ) {
-                        Text("Save")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .padding(16.dp)
-        ) {
+        Text(
+            text = "Create Recipe",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
 
         Spacer(Modifier.height(12.dp))
 
@@ -98,14 +68,17 @@ fun CreateBundleScreen(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            "Portion definition",
+            text = "Portion definition",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.secondary
         )
         Spacer(Modifier.height(4.dp))
 
         Row(modifier = Modifier.fillMaxWidth()) {
-            Row(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 RadioButton(
                     selected = portionType == PORTION_TYPE_GRAMS,
                     onClick = { portionType = PORTION_TYPE_GRAMS }
@@ -113,7 +86,10 @@ fun CreateBundleScreen(
                 Spacer(Modifier.width(6.dp))
                 Text("Grams")
             }
-            Row(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 RadioButton(
                     selected = portionType == PORTION_TYPE_CUSTOM,
                     onClick = { portionType = PORTION_TYPE_CUSTOM }
