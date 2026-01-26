@@ -55,6 +55,12 @@ fun RoutineReminderTheme(
         AppPalette.updateFromTheme(appThemeColors)
         darkColors(appThemeColors)
     }
+    val typography = remember(AppPalette.AccentStrong, AppPalette.AccentSecondary) {
+        buildTypography(
+            accentStrong = AppPalette.AccentStrong,
+            accentSecondary = AppPalette.AccentSecondary
+        )
+    }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -76,7 +82,7 @@ fun RoutineReminderTheme(
     CompositionLocalProvider(LocalDensity provides scaledDensity) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography, // Will create Typography.kt next
+            typography = typography,
             content = content
         )
     }

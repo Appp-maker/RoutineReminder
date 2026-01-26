@@ -1,6 +1,7 @@
 package com.example.routinereminder.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -14,7 +15,10 @@ import androidx.compose.ui.unit.sp
 // )
 
 // Default Material 3 Typography
-val Typography = Typography(
+fun buildTypography(
+    accentStrong: Color = AppPalette.AccentStrong,
+    accentSecondary: Color = AppPalette.AccentSecondary
+): Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -28,7 +32,7 @@ val Typography = Typography(
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp,
-        color = AppPalette.AccentStrong
+        color = accentStrong
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.Default,
@@ -36,7 +40,7 @@ val Typography = Typography(
         fontSize = 18.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp,
-        color = AppPalette.AccentSecondary
+        color = accentSecondary
     ),
     labelSmall = TextStyle(
         fontFamily = FontFamily.Default,
