@@ -1625,7 +1625,11 @@ private fun DefaultEventsSettingsSection(
         // Spacer(modifier = Modifier.width(16.dp)) // Removed Spacer
     }
     Spacer(modifier = Modifier.height(8.dp))
-    SettingSwitchItem(text = stringResource(R.string.settings_default_events_one_time_appointment), checked = isOneTimeChecked, onCheckedChange = onIsOneTimeChange)
+    SettingSwitchItem(
+        text = stringResource(R.string.settings_default_events_one_time_appointment),
+        checked = !isOneTimeChecked,
+        onCheckedChange = { isRepeating -> onIsOneTimeChange(!isRepeating) }
+    )
     SettingSwitchItem(
         text = stringResource(R.string.settings_default_events_create_calendar_entry),
         checked = createCalendarEntryChecked,
