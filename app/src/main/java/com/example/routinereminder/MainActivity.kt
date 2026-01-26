@@ -112,6 +112,7 @@ import com.example.routinereminder.ui.bundle.RecipeIngredientEditorScreen
 import com.example.routinereminder.ui.components.EditItemDialog
 import com.example.routinereminder.ui.components.isNoEventFoodColor
 import com.example.routinereminder.ui.components.resolveEventFoodColor
+import com.example.routinereminder.ui.components.RoutineInsightsCard
 import com.example.routinereminder.ui.components.SettingsIconButton
 import com.example.routinereminder.ui.theme.RoutineReminderTheme
 
@@ -373,6 +374,8 @@ fun MainAppUI(
         val activeSetIds by viewModel.activeSetIds.collectAsState()
         val availableSetIds by viewModel.availableSetIds.collectAsState()
         val hasManualActiveSetsForDate by viewModel.hasManualActiveSetsForDate.collectAsState()
+        val routineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
+        val routineInsights by viewModel.routineInsights.collectAsState()
 
         if (enabledTabsState == null) {
             FirstLaunchTabSelectionDialog(
@@ -516,7 +519,9 @@ fun MainAppUI(
                                 onUndoDone = { item ->
                                     viewModel.unmarkScheduleItemDone(item, selectedDate.toEpochDay())
                                 },
-                                viewModel = viewModel
+                                viewModel = viewModel,
+                                routineInsightsEnabled = routineInsightsEnabled,
+                                routineInsights = routineInsights
                             )
 
                         }
@@ -1223,7 +1228,9 @@ fun MainScreenContent(
     onSettingsClick: () -> Unit,                       // <-- leave as function
     onMarkDone: (ScheduleItem) -> Unit,
     onUndoDone: (ScheduleItem) -> Unit,
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    routineInsightsEnabled: Boolean,
+    routineInsights: com.example.routinereminder.ui.RoutineInsights?
 )
 
  {
@@ -1270,6 +1277,13 @@ fun MainScreenContent(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            if (routineInsightsEnabled && routineInsights != null) {
+                RoutineInsightsCard(
+                    insights = routineInsights,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
 
             if (availableSetIds.isNotEmpty()) {
                 EventSetToggleRow(

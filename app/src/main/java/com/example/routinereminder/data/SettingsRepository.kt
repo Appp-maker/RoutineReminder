@@ -63,6 +63,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val APP_SECONDARY_COLOR = intPreferencesKey("app_secondary_color")
     val APP_TERTIARY_COLOR = intPreferencesKey("app_tertiary_color")
     val RECENT_CUSTOM_EVENT_COLORS = stringPreferencesKey("recent_custom_event_colors")
+    val ROUTINE_INSIGHTS_ENABLED = booleanPreferencesKey("routine_insights_enabled")
     val EXAMPLE_DATA_SEEDED = booleanPreferencesKey("example_data_seeded")
 
     companion object {
@@ -186,6 +187,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getFoodConsumedTrackingEnabled(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[FOOD_CONSUMED_TRACKING_ENABLED] ?: false
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveRoutineInsightsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ROUTINE_INSIGHTS_ENABLED] = enabled
+        }
+    }
+
+    fun getRoutineInsightsEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[ROUTINE_INSIGHTS_ENABLED] ?: false
         }.distinctUntilChanged()
     }
 

@@ -143,6 +143,7 @@ fun SettingsScreen(
     val currentCalendarSyncCalendarToAppEnabled by viewModel.calendarSyncCalendarToAppEnabled.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
+    val currentRoutineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
     val eventSetColors by viewModel.eventSetColors.collectAsState()
     val appThemeColors by viewModel.appThemeColors.collectAsState()
@@ -177,6 +178,7 @@ fun SettingsScreen(
     var calendarSyncAppToCalendarEnabled by remember(currentCalendarSyncAppToCalendarEnabled) { mutableStateOf(currentCalendarSyncAppToCalendarEnabled) }
     var calendarSyncCalendarToAppEnabled by remember(currentCalendarSyncCalendarToAppEnabled) { mutableStateOf(currentCalendarSyncCalendarToAppEnabled) }
     var foodConsumedTrackingEnabledChecked by remember(currentFoodConsumedTrackingEnabled) { mutableStateOf(currentFoodConsumedTrackingEnabled) }
+    var routineInsightsEnabledChecked by remember(currentRoutineInsightsEnabled) { mutableStateOf(currentRoutineInsightsEnabled) }
     val eventSetNameInputs = remember { mutableStateListOf<String>() }
     val eventSetColorInputs = remember { mutableStateListOf<Int>() }
     var primaryColorInput by remember { mutableStateOf(appThemeColors.primary) }
@@ -328,7 +330,8 @@ fun SettingsScreen(
         currentDefaultEventSettings,
         selectedGoogleAccountName, // Added to dependency list
         showAllEventsChecked, showAllEvents,
-        selectedTabs, enabledTabs
+        selectedTabs, enabledTabs,
+        routineInsightsEnabledChecked, currentRoutineInsightsEnabled
     ) {
         derivedStateOf {
             if (weightInput.toDoubleOrNull() != userSettings?.weightKg) return@derivedStateOf true
@@ -369,6 +372,7 @@ fun SettingsScreen(
             if (calendarSyncCalendarToAppEnabled != currentCalendarSyncCalendarToAppEnabled) return@derivedStateOf true
             if (showAllEventsChecked != showAllEvents) return@derivedStateOf true
             if (foodConsumedTrackingEnabledChecked != currentFoodConsumedTrackingEnabled) return@derivedStateOf true
+            if (routineInsightsEnabledChecked != currentRoutineInsightsEnabled) return@derivedStateOf true
             if (selectedTabs != enabledTabs) return@derivedStateOf true
             // We don't directly compare selectedGoogleAccountName to a stored value for unsaved changes,
             // as its change directly triggers other settings to change, which are covered above.
@@ -492,6 +496,7 @@ fun SettingsScreen(
                         viewModel.updateCalendarSyncCalendarToApp(calendarSyncCalendarToAppEnabled)
                         viewModel.updateShowAllEvents(showAllEventsChecked)
                         viewModel.saveFoodConsumedTrackingEnabled(foodConsumedTrackingEnabledChecked)
+                        viewModel.updateRoutineInsightsEnabled(routineInsightsEnabledChecked)
                         viewModel.saveEventSetNames(eventSetNameInputs.toList())
                         viewModel.saveEventSetColors(eventSetColorInputs.toList())
                         viewModel.saveAppThemeColors(
@@ -783,7 +788,9 @@ fun SettingsScreen(
                         primaryColor = primaryColorInput,
                         secondaryColor = secondaryColorInput,
                         onPrimaryColorChange = { primaryColorInput = it; justSavedSuccessfully = false },
-                        onSecondaryColorChange = { secondaryColorInput = it; justSavedSuccessfully = false }
+                        onSecondaryColorChange = { secondaryColorInput = it; justSavedSuccessfully = false },
+                        routineInsightsEnabled = routineInsightsEnabledChecked,
+                        onRoutineInsightsEnabledChange = { routineInsightsEnabledChecked = it; justSavedSuccessfully = false }
                     )
                 }
             }
@@ -1855,7 +1862,9 @@ private fun AppSettingsSection(
     primaryColor: Int,
     secondaryColor: Int,
     onPrimaryColorChange: (Int) -> Unit,
-    onSecondaryColorChange: (Int) -> Unit
+    onSecondaryColorChange: (Int) -> Unit,
+    routineInsightsEnabled: Boolean,
+    onRoutineInsightsEnabledChange: (Boolean) -> Unit
 ) {
     var backupSyncHoursInputText by remember { mutableStateOf("1") }
     var backupSyncMinutesInputText by remember { mutableStateOf("0") }
@@ -1950,6 +1959,35 @@ private fun AppSettingsSection(
                         allowCustomColor = false
                     )
                 }
+            }
+        }
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_routine_insights_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_routine_insights_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                Switch(
+                    checked = routineInsightsEnabled,
+                    onCheckedChange = onRoutineInsightsEnabledChange
+                )
             }
         }
     }
