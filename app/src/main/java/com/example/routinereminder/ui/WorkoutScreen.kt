@@ -655,7 +655,7 @@ fun WorkoutScreen(
         val layoutDirection = LocalLayoutDirection.current
         val contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = padding.calculateStartPadding(layoutDirection),
-            top = 0.dp,
+            top = 8.dp,
             end = padding.calculateEndPadding(layoutDirection),
             bottom = padding.calculateBottomPadding()
         )
