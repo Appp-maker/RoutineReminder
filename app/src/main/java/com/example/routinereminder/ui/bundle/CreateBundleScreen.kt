@@ -52,7 +52,7 @@ fun CreateBundleScreen(
                 title = {
                     Text(
                         text = "Create Recipe",
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
@@ -115,8 +115,7 @@ fun CreateBundleScreen(
 
             Text(
                 text = "Portion definition",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.secondary
+                style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.height(4.dp))
 

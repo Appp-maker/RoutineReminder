@@ -40,7 +40,7 @@ fun BundleListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Recipes", color = MaterialTheme.colorScheme.primary) },
+                title = { Text("Recipes", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -69,7 +69,6 @@ fun BundleListScreen(
                             Text(
                                 text = bundle.name,
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(

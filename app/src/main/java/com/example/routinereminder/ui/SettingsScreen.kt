@@ -422,7 +422,7 @@ fun SettingsScreen(
                 title = {
                     Text(
                         stringResource(R.string.settings_title),
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = { IconButton(onClick = ::attemptDismiss) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.settings_action_back)) } },
@@ -2041,8 +2041,7 @@ private fun AppSettingsSection(
     )
     Text(
         "Data Management",
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary
+        style = MaterialTheme.typography.titleMedium
     )
     OutlinedButton(
         onClick = { onDataManagementClick("LOCAL", null) },

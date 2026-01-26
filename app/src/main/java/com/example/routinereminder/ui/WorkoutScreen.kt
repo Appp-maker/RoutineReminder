@@ -720,7 +720,6 @@ fun WorkoutScreen(
                             Text(
                                 text = planTitle,
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.primary,
                                 textAlign = TextAlign.Center,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -743,8 +742,7 @@ fun WorkoutScreen(
                                     ) {
                                         Text(
                                             text = stringResource(R.string.workout_plan_select_placeholder),
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.primary
+                                            style = MaterialTheme.typography.titleMedium
                                         )
                                         Divider(color = MaterialTheme.colorScheme.outlineVariant)
                                         if (uiState.plans.isEmpty()) {

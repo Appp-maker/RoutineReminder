@@ -1812,7 +1812,7 @@ private fun WeatherSummaryCard(
             Text(
                 text = stringResource(R.string.map_weather_title),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.secondary
             )
             Spacer(modifier = Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1833,12 +1833,12 @@ private fun WeatherSummaryCard(
                     Text(
                         text = weatherDescription,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = stringResource(R.string.map_weather_humidity, humidityText),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.tertiary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (statusText != null) {
                         Text(

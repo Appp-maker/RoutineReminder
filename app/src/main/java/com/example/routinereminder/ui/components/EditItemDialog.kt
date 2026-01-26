@@ -262,7 +262,7 @@ fun EditItemDialog(
                         title = {
                             Text(
                                 text = if (isNewItem) "Create New Entry" else "Edit Entry",
-                                color = MaterialTheme.colorScheme.primary
+                                style = MaterialTheme.typography.titleLarge
                             )
                         },
                         navigationIcon = {

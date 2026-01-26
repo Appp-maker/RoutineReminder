@@ -19,6 +19,14 @@ fun buildTypography(
     accentStrong: Color = AppPalette.AccentStrong,
     accentSecondary: Color = AppPalette.AccentSecondary
 ): Typography = Typography(
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = 0.sp,
+        color = accentStrong
+    ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -40,6 +48,14 @@ fun buildTypography(
         fontSize = 18.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp,
+        color = accentSecondary
+    ),
+    titleSmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp,
         color = accentSecondary
     ),
     labelSmall = TextStyle(
