@@ -63,6 +63,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val APP_SECONDARY_COLOR = intPreferencesKey("app_secondary_color")
     val APP_TERTIARY_COLOR = intPreferencesKey("app_tertiary_color")
     val RECENT_CUSTOM_EVENT_COLORS = stringPreferencesKey("recent_custom_event_colors")
+    val EXAMPLE_DATA_SEEDED = booleanPreferencesKey("example_data_seeded")
 
     companion object {
         const val ACTION_KEEP_IN_APP = "KEEP_IN_APP"
@@ -287,6 +288,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             preferences[APP_PRIMARY_COLOR] = colors.primary
             preferences[APP_SECONDARY_COLOR] = colors.secondary
             preferences[APP_TERTIARY_COLOR] = colors.tertiary
+        }
+    }
+
+    fun getExampleDataSeeded(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[EXAMPLE_DATA_SEEDED] ?: false
+        }.distinctUntilChanged()
+    }
+
+    suspend fun setExampleDataSeeded(seeded: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[EXAMPLE_DATA_SEEDED] = seeded
         }
     }
 

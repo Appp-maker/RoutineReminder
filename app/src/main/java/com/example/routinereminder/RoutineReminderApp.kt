@@ -13,6 +13,7 @@ import coil.ImageLoader
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import com.example.routinereminder.data.SettingsRepository
+import com.example.routinereminder.data.ExampleDataSeeder
 import com.example.routinereminder.workers.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,9 @@ class RoutineReminderApp : Application(), Configuration.Provider {
 
     @Inject
     lateinit var settingsRepository: SettingsRepository
+
+    @Inject
+    lateinit var exampleDataSeeder: ExampleDataSeeder
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -56,6 +60,10 @@ class RoutineReminderApp : Application(), Configuration.Provider {
         // Keep existing WorkManager setup
         applicationScope.launch {
             setupRecurringWork()
+        }
+
+        applicationScope.launch {
+            exampleDataSeeder.seedIfNeeded()
         }
 
     }
