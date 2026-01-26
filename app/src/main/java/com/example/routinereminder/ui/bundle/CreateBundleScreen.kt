@@ -113,5 +113,4 @@ fun CreateBundleScreen(
             )
         }
     }
-    }
 }
