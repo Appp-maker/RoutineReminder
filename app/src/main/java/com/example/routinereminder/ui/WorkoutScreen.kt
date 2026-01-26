@@ -968,6 +968,7 @@ private fun ExerciseSearchDialog(
                     LazyColumn(
                         state = exerciseListState,
                         modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 56.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
@@ -1213,7 +1214,7 @@ private fun ExerciseSearchDialog(
                         Column(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
-                                .padding(start = 12.dp, top = sliderTopPadding),
+                                .padding(start = 4.dp, top = sliderTopPadding),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
