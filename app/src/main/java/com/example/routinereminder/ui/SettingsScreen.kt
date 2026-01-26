@@ -1997,6 +1997,26 @@ private fun AppSettingsSection(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         modifier = Modifier.padding(bottom = 12.dp)
     )
+    Text(
+        "Data Management",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary
+    )
+    OutlinedButton(
+        onClick = { onDataManagementClick("LOCAL", null) },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text("Manage Local Calendar Data (${calendarEventCounts.local} events)")
+    }
+    calendarEventCounts.google.forEach { (account, count) ->
+        OutlinedButton(
+            onClick = { onDataManagementClick("GOOGLE", account) },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+        ) {
+            Text("Manage $account Data ($count events)")
+        }
+    }
+    Spacer(modifier = Modifier.height(16.dp))
     OutlinedButton(onClick = { Toast.makeText(context, context.getString(R.string.settings_toast_work_in_progress), Toast.LENGTH_SHORT).show() }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text(stringResource(R.string.settings_app_import_export)) }
     OutlinedButton(onClick = { Toast.makeText(context, context.getString(R.string.settings_toast_work_in_progress), Toast.LENGTH_SHORT).show() }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text(stringResource(R.string.settings_app_language)) }
     Spacer(modifier = Modifier.height(16.dp))
@@ -2008,7 +2028,7 @@ private fun AppSettingsSection(
             text = stringResource(R.string.settings_data_sync_backup_interval),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (isGoogleAccountSelected) MaterialTheme.colorScheme.onSurface.alpha else 0.38f)
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = if (isGoogleAccountSelected) MaterialTheme.colorScheme.onSurface.alpha else 0.38f)
         )
         OutlinedTextField(
             value = backupSyncHoursInputText,
@@ -2032,23 +2052,6 @@ private fun AppSettingsSection(
             modifier = Modifier.width(70.dp),
             enabled = isGoogleAccountSelected
         )
-    }
-
-    Spacer(modifier = Modifier.height(16.dp))
-    Text("Data Management", style = MaterialTheme.typography.titleMedium)
-    OutlinedButton(
-        onClick = { onDataManagementClick("LOCAL", null) },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-    ) {
-        Text("Manage Local Calendar Data (${calendarEventCounts.local} events)")
-    }
-    calendarEventCounts.google.forEach { (account, count) ->
-        OutlinedButton(
-            onClick = { onDataManagementClick("GOOGLE", account) },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-        ) {
-            Text("Manage $account Data ($count events)")
-        }
     }
 
     Spacer(modifier = Modifier.height(16.dp))
