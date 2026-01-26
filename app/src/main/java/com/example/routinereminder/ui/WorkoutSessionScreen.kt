@@ -392,7 +392,8 @@ fun WorkoutSessionScreen(
 
                     Text(
                         text = descriptionText,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 

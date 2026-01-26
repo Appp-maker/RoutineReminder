@@ -563,7 +563,8 @@ fun PortionDialog(
                         label = "Series color",
                         selectedColor = Color(selectedColorArgb),
                         onColorSelected = { selectedColorArgb = it.toArgb() },
-                        modifier = Modifier.padding(top = 12.dp)
+                        modifier = Modifier.padding(top = 12.dp),
+                        allowCustomColor = false
                     )
 
                     Spacer(Modifier.height(16.dp))

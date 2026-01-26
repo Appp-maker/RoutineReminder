@@ -38,7 +38,8 @@ fun FoodBundlePickerDialog(
                             if (bundle.description.isNotBlank()) {
                                 Text(
                                     formatChecklistText(bundle.description),
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }

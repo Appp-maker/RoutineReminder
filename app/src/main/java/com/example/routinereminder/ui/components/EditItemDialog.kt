@@ -429,7 +429,7 @@ fun EditItemDialog(
                         enabled = !isUsingSetColor,
                         colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else EventFoodColorOptions,
                         showLabel = !isUsingSetColor,
-                        allowCustomColor = !isUsingSetColor,
+                        allowCustomColor = false,
                         recentCustomColors = recentCustomEventColors
                     )
                     Spacer(Modifier.height(16.dp))
