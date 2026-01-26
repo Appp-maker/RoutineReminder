@@ -389,7 +389,7 @@ fun CalorieTrackerScreen(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // LEFT ARROW – FIXED SIZE
