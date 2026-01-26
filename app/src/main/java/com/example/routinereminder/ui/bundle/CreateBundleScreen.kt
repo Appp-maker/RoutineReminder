@@ -110,20 +110,55 @@ fun CreateBundleScreen(
         val customPortionValue = customPortionGrams.toDoubleOrNull()
         val canSavePortion = portionType == PORTION_TYPE_GRAMS ||
             (customPortionValue != null && customPortionValue > 0)
+        val canCreate = name.isNotBlank() && canSavePortion
 
-        Button(
-            enabled = name.isNotBlank() && canSavePortion,
-            onClick = {
-                viewModel.createBundle(
-                    name = name,
-                    description = description,
-                    portionType = portionType,
-                    customPortionGrams = customPortionValue
-                )
-                navController.popBackStack() // go back to list
-            }
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = "Ingredients",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Save")
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                enabled = canCreate,
+                onClick = {
+                    viewModel.createBundleAndReturnId(
+                        name = name,
+                        description = description,
+                        portionType = portionType,
+                        customPortionGrams = customPortionValue
+                    ) { bundleId ->
+                        navController.navigate(Screen.BundleDetail.route(bundleId, edit = true)) {
+                            popUpTo(Screen.BundleList.route)
+                        }
+                    }
+                }
+            ) {
+                Text("Add ingredient")
+            }
+
+            Button(
+                modifier = Modifier.weight(1f),
+                enabled = canCreate,
+                onClick = {
+                    viewModel.createBundle(
+                        name = name,
+                        description = description,
+                        portionType = portionType,
+                        customPortionGrams = customPortionValue
+                    )
+                    navController.popBackStack() // go back to list
+                }
+            ) {
+                Text("Save")
+            }
         }
     }
 }
