@@ -435,7 +435,7 @@ fun EditItemDialog(
                     Spacer(Modifier.height(16.dp))
 
                     Row(
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable { isOneTime = !isOneTime }
                     ) {
@@ -447,7 +447,6 @@ fun EditItemDialog(
                                     selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
                                 }
                             },
-                            modifier = Modifier.padding(top = 2.dp)
                         )
                         Text(stringResource(R.string.event_repeats_weekly_label))
                     }
@@ -529,7 +528,7 @@ fun EditItemDialog(
                     Spacer(Modifier.height(16.dp))
 
                     Row(
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable(enabled = !useGoogleBackupMode) {
                             if (!useGoogleBackupMode) {
@@ -541,7 +540,6 @@ fun EditItemDialog(
                             checked = addToCalendar,
                             onCheckedChange = { if (!useGoogleBackupMode) addToCalendar = it },
                             enabled = !useGoogleBackupMode,
-                            modifier = Modifier.padding(top = 2.dp)
                         )
                         Text(
                             text = "Calendar entry",
@@ -606,21 +604,20 @@ fun EditItemDialog(
                     Spacer(Modifier.height(8.dp))
 
                     Row(
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable { notifyEnabled = !notifyEnabled }
                     ) {
                         Checkbox(
                             checked = notifyEnabled,
                             onCheckedChange = { notifyEnabled = it },
-                            modifier = Modifier.padding(top = 2.dp)
                         )
                         Text("System notification")
                     }
                     Spacer(Modifier.height(8.dp))
 
                     Row(
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clickable(enabled = notifyEnabled) {
                             if (notifyEnabled) {
@@ -632,7 +629,6 @@ fun EditItemDialog(
                             checked = showDetailsInNotification,
                             onCheckedChange = { if (notifyEnabled) showDetailsInNotification = it },
                             enabled = notifyEnabled,
-                            modifier = Modifier.padding(top = 2.dp)
                         )
                         Text(
                             text = "Show details in notification",
