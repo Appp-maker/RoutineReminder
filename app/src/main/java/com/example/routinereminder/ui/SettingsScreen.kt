@@ -889,6 +889,67 @@ fun SettingsScreen(
             }
         }
 
+    if (showDrivePermissionDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showDrivePermissionDialog = false
+                pendingDriveAction = null
+            },
+            title = { Text(stringResource(R.string.settings_drive_permission_title)) },
+            text = { Text(stringResource(R.string.settings_drive_permission_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val action = pendingDriveAction
+                    showDrivePermissionDialog = false
+                    pendingDriveAction = null
+                    if (action == null) return@TextButton
+                    val existingUri = driveBackupUri?.let(Uri::parse)
+                    when (action) {
+                        DriveBackupAction.BACKUP -> {
+                            if (existingUri != null) {
+                                coroutineScope.launch {
+                                    val success = viewModel.backupToDrive(context, existingUri)
+                                    val message = if (success) {
+                                        context.getString(R.string.settings_drive_backup_success)
+                                    } else {
+                                        context.getString(R.string.settings_drive_backup_failure)
+                                    }
+                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                driveBackupLauncher.launch("routine_backup.json")
+                            }
+                        }
+                        DriveBackupAction.RESTORE -> {
+                            if (existingUri != null) {
+                                coroutineScope.launch {
+                                    val success = viewModel.restoreFromDrive(context, existingUri)
+                                    val message = if (success) {
+                                        context.getString(R.string.settings_drive_restore_success)
+                                    } else {
+                                        context.getString(R.string.settings_drive_restore_failure)
+                                    }
+                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                driveRestoreLauncher.launch(arrayOf("application/json"))
+                            }
+                        }
+                    }
+                }) {
+                    Text(stringResource(R.string.alert_action_ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDrivePermissionDialog = false
+                    pendingDriveAction = null
+                }) {
+                    Text(stringResource(R.string.alert_action_cancel))
+                }
+            }
+        )
+    }
 
     if (showGoogleCalendarDialog && !useGoogleBackupModeChecked) {
         val calendarsToShow = filteredGoogleCalendarsForDialog // Use the state that filters by account
@@ -2068,68 +2129,6 @@ private fun AppSettingsSection(
             confirmButton = {
                 TextButton(onClick = { showLegalDialog = false }) {
                     Text(stringResource(R.string.alert_action_close))
-                }
-            }
-        )
-    }
-
-    if (showDrivePermissionDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showDrivePermissionDialog = false
-                pendingDriveAction = null
-            },
-            title = { Text(stringResource(R.string.settings_drive_permission_title)) },
-            text = { Text(stringResource(R.string.settings_drive_permission_body)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    val action = pendingDriveAction
-                    showDrivePermissionDialog = false
-                    pendingDriveAction = null
-                    if (action == null) return@TextButton
-                    val existingUri = driveBackupUri?.let(Uri::parse)
-                    when (action) {
-                        DriveBackupAction.BACKUP -> {
-                            if (existingUri != null) {
-                                coroutineScope.launch {
-                                    val success = viewModel.backupToDrive(context, existingUri)
-                                    val message = if (success) {
-                                        context.getString(R.string.settings_drive_backup_success)
-                                    } else {
-                                        context.getString(R.string.settings_drive_backup_failure)
-                                    }
-                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                                }
-                            } else {
-                                driveBackupLauncher.launch("routine_backup.json")
-                            }
-                        }
-                        DriveBackupAction.RESTORE -> {
-                            if (existingUri != null) {
-                                coroutineScope.launch {
-                                    val success = viewModel.restoreFromDrive(context, existingUri)
-                                    val message = if (success) {
-                                        context.getString(R.string.settings_drive_restore_success)
-                                    } else {
-                                        context.getString(R.string.settings_drive_restore_failure)
-                                    }
-                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                                }
-                            } else {
-                                driveRestoreLauncher.launch(arrayOf("application/json"))
-                            }
-                        }
-                    }
-                }) {
-                    Text(stringResource(R.string.alert_action_ok))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showDrivePermissionDialog = false
-                    pendingDriveAction = null
-                }) {
-                    Text(stringResource(R.string.alert_action_cancel))
                 }
             }
         )
