@@ -3,9 +3,13 @@ package com.example.routinereminder.ui
 import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -79,6 +83,11 @@ enum class StartTimeOption {
     }
 }
 
+enum class DriveBackupAction {
+    BACKUP,
+    RESTORE
+}
+
 enum class SettingsCategory {
     PROFILE,
     SYNC,
@@ -98,6 +107,7 @@ fun SettingsScreen(
 )
  {
      val context = LocalContext.current
+     val coroutineScope = rememberCoroutineScope()
      val enabledTabsState by viewModel.enabledTabs.collectAsState()
      val enabledTabs = enabledTabsState ?: AppTab.defaultTabs
      val routineEnabled = enabledTabs.contains(AppTab.Routine)
@@ -151,6 +161,7 @@ fun SettingsScreen(
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
     val selectedGoogleAccountName by viewModel.selectedGoogleAccountName.collectAsState()
+    val driveBackupUri by viewModel.driveBackupUri.collectAsState()
 
      val showAllEvents by viewModel.showAllEvents.collectAsState()
     val calendarEventCounts by viewModel.calendarEventCounts.collectAsState()
@@ -194,6 +205,136 @@ fun SettingsScreen(
     var showDataManagementDialog by remember { mutableStateOf<String?>(null) }
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     var accountNameToManage by remember { mutableStateOf<String?>(null) }
+    var showDrivePermissionDialog by remember { mutableStateOf(false) }
+    var pendingDriveAction by remember { mutableStateOf<DriveBackupAction?>(null) }
+
+    val localBackupLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            coroutineScope.launch {
+                val success = viewModel.exportDataToUri(context, uri)
+                val message = if (success) {
+                    context.getString(R.string.settings_backup_export_success)
+                } else {
+                    context.getString(R.string.settings_backup_export_failure)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+        }
+
+    val localRestoreLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            coroutineScope.launch {
+                val success = viewModel.importDataFromUri(context, uri)
+                val message = if (success) {
+                    context.getString(R.string.settings_backup_import_success)
+                } else {
+                    context.getString(R.string.settings_backup_import_failure)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+        }
+
+    val driveBackupLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            viewModel.updateDriveBackupUri(uri.toString())
+            coroutineScope.launch {
+                val success = viewModel.backupToDrive(context, uri)
+                val message = if (success) {
+                    context.getString(R.string.settings_drive_backup_success)
+                } else {
+                    context.getString(R.string.settings_drive_backup_failure)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+        }
+
+    val driveRestoreLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            viewModel.updateDriveBackupUri(uri.toString())
+            coroutineScope.launch {
+                val success = viewModel.restoreFromDrive(context, uri)
+                val message = if (success) {
+                    context.getString(R.string.settings_drive_restore_success)
+                } else {
+                    context.getString(R.string.settings_drive_restore_failure)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+        }
+
+    if (showDrivePermissionDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showDrivePermissionDialog = false
+                pendingDriveAction = null
+            },
+            title = { Text(stringResource(R.string.settings_drive_permission_title)) },
+            text = { Text(stringResource(R.string.settings_drive_permission_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val action = pendingDriveAction
+                    showDrivePermissionDialog = false
+                    pendingDriveAction = null
+                    if (action == null) return@TextButton
+                    val existingUri = driveBackupUri?.let(Uri::parse)
+                    when (action) {
+                        DriveBackupAction.BACKUP -> {
+                            if (existingUri != null) {
+                                coroutineScope.launch {
+                                    val success = viewModel.backupToDrive(context, existingUri)
+                                    val message = if (success) {
+                                        context.getString(R.string.settings_drive_backup_success)
+                                    } else {
+                                        context.getString(R.string.settings_drive_backup_failure)
+                                    }
+                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                driveBackupLauncher.launch("routine_backup.json")
+                            }
+                        }
+                        DriveBackupAction.RESTORE -> {
+                            if (existingUri != null) {
+                                coroutineScope.launch {
+                                    val success = viewModel.restoreFromDrive(context, existingUri)
+                                    val message = if (success) {
+                                        context.getString(R.string.settings_drive_restore_success)
+                                    } else {
+                                        context.getString(R.string.settings_drive_restore_failure)
+                                    }
+                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                driveRestoreLauncher.launch(arrayOf("application/json"))
+                            }
+                        }
+                    }
+                }) {
+                    Text(stringResource(R.string.alert_action_ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDrivePermissionDialog = false
+                    pendingDriveAction = null
+                }) {
+                    Text(stringResource(R.string.alert_action_cancel))
+                }
+            }
+        )
+    }
 
 
     LaunchedEffect(userSettings) {
@@ -726,6 +867,19 @@ fun SettingsScreen(
                                 }
                             }
                         )
+                        BackupRestoreSection(
+                            driveBackupUri = driveBackupUri,
+                            onLocalBackup = { localBackupLauncher.launch("routine_backup.json") },
+                            onLocalRestore = { localRestoreLauncher.launch(arrayOf("application/json")) },
+                            onDriveBackup = {
+                                pendingDriveAction = DriveBackupAction.BACKUP
+                                showDrivePermissionDialog = true
+                            },
+                            onDriveRestore = {
+                                pendingDriveAction = DriveBackupAction.RESTORE
+                                showDrivePermissionDialog = true
+                            }
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                         CalendarSyncSettingsSection(
                             currentSyncInterval = currentSyncInterval,
@@ -790,7 +944,8 @@ fun SettingsScreen(
                         onPrimaryColorChange = { primaryColorInput = it; justSavedSuccessfully = false },
                         onSecondaryColorChange = { secondaryColorInput = it; justSavedSuccessfully = false },
                         routineInsightsEnabled = routineInsightsEnabledChecked,
-                        onRoutineInsightsEnabledChange = { routineInsightsEnabledChecked = it; justSavedSuccessfully = false }
+                        onRoutineInsightsEnabledChange = { routineInsightsEnabledChecked = it; justSavedSuccessfully = false },
+                        onBackupClick = { selectedCategory = SettingsCategory.SYNC }
                     )
                 }
             }
@@ -1542,6 +1697,72 @@ private fun CalendarSyncSettingsSection(
 }
 
 @Composable
+private fun BackupRestoreSection(
+    driveBackupUri: String?,
+    onLocalBackup: () -> Unit,
+    onLocalRestore: () -> Unit,
+    onDriveBackup: () -> Unit,
+    onDriveRestore: () -> Unit
+) {
+    Text(
+        text = stringResource(R.string.settings_backup_title),
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
+    )
+    Text(
+        text = stringResource(R.string.settings_backup_description),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = stringResource(R.string.settings_backup_file_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Text(
+                text = stringResource(R.string.settings_backup_file_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedButton(onClick = onLocalBackup, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_backup_export_action))
+            }
+            OutlinedButton(onClick = onLocalRestore, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_backup_import_action))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.settings_backup_drive_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Text(
+                text = if (driveBackupUri.isNullOrBlank()) {
+                    stringResource(R.string.settings_backup_drive_not_set)
+                } else {
+                    stringResource(R.string.settings_backup_drive_ready)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedButton(onClick = onDriveBackup, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_drive_backup_action))
+            }
+            OutlinedButton(onClick = onDriveRestore, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_drive_restore_action))
+            }
+        }
+    }
+    Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Composable
 private fun DefaultEventsSettingsSection(
     startTimeOption: StartTimeOption,
     onStartTimeOptionChange: (StartTimeOption) -> Unit,
@@ -1864,7 +2085,8 @@ private fun AppSettingsSection(
     onPrimaryColorChange: (Int) -> Unit,
     onSecondaryColorChange: (Int) -> Unit,
     routineInsightsEnabled: Boolean,
-    onRoutineInsightsEnabledChange: (Boolean) -> Unit
+    onRoutineInsightsEnabledChange: (Boolean) -> Unit,
+    onBackupClick: () -> Unit
 ) {
     var backupSyncHoursInputText by remember { mutableStateOf("1") }
     var backupSyncMinutesInputText by remember { mutableStateOf("0") }
@@ -2058,7 +2280,9 @@ private fun AppSettingsSection(
         }
     }
     Spacer(modifier = Modifier.height(16.dp))
-    OutlinedButton(onClick = { Toast.makeText(context, context.getString(R.string.settings_toast_work_in_progress), Toast.LENGTH_SHORT).show() }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text(stringResource(R.string.settings_app_import_export)) }
+    OutlinedButton(onClick = onBackupClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(stringResource(R.string.settings_app_import_export))
+    }
     OutlinedButton(onClick = { Toast.makeText(context, context.getString(R.string.settings_toast_work_in_progress), Toast.LENGTH_SHORT).show() }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Text(stringResource(R.string.settings_app_language)) }
     Spacer(modifier = Modifier.height(16.dp))
     Row(
