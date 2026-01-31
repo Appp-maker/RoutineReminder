@@ -1447,7 +1447,6 @@ fun ScheduleItemView(
 
     val titleTextColor = Color.White.copy(alpha = doneAlpha)
     val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
-        color = titleTextColor,
         textDecoration = doneDecoration
     )
 
@@ -1557,6 +1556,7 @@ fun ScheduleItemView(
                     Text(
                         text = item.name,
                         style = doneTextStyle,
+                        color = Color.White.copy(alpha = doneAlpha),
                         maxLines = if (isExpanded) Int.MAX_VALUE else 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
