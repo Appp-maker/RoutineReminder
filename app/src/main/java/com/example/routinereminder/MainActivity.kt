@@ -33,6 +33,7 @@ import androidx.navigation.NavController
 import com.example.routinereminder.ui.Screen
 import com.example.routinereminder.ui.BarcodeScannerScreen
 import android.app.Activity
+import android.accounts.AccountManager
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
@@ -208,7 +209,7 @@ class MainActivity : ComponentActivity() {
         val accountPickerLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
-                    val email = result.data?.dataString
+                    val email = result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
                     viewModel.updateSelectedGoogleAccountName(email)
                 }
             }
@@ -221,9 +222,15 @@ class MainActivity : ComponentActivity() {
                     .receiveAsFlow()
                     .collectLatest {
 
-                        val intent = Intent(Intent.ACTION_PICK).apply {
-                            type = "vnd.android.cursor.dir/email_v2"
-                        }
+                        val intent = AccountManager.newChooseAccountIntent(
+                            null,
+                            null,
+                            arrayOf("com.google"),
+                            null,
+                            null,
+                            null,
+                            null
+                        )
                         accountPickerLauncher.launch(intent)
 
 
