@@ -1002,9 +1002,9 @@ private fun ScheduleItemListContent(
             contentPadding = PaddingValues(bottom = 72.dp)
         ) {
             items(
-                items = displayItems,
-                key = { displayItem: DisplayScheduleItem ->
-                    when (displayItem) {
+                count = displayItems.size,
+                key = { index: Int ->
+                    when (val displayItem = displayItems[index]) {
                         is DisplayScheduleItem.Event -> displayItem.item.id
                         DisplayScheduleItem.NowIndicator -> "now-indicator"
                         DisplayScheduleItem.EmptyState -> "empty-state"
@@ -1016,8 +1016,8 @@ private fun ScheduleItemListContent(
                         else -> GridItemSpan(maxLineSpan)
                     }
                 }
-            ) { displayItem: DisplayScheduleItem ->
-                when (displayItem) {
+            ) { index: Int ->
+                when (val displayItem = displayItems[index]) {
                     is DisplayScheduleItem.Event -> {
                         val item = displayItem.item
                         val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
