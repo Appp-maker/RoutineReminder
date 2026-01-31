@@ -1451,8 +1451,8 @@ fun ScheduleItemView(
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
     val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
-    val rowBackgroundColor = if (showSeriesColor) {
-        val baseAlpha = if (isEffectivelyActiveNow) 0.16f else 0.08f
+    val rowBackgroundColor = if (showSeriesColor && !isDoneToday && !isEffectivelyPastNow) {
+        val baseAlpha = if (isEffectivelyActiveNow) 0.3f else 0.2f
         seriesColor.copy(alpha = baseAlpha)
     } else {
         Color.Transparent
@@ -1470,7 +1470,6 @@ fun ScheduleItemView(
     val doneAlpha = if (isDoneToday) 0.4f else 1f
     val doneDecoration = if (isDoneToday) TextDecoration.LineThrough else TextDecoration.None
 
-    val titleTextColor = Color.White.copy(alpha = doneAlpha)
     val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
         textDecoration = doneDecoration
     )
