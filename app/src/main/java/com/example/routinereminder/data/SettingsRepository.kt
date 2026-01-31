@@ -404,6 +404,12 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }
     }
 
+    suspend fun clearActiveSetsForDate(date: LocalDate) {
+        dataStore.edit { preferences ->
+            preferences.remove(activeEventSetKey(date))
+        }
+    }
+
     suspend fun saveDefaultEventSettings(settings: DefaultEventSettings) {
         dataStore.edit { preferences ->
             preferences[DEFAULT_EVENT_HOUR] = settings.hour

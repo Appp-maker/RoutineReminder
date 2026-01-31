@@ -1111,6 +1111,7 @@ private fun EventSetToggleRow(
     activeSetIds: Set<Int>,
     hasManualSetsForDate: Boolean,
     onToggleSet: (Int) -> Boolean,
+    onResetManualSetsForDate: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1140,37 +1141,60 @@ private fun EventSetToggleRow(
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        OutlinedButton(
-            onClick = { showDialog = true },
-            modifier = Modifier
-                .width(90.dp)
-                .height(28.dp),
-            shape = RoundedCornerShape(50),
-            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = buttonLabel,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                modifier = Modifier.weight(1f, fill = false),
-                textAlign = TextAlign.Center
-            )
-            Icon(
-                imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedButton(
+                onClick = { showDialog = true },
                 modifier = Modifier
-                    .padding(start = 4.dp)
-                    .size(12.dp)
-            )
-        }
-        if (hasManualSetsForDate) {
-            Text(
-                text = stringResource(R.string.event_sets_manual_override),
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 12.dp, top = 4.dp)
-            )
+                    .defaultMinSize(minWidth = 90.dp)
+                    .height(28.dp),
+                shape = RoundedCornerShape(50),
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = buttonLabel,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        textAlign = TextAlign.Center
+                    )
+                    if (hasManualSetsForDate) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.event_sets_active_badge),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            color = MaterialTheme.colorScheme.secondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Clip
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .padding(start = 4.dp)
+                        .size(12.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            OutlinedButton(
+                onClick = onResetManualSetsForDate,
+                enabled = hasManualSetsForDate,
+                modifier = Modifier.height(28.dp),
+                shape = RoundedCornerShape(50),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.event_sets_reset_day_action),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 
@@ -1321,6 +1345,7 @@ fun MainScreenContent(
                     activeSetIds = activeSetIds,
                     hasManualSetsForDate = hasManualActiveSetsForDate,
                     onToggleSet = { setId -> viewModel.toggleActiveSet(setId) },
+                    onResetManualSetsForDate = { viewModel.resetManualActiveEventSetsForDate() },
                     onOpenSettings = { navController.navigate("settings/routine?category=event_sets") }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
