@@ -57,6 +57,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
@@ -927,12 +932,14 @@ private fun ScheduleItemListContent(
     currentDate: LocalDate,
     doneStates: Map<Pair<Long, Long>, Boolean>,
     eventSetColors: List<Int>,
+    isCompactView: Boolean,
     onLongPress: (ScheduleItem) -> Unit,
     viewModel: MainViewModel
 )
  {
     val distinctItems = remember(items) { items.distinctBy { it.id } }
     val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
     val today = remember(currentDate) { LocalDate.now() }
     val showNowIndicator = currentDate == today
     val nowIndicatorIndex = remember(distinctItems, currentDate) {
@@ -975,62 +982,176 @@ private fun ScheduleItemListContent(
         }
     }
 
-    LaunchedEffect(showNowIndicator, nowIndicatorIndex, displayItems.size) {
+    LaunchedEffect(showNowIndicator, nowIndicatorIndex, displayItems.size, isCompactView) {
         if (showNowIndicator && nowIndicatorIndex >= 0) {
-            listState.scrollToItem(nowIndicatorIndex)
+            if (isCompactView) {
+                gridState.scrollToItem(nowIndicatorIndex)
+            } else {
+                listState.scrollToItem(nowIndicatorIndex)
+            }
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        state = listState,
-        verticalArrangement = Arrangement.Top,
-        contentPadding = PaddingValues(bottom = 72.dp)
-    ) {
-        items(
-            items = displayItems,
-            key = { displayItem: DisplayScheduleItem ->
+    if (isCompactView) {
+        LazyVerticalGrid(
+            modifier = Modifier.fillMaxSize(),
+            state = gridState,
+            columns = GridCells.Adaptive(minSize = 160.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = 72.dp)
+        ) {
+            items(
+                items = displayItems,
+                key = { displayItem: DisplayScheduleItem ->
+                    when (displayItem) {
+                        is DisplayScheduleItem.Event -> displayItem.item.id
+                        DisplayScheduleItem.NowIndicator -> "now-indicator"
+                        DisplayScheduleItem.EmptyState -> "empty-state"
+                    }
+                },
+                span = { index ->
+                    when (displayItems[index]) {
+                        is DisplayScheduleItem.Event -> GridItemSpan(1)
+                        else -> GridItemSpan(maxLineSpan)
+                    }
+                }
+            ) { displayItem: DisplayScheduleItem ->
                 when (displayItem) {
-                    is DisplayScheduleItem.Event -> displayItem.item.id
-                    DisplayScheduleItem.NowIndicator -> "now-indicator"
-                    DisplayScheduleItem.EmptyState -> "empty-state"
+                    is DisplayScheduleItem.Event -> {
+                        val item = displayItem.item
+                        val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
+                        val isDoneToday = doneStates[key] == true
+
+                        CompactScheduleItemCard(
+                            item = item,
+                            isDoneToday = isDoneToday,
+                            onLongPress = onLongPress
+                        )
+                    }
+                    DisplayScheduleItem.NowIndicator -> {
+                        NowIndicatorRow()
+                    }
+                    DisplayScheduleItem.EmptyState -> {
+                        Text(
+                            text = "No entries for this day. Tap + to create a new entry or swipe for another day.",
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
                 }
             }
-        ) { displayItem: DisplayScheduleItem ->
-            when (displayItem) {
-                is DisplayScheduleItem.Event -> {
-                    val item = displayItem.item
-                    val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
-                    val isDoneToday = doneStates[key] == true
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            verticalArrangement = Arrangement.Top,
+            contentPadding = PaddingValues(bottom = 72.dp)
+        ) {
+            items(
+                items = displayItems,
+                key = { displayItem: DisplayScheduleItem ->
+                    when (displayItem) {
+                        is DisplayScheduleItem.Event -> displayItem.item.id
+                        DisplayScheduleItem.NowIndicator -> "now-indicator"
+                        DisplayScheduleItem.EmptyState -> "empty-state"
+                    }
+                }
+            ) { displayItem: DisplayScheduleItem ->
+                when (displayItem) {
+                    is DisplayScheduleItem.Event -> {
+                        val item = displayItem.item
+                        val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
+                        val isDoneToday = doneStates[key] == true
 
-                    ScheduleItemView(
-                        item = item,
-                        currentDate = currentDate,
-                        isDoneToday = isDoneToday,
-                        eventSetColors = eventSetColors,
-                        onLongPress = onLongPress,
-                        onChecklistUpdate = { updatedItem, updatedNotes, completion ->
-                            viewModel.upsertScheduleItem(updatedItem.copy(notes = updatedNotes))
-                            if (completion.hasCheckboxes) {
-                                if (completion.allChecked) {
-                                    viewModel.markScheduleItemDone(updatedItem, currentDate.toEpochDay())
-                                } else {
-                                    viewModel.unmarkScheduleItemDone(updatedItem, currentDate.toEpochDay())
+                        ScheduleItemView(
+                            item = item,
+                            currentDate = currentDate,
+                            isDoneToday = isDoneToday,
+                            eventSetColors = eventSetColors,
+                            onLongPress = onLongPress,
+                            onChecklistUpdate = { updatedItem, updatedNotes, completion ->
+                                viewModel.upsertScheduleItem(updatedItem.copy(notes = updatedNotes))
+                                if (completion.hasCheckboxes) {
+                                    if (completion.allChecked) {
+                                        viewModel.markScheduleItemDone(updatedItem, currentDate.toEpochDay())
+                                    } else {
+                                        viewModel.unmarkScheduleItemDone(updatedItem, currentDate.toEpochDay())
+                                    }
                                 }
                             }
-                        }
-                    )
-                }
-                DisplayScheduleItem.NowIndicator -> {
-                    NowIndicatorRow()
-                }
-                DisplayScheduleItem.EmptyState -> {
-                    Text(
-                        text = "No entries for this day. Tap + to create a new entry or swipe for another day.",
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
+                        )
+                    }
+                    DisplayScheduleItem.NowIndicator -> {
+                        NowIndicatorRow()
+                    }
+                    DisplayScheduleItem.EmptyState -> {
+                        Text(
+                            text = "No entries for this day. Tap + to create a new entry or swipe for another day.",
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CompactScheduleItemCard(
+    item: ScheduleItem,
+    isDoneToday: Boolean,
+    onLongPress: (ScheduleItem) -> Unit
+) {
+    val startTime = remember(item.hour, item.minute) { LocalTime.of(item.hour, item.minute) }
+    val endTime = remember(item.hour, item.minute, item.durationMinutes) {
+        startTime.plusMinutes(item.durationMinutes.toLong())
+    }
+    val timeRange = remember(startTime, endTime) {
+        "${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}–${
+            endTime.format(DateTimeFormatter.ofPattern("HH:mm"))
+        }"
+    }
+    val decoration = if (isDoneToday) TextDecoration.LineThrough else TextDecoration.None
+    val titleColor = if (isDoneToday) {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val timeColor = if (isDoneToday) {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+    } else {
+        MaterialTheme.colorScheme.secondary
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = { },
+                onLongClick = { onLongPress(item) }
+            ),
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 1.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.labelLarge,
+                color = titleColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textDecoration = decoration
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = timeRange,
+                style = MaterialTheme.typography.labelSmall,
+                color = timeColor,
+                maxLines = 1
+            )
         }
     }
 }
@@ -1110,6 +1231,8 @@ private fun EventSetToggleRow(
     availableSetIds: Set<Int>,
     activeSetIds: Set<Int>,
     hasManualSetsForDate: Boolean,
+    isCompactView: Boolean,
+    onCompactViewChange: (Boolean) -> Unit,
     onToggleSet: (Int) -> Boolean,
     onResetManualSetsForDate: () -> Unit,
     onOpenSettings: () -> Unit
@@ -1141,7 +1264,10 @@ private fun EventSetToggleRow(
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             OutlinedButton(
                 onClick = { showDialog = true },
                 modifier = Modifier
@@ -1193,6 +1319,19 @@ private fun EventSetToggleRow(
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.event_sets_compact_view_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Switch(
+                    checked = isCompactView,
+                    onCheckedChange = onCompactViewChange
                 )
             }
         }
@@ -1295,6 +1434,7 @@ fun MainScreenContent(
     val density = LocalDensity.current
     val swipeThresholdPx = with(density) { 50.dp.toPx() }
     var showDatePicker by remember { mutableStateOf(false) }
+    var isCompactView by rememberSaveable { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -1344,6 +1484,8 @@ fun MainScreenContent(
                     availableSetIds = availableSetIds,
                     activeSetIds = activeSetIds,
                     hasManualSetsForDate = hasManualActiveSetsForDate,
+                    isCompactView = isCompactView,
+                    onCompactViewChange = { isCompactView = it },
                     onToggleSet = { setId -> viewModel.toggleActiveSet(setId) },
                     onResetManualSetsForDate = { viewModel.resetManualActiveEventSetsForDate() },
                     onOpenSettings = { navController.navigate("settings/routine?category=event_sets") }
@@ -1356,6 +1498,7 @@ fun MainScreenContent(
                 currentDate = currentDate,
                 doneStates = viewModel.doneItemsForDay.collectAsState().value,
                 eventSetColors = eventSetColors,
+                isCompactView = isCompactView,
                 onLongPress = { item ->
                     selectedItemForAction = item
                     coroutineScope.launch {
