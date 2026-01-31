@@ -155,6 +155,7 @@
     <string name="event_sets_compact_placeholder">Sets</string>
     <string name="event_sets_active_badge">Active</string>
     <string name="event_sets_reset_day_action">Reset day</string>
+    <string name="event_sets_compact_view_label">Compact view</string>
     <string name="event_sets_dialog_title">Sets A / E / K</string>
     <string name="event_sets_dialog_body">Sets let you switch between alternate plans (like A/E/K). Turn on the sets you want active today to show those events. Rename sets in Settings if you want.</string>
     <string name="event_sets_dialog_active_label">Active today</string>
