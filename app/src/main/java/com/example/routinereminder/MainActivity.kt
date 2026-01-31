@@ -1616,6 +1616,11 @@ fun ScheduleItemView(
     val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
         textDecoration = doneDecoration
     )
+    val titleColor = when {
+        isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
+        isEffectivelyPastNow -> MaterialTheme.colorScheme.outline
+        else -> MaterialTheme.colorScheme.primary
+    }
 
 
 
@@ -1723,7 +1728,7 @@ fun ScheduleItemView(
                     Text(
                         text = item.name,
                         style = doneTextStyle,
-                        color = Color.White.copy(alpha = doneAlpha),
+                        color = titleColor.copy(alpha = doneAlpha),
                         maxLines = if (isExpanded) Int.MAX_VALUE else 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
