@@ -1421,12 +1421,17 @@ fun ScheduleItemView(
             !realNowDateTime.isBefore(itemAbsoluteStartDateTime) &&
             realNowDateTime.isBefore(itemAbsoluteEndDateTime)
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
-    val rowBackgroundColor = if (isEffectivelyActiveNow) MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f) else Color.Transparent
     val resolvedColorArgb = item.setId?.let { setId ->
         eventSetColors.getOrNull(setId - 1)
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
     val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
+    val rowBackgroundColor = if (showSeriesColor) {
+        val baseAlpha = if (isEffectivelyActiveNow) 0.3f else 0.2f
+        seriesColor.copy(alpha = baseAlpha)
+    } else {
+        Color.Transparent
+    }
 
 
 // Base text color logic
@@ -1440,13 +1445,7 @@ fun ScheduleItemView(
     val doneAlpha = if (isDoneToday) 0.4f else 1f
     val doneDecoration = if (isDoneToday) TextDecoration.LineThrough else TextDecoration.None
 
-    val titleTextColor = when {
-        isDoneToday -> baseTextColor.copy(alpha = doneAlpha)
-        isEffectivelyPastNow -> baseTextColor.copy(alpha = doneAlpha)
-        else -> MaterialTheme.colorScheme.primary.copy(alpha = doneAlpha)
-    }
     val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
-        color = titleTextColor,
         textDecoration = doneDecoration
     )
 
@@ -1556,6 +1555,7 @@ fun ScheduleItemView(
                     Text(
                         text = item.name,
                         style = doneTextStyle,
+                        color = Color.White.copy(alpha = doneAlpha),
                         maxLines = if (isExpanded) Int.MAX_VALUE else 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
