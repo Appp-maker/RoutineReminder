@@ -28,6 +28,8 @@ import java.io.FileOutputStream
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.TextStyle
 import com.example.routinereminder.data.entities.ScheduleDone
+import com.example.routinereminder.data.EventColorDisplayCondition
+import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.SettingsRepository
 import androidx.navigation.NavController
 import com.example.routinereminder.ui.Screen
@@ -384,6 +386,10 @@ fun MainAppUI(
         val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
         val eventSetNames by viewModel.eventSetNames.collectAsState()
         val eventSetColors by viewModel.eventSetColors.collectAsState()
+        val eventIndicatorDisplayCondition by viewModel.eventIndicatorDisplayCondition.collectAsState()
+        val eventBackgroundDisplayCondition by viewModel.eventBackgroundDisplayCondition.collectAsState()
+        val eventTitleColorChoice by viewModel.eventTitleColorChoice.collectAsState()
+        val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
         val recentCustomEventColors by viewModel.recentCustomEventColors.collectAsState()
         val activeSetIds by viewModel.activeSetIds.collectAsState()
         val availableSetIds by viewModel.availableSetIds.collectAsState()
@@ -520,6 +526,10 @@ fun MainAppUI(
                                 currentDate = selectedDate,
                                 eventSetNames = eventSetNames,
                                 eventSetColors = eventSetColors,
+                                eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
+                                eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                                eventTitleColorChoice = eventTitleColorChoice,
+                                eventTitleCustomColor = eventTitleCustomColor,
                                 activeSetIds = activeSetIds,
                                 availableSetIds = availableSetIds,
                                 hasManualActiveSetsForDate = hasManualActiveSetsForDate,
@@ -932,6 +942,10 @@ private fun ScheduleItemListContent(
     currentDate: LocalDate,
     doneStates: Map<Pair<Long, Long>, Boolean>,
     eventSetColors: List<Int>,
+    eventIndicatorDisplayCondition: EventColorDisplayCondition,
+    eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    eventTitleColorChoice: EventTitleColorChoice,
+    eventTitleCustomColor: Int,
     isCompactView: Boolean,
     onLongPress: (ScheduleItem) -> Unit,
     viewModel: MainViewModel
@@ -1025,7 +1039,13 @@ private fun ScheduleItemListContent(
 
                         CompactScheduleItemCard(
                             item = item,
+                            currentDate = currentDate,
                             isDoneToday = isDoneToday,
+                            eventSetColors = eventSetColors,
+                            eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
+                            eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                            eventTitleColorChoice = eventTitleColorChoice,
+                            eventTitleCustomColor = eventTitleCustomColor,
                             onLongPress = onLongPress
                         )
                     }
@@ -1069,6 +1089,10 @@ private fun ScheduleItemListContent(
                             currentDate = currentDate,
                             isDoneToday = isDoneToday,
                             eventSetColors = eventSetColors,
+                            eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
+                            eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                            eventTitleColorChoice = eventTitleColorChoice,
+                            eventTitleCustomColor = eventTitleCustomColor,
                             onLongPress = onLongPress,
                             onChecklistUpdate = { updatedItem, updatedNotes, completion ->
                                 viewModel.upsertScheduleItem(updatedItem.copy(notes = updatedNotes))
@@ -1101,7 +1125,13 @@ private fun ScheduleItemListContent(
 @Composable
 private fun CompactScheduleItemCard(
     item: ScheduleItem,
+    currentDate: LocalDate,
     isDoneToday: Boolean,
+    eventSetColors: List<Int>,
+    eventIndicatorDisplayCondition: EventColorDisplayCondition,
+    eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    eventTitleColorChoice: EventTitleColorChoice,
+    eventTitleCustomColor: Int,
     onLongPress: (ScheduleItem) -> Unit
 ) {
     val startTime = remember(item.hour, item.minute) { LocalTime.of(item.hour, item.minute) }
@@ -1114,10 +1144,32 @@ private fun CompactScheduleItemCard(
         }"
     }
     val decoration = if (isDoneToday) TextDecoration.LineThrough else TextDecoration.None
-    val titleColor = if (isDoneToday) {
-        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
-    } else {
-        MaterialTheme.colorScheme.primary
+    val realNowDateTime = LocalDateTime.now()
+    val itemAbsoluteStartDateTime = currentDate.atTime(item.hour, item.minute)
+    val itemAbsoluteEndDateTime = itemAbsoluteStartDateTime.plusMinutes(item.durationMinutes.toLong())
+    val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
+    val resolvedColorArgb = item.setId?.let { setId ->
+        eventSetColors.getOrNull(setId - 1)
+    } ?: item.colorArgb
+    val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
+    val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
+    val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isDoneToday, isEffectivelyPastNow)
+    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isDoneToday, isEffectivelyPastNow)
+    val indicatorColor = when {
+        showIndicatorColor -> seriesColor
+        showSeriesColor -> Color.Transparent
+        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    }
+    val titleBaseColor = when (eventTitleColorChoice) {
+        EventTitleColorChoice.PRIMARY -> MaterialTheme.colorScheme.primary
+        EventTitleColorChoice.SECONDARY -> MaterialTheme.colorScheme.secondary
+        EventTitleColorChoice.EVENT_COLOR -> if (showSeriesColor) seriesColor else MaterialTheme.colorScheme.primary
+        EventTitleColorChoice.CUSTOM -> Color(eventTitleCustomColor)
+    }
+    val titleColor = when {
+        isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+        isEffectivelyPastNow -> MaterialTheme.colorScheme.outline
+        else -> titleBaseColor
     }
     val timeColor = if (isDoneToday) {
         MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -1133,10 +1185,19 @@ private fun CompactScheduleItemCard(
                 onLongClick = { onLongPress(item) }
             ),
         shape = RoundedCornerShape(12.dp),
+        color = if (showBackgroundColor) seriesColor.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(28.dp)
+                    .background(indicatorColor.copy(alpha = if (isDoneToday) 0.4f else 1f), shape = MaterialTheme.shapes.extraSmall)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
             Text(
                 text = item.name,
                 style = MaterialTheme.typography.labelLarge,
@@ -1152,6 +1213,7 @@ private fun CompactScheduleItemCard(
                 color = timeColor,
                 maxLines = 1
             )
+            }
         }
     }
 }
@@ -1408,6 +1470,10 @@ fun MainScreenContent(
     currentDate: LocalDate,
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
+    eventIndicatorDisplayCondition: EventColorDisplayCondition,
+    eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    eventTitleColorChoice: EventTitleColorChoice,
+    eventTitleCustomColor: Int,
     activeSetIds: Set<Int>,
     availableSetIds: Set<Int>,
     hasManualActiveSetsForDate: Boolean,
@@ -1498,6 +1564,10 @@ fun MainScreenContent(
                 currentDate = currentDate,
                 doneStates = viewModel.doneItemsForDay.collectAsState().value,
                 eventSetColors = eventSetColors,
+                eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
+                eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                eventTitleColorChoice = eventTitleColorChoice,
+                eventTitleCustomColor = eventTitleCustomColor,
                 isCompactView = isCompactView,
                 onLongPress = { item ->
                     selectedItemForAction = item
@@ -1573,6 +1643,10 @@ fun ScheduleItemView(
     currentDate: LocalDate,
     isDoneToday: Boolean,
     eventSetColors: List<Int>,
+    eventIndicatorDisplayCondition: EventColorDisplayCondition,
+    eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    eventTitleColorChoice: EventTitleColorChoice,
+    eventTitleCustomColor: Int,
     onLongPress: (ScheduleItem) -> Unit,
     onChecklistUpdate: (ScheduleItem, String, com.example.routinereminder.ui.components.ChecklistCompletion) -> Unit
 ) {
@@ -1594,7 +1668,9 @@ fun ScheduleItemView(
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
     val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
-    val rowBackgroundColor = if (showSeriesColor && !isDoneToday && !isEffectivelyPastNow) {
+    val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isDoneToday, isEffectivelyPastNow)
+    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isDoneToday, isEffectivelyPastNow)
+    val rowBackgroundColor = if (showBackgroundColor) {
         val baseAlpha = if (isEffectivelyActiveNow) 0.3f else 0.2f
         seriesColor.copy(alpha = baseAlpha)
     } else {
@@ -1616,10 +1692,16 @@ fun ScheduleItemView(
     val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
         textDecoration = doneDecoration
     )
+    val titleBaseColor = when (eventTitleColorChoice) {
+        EventTitleColorChoice.PRIMARY -> MaterialTheme.colorScheme.primary
+        EventTitleColorChoice.SECONDARY -> MaterialTheme.colorScheme.secondary
+        EventTitleColorChoice.EVENT_COLOR -> if (showSeriesColor) seriesColor else MaterialTheme.colorScheme.primary
+        EventTitleColorChoice.CUSTOM -> Color(eventTitleCustomColor)
+    }
     val titleColor = when {
         isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
         isEffectivelyPastNow -> MaterialTheme.colorScheme.outline
-        else -> MaterialTheme.colorScheme.primary
+        else -> titleBaseColor
     }
 
 
@@ -1650,10 +1732,10 @@ fun ScheduleItemView(
             verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth()
         ) {
-            val indicatorColor = if (showSeriesColor) {
-                seriesColor
-            } else {
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            val indicatorColor = when {
+                showIndicatorColor -> seriesColor
+                showSeriesColor -> Color.Transparent
+                else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             }
             Box(
                 modifier = Modifier

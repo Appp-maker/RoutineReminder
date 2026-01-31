@@ -79,6 +79,22 @@
     <string name="settings_default_events_notification_options_title">Notification Options</string>
     <string name="settings_default_events_system_notification">Show system notification</string>
     <string name="settings_default_events_show_details_notification">Show details in notification</string>
+    <string name="settings_events_enabled_title">Enable events</string>
+    <string name="settings_events_enabled_description">Turn this off to hide event buttons and disable event sets.</string>
+    <string name="settings_event_appearance_title">Event appearance</string>
+    <string name="settings_event_color_indicator_label">Event color indicator</string>
+    <string name="settings_event_color_background_label">Event background color</string>
+    <string name="settings_event_title_color_label">Event title color</string>
+    <string name="settings_event_title_custom_color_label">Custom title color</string>
+    <string name="settings_event_color_condition_always">Always</string>
+    <string name="settings_event_color_condition_done">Only when done</string>
+    <string name="settings_event_color_condition_past">Only when past</string>
+    <string name="settings_event_color_condition_done_or_past">Only when done or past</string>
+    <string name="settings_event_color_condition_never">Never</string>
+    <string name="settings_event_title_color_primary">Primary color</string>
+    <string name="settings_event_title_color_secondary">Secondary color</string>
+    <string name="settings_event_title_color_event">Event color</string>
+    <string name="settings_event_title_color_custom">Custom color</string>
 
     <!-- App Settings -->
     <string name="settings_app_title">Application</string>
