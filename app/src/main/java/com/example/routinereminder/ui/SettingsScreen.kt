@@ -156,7 +156,12 @@ fun SettingsScreen(
     val currentRoutineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
     val eventSetColors by viewModel.eventSetColors.collectAsState()
+    val recentCustomEventColors by viewModel.recentCustomEventColors.collectAsState()
     val appThemeColors by viewModel.appThemeColors.collectAsState()
+    val eventIndicatorDisplayCondition by viewModel.eventIndicatorDisplayCondition.collectAsState()
+    val eventBackgroundDisplayCondition by viewModel.eventBackgroundDisplayCondition.collectAsState()
+    val eventTitleColorChoice by viewModel.eventTitleColorChoice.collectAsState()
+    val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
     val defaultActiveSetsByWeekday by viewModel.defaultActiveSetsByWeekday.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
@@ -195,6 +200,10 @@ fun SettingsScreen(
     var primaryColorInput by remember { mutableStateOf(appThemeColors.primary) }
     var secondaryColorInput by remember { mutableStateOf(appThemeColors.secondary) }
     var defaultActiveSetSelections by remember { mutableStateOf<Map<DayOfWeek, Set<Int>>>(emptyMap()) }
+    var indicatorDisplayConditionState by remember(eventIndicatorDisplayCondition) { mutableStateOf(eventIndicatorDisplayCondition) }
+    var backgroundDisplayConditionState by remember(eventBackgroundDisplayCondition) { mutableStateOf(eventBackgroundDisplayCondition) }
+    var eventTitleColorChoiceState by remember(eventTitleColorChoice) { mutableStateOf(eventTitleColorChoice) }
+    var eventTitleCustomColorState by remember(eventTitleCustomColor) { mutableStateOf(eventTitleCustomColor) }
 
 
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
@@ -585,6 +594,10 @@ fun SettingsScreen(
                                 tertiary = secondaryColorInput
                             )
                         )
+                        viewModel.saveEventIndicatorDisplayCondition(indicatorDisplayConditionState)
+                        viewModel.saveEventBackgroundDisplayCondition(backgroundDisplayConditionState)
+                        viewModel.saveEventTitleColorChoice(eventTitleColorChoiceState)
+                        viewModel.saveEventTitleCustomColor(eventTitleCustomColorState)
                         viewModel.saveDefaultActiveSetsByWeekday(defaultActiveSetSelections)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
@@ -753,7 +766,42 @@ fun SettingsScreen(
                         onSystemNotificationChange = { newValue -> systemNotificationChecked = newValue; if (!newValue) showDetailsInNotificationChecked = false; justSavedSuccessfully = false },
                         showDetailsInNotificationChecked = showDetailsInNotificationChecked,
                         onShowDetailsInNotificationChange = { showDetailsInNotificationChecked = it; justSavedSuccessfully = false },
-                        selectedGoogleAccountName = selectedGoogleAccountName
+                        selectedGoogleAccountName = selectedGoogleAccountName,
+                        eventsEnabled = selectedTabs.contains(AppTab.Routine),
+                        onEventsEnabledChange = { enabled ->
+                            val updatedTabs = if (enabled) {
+                                selectedTabs + AppTab.Routine
+                            } else {
+                                selectedTabs - AppTab.Routine
+                            }
+                            if (updatedTabs.isNotEmpty()) {
+                                selectedTabs = updatedTabs
+                                justSavedSuccessfully = false
+                            } else {
+                                Toast.makeText(context, context.getString(R.string.settings_tabs_select_at_least_one), Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        eventIndicatorDisplayCondition = indicatorDisplayConditionState,
+                        onEventIndicatorDisplayConditionChange = { condition ->
+                            indicatorDisplayConditionState = condition
+                            justSavedSuccessfully = false
+                        },
+                        eventBackgroundDisplayCondition = backgroundDisplayConditionState,
+                        onEventBackgroundDisplayConditionChange = { condition ->
+                            backgroundDisplayConditionState = condition
+                            justSavedSuccessfully = false
+                        },
+                        eventTitleColorChoice = eventTitleColorChoiceState,
+                        onEventTitleColorChoiceChange = { choice ->
+                            eventTitleColorChoiceState = choice
+                            justSavedSuccessfully = false
+                        },
+                        eventTitleCustomColor = eventTitleCustomColorState,
+                        onEventTitleCustomColorChange = { color ->
+                            eventTitleCustomColorState = color
+                            justSavedSuccessfully = false
+                        },
+                        recentCustomEventColors = recentCustomEventColors
                     )
                     SettingsCategory.EVENT_SETS -> EventSetsSettingsSection(
                         eventSetNames = eventSetNameInputs,
@@ -1785,9 +1833,67 @@ private fun DefaultEventsSettingsSection(
     onSystemNotificationChange: (Boolean) -> Unit,
     showDetailsInNotificationChecked: Boolean,
     onShowDetailsInNotificationChange: (Boolean) -> Unit,
-    selectedGoogleAccountName: String?
+    selectedGoogleAccountName: String?,
+    eventsEnabled: Boolean,
+    onEventsEnabledChange: (Boolean) -> Unit,
+    eventIndicatorDisplayCondition: EventColorDisplayCondition,
+    onEventIndicatorDisplayConditionChange: (EventColorDisplayCondition) -> Unit,
+    eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    onEventBackgroundDisplayConditionChange: (EventColorDisplayCondition) -> Unit,
+    eventTitleColorChoice: EventTitleColorChoice,
+    onEventTitleColorChoiceChange: (EventTitleColorChoice) -> Unit,
+    eventTitleCustomColor: Int,
+    onEventTitleCustomColorChange: (Int) -> Unit,
+    recentCustomEventColors: List<Int>
 ) {
     Text(stringResource(R.string.settings_default_events_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
+    SettingSwitchItem(
+        text = stringResource(R.string.settings_events_enabled_title),
+        checked = eventsEnabled,
+        onCheckedChange = onEventsEnabledChange
+    )
+    Text(
+        text = stringResource(R.string.settings_events_enabled_description),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+    Text(
+        text = stringResource(R.string.settings_event_appearance_title),
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    EventColorConditionDropdown(
+        label = stringResource(R.string.settings_event_color_indicator_label),
+        selectedCondition = eventIndicatorDisplayCondition,
+        onConditionChange = onEventIndicatorDisplayConditionChange
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    EventColorConditionDropdown(
+        label = stringResource(R.string.settings_event_color_background_label),
+        selectedCondition = eventBackgroundDisplayCondition,
+        onConditionChange = onEventBackgroundDisplayConditionChange
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    EventTitleColorDropdown(
+        label = stringResource(R.string.settings_event_title_color_label),
+        selectedChoice = eventTitleColorChoice,
+        onChoiceChange = onEventTitleColorChoiceChange
+    )
+    if (eventTitleColorChoice == EventTitleColorChoice.CUSTOM) {
+        Spacer(modifier = Modifier.height(8.dp))
+        SeriesColorPicker(
+            label = stringResource(R.string.settings_event_title_custom_color_label),
+            selectedColor = Color(eventTitleCustomColor),
+            onColorSelected = { onEventTitleCustomColorChange(it.toArgb()) },
+            modifier = Modifier.padding(bottom = 8.dp),
+            colorOptions = SeriesColorOptions,
+            allowCustomColor = true,
+            recentCustomColors = recentCustomEventColors
+        )
+    }
+    Spacer(modifier = Modifier.height(16.dp))
     Text(stringResource(R.string.settings_default_events_start_time), style = MaterialTheme.typography.titleMedium)
     Column(Modifier.selectableGroup()) {
         StartTimeOption.entries.forEach { option ->
@@ -1889,6 +1995,143 @@ private fun DefaultEventsSettingsSection(
     SettingSwitchItem(text = stringResource(R.string.settings_default_events_system_notification), checked = systemNotificationChecked, onCheckedChange = onSystemNotificationChange)
     SettingSwitchItem(text = stringResource(R.string.settings_default_events_show_details_notification), checked = showDetailsInNotificationChecked, enabled = systemNotificationChecked, onCheckedChange = onShowDetailsInNotificationChange)
     Spacer(modifier = Modifier.height(16.dp))
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EventColorConditionDropdown(
+    label: String,
+    selectedCondition: EventColorDisplayCondition,
+    onConditionChange: (EventColorDisplayCondition) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = eventConditionLabel(selectedCondition)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = selectedLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            FilledTonalButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.menuAnchor()
+            ) {
+                Text(selectedLabel)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                EventColorDisplayCondition.entries.forEach { condition ->
+                    DropdownMenuItem(
+                        text = { Text(eventConditionLabel(condition)) },
+                        onClick = {
+                            onConditionChange(condition)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EventTitleColorDropdown(
+    label: String,
+    selectedChoice: EventTitleColorChoice,
+    onChoiceChange: (EventTitleColorChoice) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = eventTitleColorLabel(selectedChoice)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = selectedLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            FilledTonalButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.menuAnchor()
+            ) {
+                Text(selectedLabel)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                EventTitleColorChoice.entries.forEach { choice ->
+                    DropdownMenuItem(
+                        text = { Text(eventTitleColorLabel(choice)) },
+                        onClick = {
+                            onChoiceChange(choice)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun eventConditionLabel(condition: EventColorDisplayCondition): String {
+    return stringResource(
+        when (condition) {
+            EventColorDisplayCondition.ALWAYS -> R.string.settings_event_color_condition_always
+            EventColorDisplayCondition.DONE -> R.string.settings_event_color_condition_done
+            EventColorDisplayCondition.PAST -> R.string.settings_event_color_condition_past
+            EventColorDisplayCondition.DONE_OR_PAST -> R.string.settings_event_color_condition_done_or_past
+            EventColorDisplayCondition.NEVER -> R.string.settings_event_color_condition_never
+        }
+    )
+}
+
+@Composable
+private fun eventTitleColorLabel(choice: EventTitleColorChoice): String {
+    return stringResource(
+        when (choice) {
+            EventTitleColorChoice.PRIMARY -> R.string.settings_event_title_color_primary
+            EventTitleColorChoice.SECONDARY -> R.string.settings_event_title_color_secondary
+            EventTitleColorChoice.EVENT_COLOR -> R.string.settings_event_title_color_event
+            EventTitleColorChoice.CUSTOM -> R.string.settings_event_title_color_custom
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

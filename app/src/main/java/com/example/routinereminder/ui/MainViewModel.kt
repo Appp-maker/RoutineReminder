@@ -13,7 +13,10 @@ import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
 import com.example.routinereminder.data.UserSettings
 import com.example.routinereminder.data.AppThemeColors
+import com.example.routinereminder.data.DEFAULT_PRIMARY_COLOR_ARGB
 import com.example.routinereminder.data.defaultSeriesColorForIndex
+import com.example.routinereminder.data.EventColorDisplayCondition
+import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.model.ActiveRunState
 import com.example.routinereminder.data.model.TrailPoint
 import com.example.routinereminder.data.mappers.toEntity
@@ -158,6 +161,23 @@ class MainViewModel @Inject constructor(
 
     private val _appThemeColors = MutableStateFlow(AppThemeColors.Default)
     val appThemeColors: StateFlow<AppThemeColors> = _appThemeColors.asStateFlow()
+
+    private val _eventIndicatorDisplayCondition =
+        MutableStateFlow(EventColorDisplayCondition.ALWAYS)
+    val eventIndicatorDisplayCondition: StateFlow<EventColorDisplayCondition> =
+        _eventIndicatorDisplayCondition.asStateFlow()
+
+    private val _eventBackgroundDisplayCondition =
+        MutableStateFlow(EventColorDisplayCondition.NEVER)
+    val eventBackgroundDisplayCondition: StateFlow<EventColorDisplayCondition> =
+        _eventBackgroundDisplayCondition.asStateFlow()
+
+    private val _eventTitleColorChoice = MutableStateFlow(EventTitleColorChoice.PRIMARY)
+    val eventTitleColorChoice: StateFlow<EventTitleColorChoice> =
+        _eventTitleColorChoice.asStateFlow()
+
+    private val _eventTitleCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
+    val eventTitleCustomColor: StateFlow<Int> = _eventTitleCustomColor.asStateFlow()
 
     private val _availableSetIds = MutableStateFlow<Set<Int>>(emptySet())
     val availableSetIds: StateFlow<Set<Int>> = _availableSetIds.asStateFlow()
@@ -332,6 +352,26 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getAppThemeColors().collectLatest { colors ->
                 _appThemeColors.value = colors
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventIndicatorDisplayCondition().collectLatest { condition ->
+                _eventIndicatorDisplayCondition.value = condition
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventBackgroundDisplayCondition().collectLatest { condition ->
+                _eventBackgroundDisplayCondition.value = condition
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventTitleColorChoice().collectLatest { choice ->
+                _eventTitleColorChoice.value = choice
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventTitleCustomColor().collectLatest { color ->
+                _eventTitleCustomColor.value = color
             }
         }
         viewModelScope.launch {
@@ -590,6 +630,30 @@ class MainViewModel @Inject constructor(
     fun saveAppThemeColors(colors: AppThemeColors) {
         viewModelScope.launch {
             settingsRepository.saveAppThemeColors(colors)
+        }
+    }
+
+    fun saveEventIndicatorDisplayCondition(condition: EventColorDisplayCondition) {
+        viewModelScope.launch {
+            settingsRepository.saveEventIndicatorDisplayCondition(condition)
+        }
+    }
+
+    fun saveEventBackgroundDisplayCondition(condition: EventColorDisplayCondition) {
+        viewModelScope.launch {
+            settingsRepository.saveEventBackgroundDisplayCondition(condition)
+        }
+    }
+
+    fun saveEventTitleColorChoice(choice: EventTitleColorChoice) {
+        viewModelScope.launch {
+            settingsRepository.saveEventTitleColorChoice(choice)
+        }
+    }
+
+    fun saveEventTitleCustomColor(colorArgb: Int) {
+        viewModelScope.launch {
+            settingsRepository.saveEventTitleCustomColor(colorArgb)
         }
     }
 

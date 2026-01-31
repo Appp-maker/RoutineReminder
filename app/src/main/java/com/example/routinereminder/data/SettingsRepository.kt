@@ -63,6 +63,10 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val APP_SECONDARY_COLOR = intPreferencesKey("app_secondary_color")
     val APP_TERTIARY_COLOR = intPreferencesKey("app_tertiary_color")
     val RECENT_CUSTOM_EVENT_COLORS = stringPreferencesKey("recent_custom_event_colors")
+    val EVENT_INDICATOR_DISPLAY_CONDITION = stringPreferencesKey("event_indicator_display_condition")
+    val EVENT_BACKGROUND_DISPLAY_CONDITION = stringPreferencesKey("event_background_display_condition")
+    val EVENT_TITLE_COLOR_CHOICE = stringPreferencesKey("event_title_color_choice")
+    val EVENT_TITLE_CUSTOM_COLOR = intPreferencesKey("event_title_custom_color")
     val ROUTINE_INSIGHTS_ENABLED = booleanPreferencesKey("routine_insights_enabled")
     val EXAMPLE_DATA_SEEDED = booleanPreferencesKey("example_data_seeded")
     val DRIVE_BACKUP_URI = stringPreferencesKey("drive_backup_uri")
@@ -332,6 +336,57 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             preferences[APP_SECONDARY_COLOR] = colors.secondary
             preferences[APP_TERTIARY_COLOR] = colors.tertiary
         }
+    }
+
+    suspend fun saveEventIndicatorDisplayCondition(condition: EventColorDisplayCondition) {
+        dataStore.edit { preferences ->
+            preferences[EVENT_INDICATOR_DISPLAY_CONDITION] = condition.name
+        }
+    }
+
+    fun getEventIndicatorDisplayCondition(): Flow<EventColorDisplayCondition> {
+        return dataStore.data.map { preferences ->
+            EventColorDisplayCondition.fromName(preferences[EVENT_INDICATOR_DISPLAY_CONDITION])
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveEventBackgroundDisplayCondition(condition: EventColorDisplayCondition) {
+        dataStore.edit { preferences ->
+            preferences[EVENT_BACKGROUND_DISPLAY_CONDITION] = condition.name
+        }
+    }
+
+    fun getEventBackgroundDisplayCondition(): Flow<EventColorDisplayCondition> {
+        return dataStore.data.map { preferences ->
+            EventColorDisplayCondition.fromName(
+                preferences[EVENT_BACKGROUND_DISPLAY_CONDITION]
+                    ?: EventColorDisplayCondition.NEVER.name
+            )
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveEventTitleColorChoice(choice: EventTitleColorChoice) {
+        dataStore.edit { preferences ->
+            preferences[EVENT_TITLE_COLOR_CHOICE] = choice.name
+        }
+    }
+
+    fun getEventTitleColorChoice(): Flow<EventTitleColorChoice> {
+        return dataStore.data.map { preferences ->
+            EventTitleColorChoice.fromName(preferences[EVENT_TITLE_COLOR_CHOICE])
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveEventTitleCustomColor(colorArgb: Int) {
+        dataStore.edit { preferences ->
+            preferences[EVENT_TITLE_CUSTOM_COLOR] = colorArgb
+        }
+    }
+
+    fun getEventTitleCustomColor(): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            preferences[EVENT_TITLE_CUSTOM_COLOR] ?: DEFAULT_PRIMARY_COLOR_ARGB
+        }.distinctUntilChanged()
     }
 
     fun getExampleDataSeeded(): Flow<Boolean> {
