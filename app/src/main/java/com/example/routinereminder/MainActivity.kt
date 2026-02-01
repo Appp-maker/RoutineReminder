@@ -1160,16 +1160,10 @@ private fun CompactScheduleItemCard(
         showSeriesColor -> Color.Transparent
         else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     }
-    val titleBaseColor = when (eventTitleColorChoice) {
-        EventTitleColorChoice.PRIMARY -> MaterialTheme.colorScheme.primary
-        EventTitleColorChoice.SECONDARY -> MaterialTheme.colorScheme.secondary
-        EventTitleColorChoice.EVENT_COLOR -> if (showSeriesColor) seriesColor else MaterialTheme.colorScheme.primary
-        EventTitleColorChoice.CUSTOM -> Color(eventTitleCustomColor)
-    }
     val titleColor = when {
         isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
         isEffectivelyPastNow -> MaterialTheme.colorScheme.outline
-        else -> titleBaseColor
+        else -> Color.White
     }
     val timeColor = if (isDoneToday) {
         MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -1692,16 +1686,10 @@ fun ScheduleItemView(
     val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
         textDecoration = doneDecoration
     )
-    val titleBaseColor = when (eventTitleColorChoice) {
-        EventTitleColorChoice.PRIMARY -> MaterialTheme.colorScheme.primary
-        EventTitleColorChoice.SECONDARY -> MaterialTheme.colorScheme.secondary
-        EventTitleColorChoice.EVENT_COLOR -> if (showSeriesColor) seriesColor else MaterialTheme.colorScheme.primary
-        EventTitleColorChoice.CUSTOM -> Color(eventTitleCustomColor)
-    }
     val titleColor = when {
         isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
         isEffectivelyPastNow -> MaterialTheme.colorScheme.outline
-        else -> titleBaseColor
+        else -> Color.White
     }
 
 
