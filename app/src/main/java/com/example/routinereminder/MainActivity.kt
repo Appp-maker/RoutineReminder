@@ -394,6 +394,7 @@ fun MainAppUI(
         val activeSetIds by viewModel.activeSetIds.collectAsState()
         val availableSetIds by viewModel.availableSetIds.collectAsState()
         val hasManualActiveSetsForDate by viewModel.hasManualActiveSetsForDate.collectAsState()
+        val eventSetsEnabled by viewModel.eventSetsEnabled.collectAsState()
         val routineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
         val routineInsights by viewModel.routineInsights.collectAsState()
 
@@ -533,6 +534,7 @@ fun MainAppUI(
                                 activeSetIds = activeSetIds,
                                 availableSetIds = availableSetIds,
                                 hasManualActiveSetsForDate = hasManualActiveSetsForDate,
+                                eventSetsEnabled = eventSetsEnabled,
                                 onPreviousDay = { viewModel.selectPreviousDay() },
                                 onNextDay = { viewModel.selectNextDay() },
                                 onDateSelected = viewModel::selectDate,
@@ -1471,6 +1473,7 @@ fun MainScreenContent(
     activeSetIds: Set<Int>,
     availableSetIds: Set<Int>,
     hasManualActiveSetsForDate: Boolean,
+    eventSetsEnabled: Boolean,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onDateSelected: (LocalDate) -> Unit,
@@ -1538,7 +1541,7 @@ fun MainScreenContent(
                 )
             }
 
-            if (availableSetIds.isNotEmpty()) {
+            if (eventSetsEnabled && availableSetIds.isNotEmpty()) {
                 EventSetToggleRow(
                     eventSetNames = eventSetNames,
                     availableSetIds = availableSetIds,

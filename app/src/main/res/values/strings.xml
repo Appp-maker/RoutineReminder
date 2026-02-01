@@ -79,8 +79,8 @@
     <string name="settings_default_events_notification_options_title">Notification Options</string>
     <string name="settings_default_events_system_notification">Show system notification</string>
     <string name="settings_default_events_show_details_notification">Show details in notification</string>
-    <string name="settings_events_enabled_title">Enable events</string>
-    <string name="settings_events_enabled_description">Turn this off to hide event buttons and disable event sets.</string>
+    <string name="settings_events_enabled_title">Enable event sets</string>
+    <string name="settings_events_enabled_description">Turn this off to disable event sets.</string>
     <string name="settings_event_appearance_title">Event appearance</string>
     <string name="settings_event_color_indicator_label">Event color indicator</string>
     <string name="settings_event_color_background_label">Event background color</string>

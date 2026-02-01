@@ -59,6 +59,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
     val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
     val EVENT_SET_COLORS = stringSetPreferencesKey("event_set_colors")
+    val EVENT_SETS_ENABLED = booleanPreferencesKey("event_sets_enabled")
     val APP_PRIMARY_COLOR = intPreferencesKey("app_primary_color")
     val APP_SECONDARY_COLOR = intPreferencesKey("app_secondary_color")
     val APP_TERTIARY_COLOR = intPreferencesKey("app_tertiary_color")
@@ -293,6 +294,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         dataStore.edit { preferences ->
             preferences[EVENT_SET_COLORS] = normalizedColors
         }
+    }
+
+    suspend fun saveEventSetsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[EVENT_SETS_ENABLED] = enabled
+        }
+    }
+
+    fun getEventSetsEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[EVENT_SETS_ENABLED] ?: true
+        }.distinctUntilChanged()
     }
 
     fun getRecentCustomEventColors(): Flow<List<Int>> {
