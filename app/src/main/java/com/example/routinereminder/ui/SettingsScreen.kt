@@ -156,6 +156,7 @@ fun SettingsScreen(
     val currentRoutineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
     val eventSetColors by viewModel.eventSetColors.collectAsState()
+    val eventSetsEnabled by viewModel.eventSetsEnabled.collectAsState()
     val recentCustomEventColors by viewModel.recentCustomEventColors.collectAsState()
     val appThemeColors by viewModel.appThemeColors.collectAsState()
     val eventIndicatorDisplayCondition by viewModel.eventIndicatorDisplayCondition.collectAsState()
@@ -195,6 +196,7 @@ fun SettingsScreen(
     var calendarSyncCalendarToAppEnabled by remember(currentCalendarSyncCalendarToAppEnabled) { mutableStateOf(currentCalendarSyncCalendarToAppEnabled) }
     var foodConsumedTrackingEnabledChecked by remember(currentFoodConsumedTrackingEnabled) { mutableStateOf(currentFoodConsumedTrackingEnabled) }
     var routineInsightsEnabledChecked by remember(currentRoutineInsightsEnabled) { mutableStateOf(currentRoutineInsightsEnabled) }
+    var eventSetsEnabledChecked by remember(eventSetsEnabled) { mutableStateOf(eventSetsEnabled) }
     val eventSetNameInputs = remember { mutableStateListOf<String>() }
     val eventSetColorInputs = remember { mutableStateListOf<Int>() }
     var primaryColorInput by remember { mutableStateOf(appThemeColors.primary) }
@@ -419,7 +421,8 @@ fun SettingsScreen(
         selectedGoogleAccountName, // Added to dependency list
         showAllEventsChecked, showAllEvents,
         selectedTabs, enabledTabs,
-        routineInsightsEnabledChecked, currentRoutineInsightsEnabled
+        routineInsightsEnabledChecked, currentRoutineInsightsEnabled,
+        eventSetsEnabledChecked, eventSetsEnabled
     ) {
         derivedStateOf {
             if (weightInput.toDoubleOrNull() != userSettings?.weightKg) return@derivedStateOf true
@@ -461,6 +464,7 @@ fun SettingsScreen(
             if (showAllEventsChecked != showAllEvents) return@derivedStateOf true
             if (foodConsumedTrackingEnabledChecked != currentFoodConsumedTrackingEnabled) return@derivedStateOf true
             if (routineInsightsEnabledChecked != currentRoutineInsightsEnabled) return@derivedStateOf true
+            if (eventSetsEnabledChecked != eventSetsEnabled) return@derivedStateOf true
             if (selectedTabs != enabledTabs) return@derivedStateOf true
             // We don't directly compare selectedGoogleAccountName to a stored value for unsaved changes,
             // as its change directly triggers other settings to change, which are covered above.
@@ -585,6 +589,7 @@ fun SettingsScreen(
                         viewModel.updateShowAllEvents(showAllEventsChecked)
                         viewModel.saveFoodConsumedTrackingEnabled(foodConsumedTrackingEnabledChecked)
                         viewModel.updateRoutineInsightsEnabled(routineInsightsEnabledChecked)
+                        viewModel.updateEventSetsEnabled(eventSetsEnabledChecked)
                         viewModel.saveEventSetNames(eventSetNameInputs.toList())
                         viewModel.saveEventSetColors(eventSetColorInputs.toList())
                         viewModel.saveAppThemeColors(
@@ -767,19 +772,10 @@ fun SettingsScreen(
                         showDetailsInNotificationChecked = showDetailsInNotificationChecked,
                         onShowDetailsInNotificationChange = { showDetailsInNotificationChecked = it; justSavedSuccessfully = false },
                         selectedGoogleAccountName = selectedGoogleAccountName,
-                        eventsEnabled = selectedTabs.contains(AppTab.Routine),
-                        onEventsEnabledChange = { enabled ->
-                            val updatedTabs = if (enabled) {
-                                selectedTabs + AppTab.Routine
-                            } else {
-                                selectedTabs - AppTab.Routine
-                            }
-                            if (updatedTabs.isNotEmpty()) {
-                                selectedTabs = updatedTabs
-                                justSavedSuccessfully = false
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.settings_tabs_select_at_least_one), Toast.LENGTH_SHORT).show()
-                            }
+                        eventSetsEnabled = eventSetsEnabledChecked,
+                        onEventSetsEnabledChange = { enabled ->
+                            eventSetsEnabledChecked = enabled
+                            justSavedSuccessfully = false
                         },
                         eventIndicatorDisplayCondition = indicatorDisplayConditionState,
                         onEventIndicatorDisplayConditionChange = { condition ->
@@ -1834,8 +1830,8 @@ private fun DefaultEventsSettingsSection(
     showDetailsInNotificationChecked: Boolean,
     onShowDetailsInNotificationChange: (Boolean) -> Unit,
     selectedGoogleAccountName: String?,
-    eventsEnabled: Boolean,
-    onEventsEnabledChange: (Boolean) -> Unit,
+    eventSetsEnabled: Boolean,
+    onEventSetsEnabledChange: (Boolean) -> Unit,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     onEventIndicatorDisplayConditionChange: (EventColorDisplayCondition) -> Unit,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
@@ -1849,8 +1845,8 @@ private fun DefaultEventsSettingsSection(
     Text(stringResource(R.string.settings_default_events_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
     SettingSwitchItem(
         text = stringResource(R.string.settings_events_enabled_title),
-        checked = eventsEnabled,
-        onCheckedChange = onEventsEnabledChange
+        checked = eventSetsEnabled,
+        onCheckedChange = onEventSetsEnabledChange
     )
     Text(
         text = stringResource(R.string.settings_events_enabled_description),

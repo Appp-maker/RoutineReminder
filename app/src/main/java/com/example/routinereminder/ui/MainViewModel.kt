@@ -53,6 +53,13 @@ import android.net.Uri
 
 data class CalendarInfo(val id: String, val displayName: String, val accountName: String)
 
+private data class ScheduleFilterState(
+    val itemsForDate: List<ScheduleItem>,
+    val availableSetIds: Set<Int>,
+    val effectiveActiveSetIds: Set<Int>,
+    val eventSetsEnabled: Boolean
+)
+
 @HiltViewModel
 class MainViewModel @Inject constructor(
     application: Application,
@@ -155,6 +162,9 @@ class MainViewModel @Inject constructor(
         }
     )
     val eventSetColors: StateFlow<List<Int>> = _eventSetColors.asStateFlow()
+
+    private val _eventSetsEnabled = MutableStateFlow(true)
+    val eventSetsEnabled: StateFlow<Boolean> = _eventSetsEnabled.asStateFlow()
 
     private val _recentCustomEventColors = MutableStateFlow<List<Int>>(emptyList())
     val recentCustomEventColors: StateFlow<List<Int>> = _recentCustomEventColors.asStateFlow()
@@ -341,6 +351,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEventSetColors().collectLatest { colors ->
                 _eventSetColors.value = colors
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventSetsEnabled().collectLatest { enabled ->
+                _eventSetsEnabled.value = enabled
             }
         }
         viewModelScope.launch {
@@ -591,6 +606,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun toggleActiveSet(setId: Int): Boolean {
+        if (!_eventSetsEnabled.value) return false
         if (setId !in _availableSetIds.value) return false
         val current = _activeSetIds.value.toMutableSet()
         val updated = if (setId in current) {
@@ -618,6 +634,12 @@ class MainViewModel @Inject constructor(
     fun saveEventSetColors(colors: List<Int>) {
         viewModelScope.launch {
             settingsRepository.saveEventSetColors(colors)
+        }
+    }
+
+    fun updateEventSetsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveEventSetsEnabled(enabled)
         }
     }
 
@@ -1024,25 +1046,31 @@ class MainViewModel @Inject constructor(
             kotlinx.coroutines.flow.combine(
                 scheduleDao.observeAll(),
                 _selectedDate,
-                _activeSetIds
-            ) { entities: List<com.example.routinereminder.data.entities.Schedule>, date: LocalDate, activeSetIds: Set<Int> ->
+                _activeSetIds,
+                _eventSetsEnabled
+            ) { entities: List<com.example.routinereminder.data.entities.Schedule>, date: LocalDate, activeSetIds: Set<Int>, eventSetsEnabled: Boolean ->
                 val itemsForDate = entities
                     .map { it.toItem() }
                     .filter { item -> item.occursOnDate(date) }
                     .distinctBy { item -> item.id }
                 val availableSetIds = itemsForDate.mapNotNull { it.setId }.toSet()
-                val effectiveActiveSetIds = activeSetIds.intersect(availableSetIds)
+                val effectiveActiveSetIds = if (eventSetsEnabled) {
+                    activeSetIds.intersect(availableSetIds)
+                } else {
+                    availableSetIds
+                }
 
-                Triple(
-                    itemsForDate,
-                    availableSetIds,
-                    effectiveActiveSetIds
+                ScheduleFilterState(
+                    itemsForDate = itemsForDate,
+                    availableSetIds = availableSetIds,
+                    effectiveActiveSetIds = effectiveActiveSetIds,
+                    eventSetsEnabled = eventSetsEnabled
                 )
-            }.collectLatest { (itemsForDate, availableSetIds, effectiveActiveSetIds) ->
+            }.collectLatest { (itemsForDate, availableSetIds, effectiveActiveSetIds, eventSetsEnabled) ->
                 if (_availableSetIds.value != availableSetIds) {
                     _availableSetIds.value = availableSetIds
                 }
-                if (_activeSetIds.value != effectiveActiveSetIds) {
+                if (eventSetsEnabled && _activeSetIds.value != effectiveActiveSetIds) {
                     _activeSetIds.value = effectiveActiveSetIds
                     if (_hasManualActiveSetsForDate.value) {
                         settingsRepository.saveActiveSetsForDate(_selectedDate.value, effectiveActiveSetIds)
