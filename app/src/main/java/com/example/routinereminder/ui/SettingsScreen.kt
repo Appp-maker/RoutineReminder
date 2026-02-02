@@ -775,11 +775,6 @@ fun SettingsScreen(
                         showDetailsInNotificationChecked = showDetailsInNotificationChecked,
                         onShowDetailsInNotificationChange = { showDetailsInNotificationChecked = it; justSavedSuccessfully = false },
                         selectedGoogleAccountName = selectedGoogleAccountName,
-                        eventSetsEnabled = eventSetsEnabledChecked,
-                        onEventSetsEnabledChange = { enabled ->
-                            eventSetsEnabledChecked = enabled
-                            justSavedSuccessfully = false
-                        },
                         eventIndicatorDisplayCondition = indicatorDisplayConditionState,
                         onEventIndicatorDisplayConditionChange = { condition ->
                             indicatorDisplayConditionState = condition
@@ -808,6 +803,11 @@ fun SettingsScreen(
                         recentCustomEventColors = recentCustomEventColors
                     )
                     SettingsCategory.EVENT_SETS -> EventSetsSettingsSection(
+                        eventSetsEnabled = eventSetsEnabledChecked,
+                        onEventSetsEnabledChange = { enabled ->
+                            eventSetsEnabledChecked = enabled
+                            justSavedSuccessfully = false
+                        },
                         eventSetNames = eventSetNameInputs,
                         eventSetColors = eventSetColorInputs,
                         defaultActiveSetsByWeekday = defaultActiveSetSelections,
@@ -1838,8 +1838,6 @@ private fun DefaultEventsSettingsSection(
     showDetailsInNotificationChecked: Boolean,
     onShowDetailsInNotificationChange: (Boolean) -> Unit,
     selectedGoogleAccountName: String?,
-    eventSetsEnabled: Boolean,
-    onEventSetsEnabledChange: (Boolean) -> Unit,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     onEventIndicatorDisplayConditionChange: (EventColorDisplayCondition) -> Unit,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
@@ -1853,17 +1851,6 @@ private fun DefaultEventsSettingsSection(
     recentCustomEventColors: List<Int>
 ) {
     Text(stringResource(R.string.settings_default_events_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
-    SettingSwitchItem(
-        text = stringResource(R.string.settings_events_enabled_title),
-        checked = eventSetsEnabled,
-        onCheckedChange = onEventSetsEnabledChange
-    )
-    Text(
-        text = stringResource(R.string.settings_events_enabled_description),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-        modifier = Modifier.padding(bottom = 12.dp)
-    )
     Text(
         text = stringResource(R.string.settings_event_appearance_title),
         style = MaterialTheme.typography.titleMedium,
@@ -2198,6 +2185,8 @@ private fun eventTitleColorLabel(choice: EventTitleColorChoice): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventSetsSettingsSection(
+    eventSetsEnabled: Boolean,
+    onEventSetsEnabledChange: (Boolean) -> Unit,
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
     defaultActiveSetsByWeekday: Map<DayOfWeek, Set<Int>>,
@@ -2208,12 +2197,38 @@ private fun EventSetsSettingsSection(
 ) {
     val context = LocalContext.current
     var showResetDialog by remember { mutableStateOf(false) }
-    Text(stringResource(R.string.settings_event_sets_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
+    Text(
+        stringResource(R.string.settings_event_sets_title),
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+    )
+    Text(
+        text = stringResource(R.string.settings_event_sets_intro),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+    SettingSwitchItem(
+        text = stringResource(R.string.settings_events_enabled_title),
+        checked = eventSetsEnabled,
+        onCheckedChange = onEventSetsEnabledChange
+    )
+    Text(
+        text = stringResource(R.string.settings_events_enabled_description),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
     Text(
         text = stringResource(R.string.settings_event_sets_description),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         modifier = Modifier.padding(bottom = 12.dp)
+    )
+    Text(
+        text = stringResource(R.string.settings_event_sets_options_title),
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(bottom = 8.dp)
     )
     OutlinedButton(
         onClick = { showResetDialog = true },

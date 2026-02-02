@@ -531,6 +531,7 @@ fun MainAppUI(
                                 eventSetColors = eventSetColors,
                                 eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
                                 eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                                eventBackgroundTransparency = eventBackgroundTransparency,
                                 eventTitleColorChoice = eventTitleColorChoice,
                                 eventTitleCustomColor = eventTitleCustomColor,
                                 activeSetIds = activeSetIds,
@@ -1174,7 +1175,10 @@ private fun CompactScheduleItemCard(
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
     val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
-    val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
+    val showIndicatorBar = eventIndicatorDisplayCondition != EventColorDisplayCondition.NEVER
+    val showIndicatorColor = showIndicatorBar &&
+        showSeriesColor &&
+        eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
     val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
     val indicatorColor = when {
         showIndicatorColor -> seriesColor
@@ -1205,13 +1209,18 @@ private fun CompactScheduleItemCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(28.dp)
-                    .background(indicatorColor.copy(alpha = if (isDoneToday) 0.4f else 1f), shape = MaterialTheme.shapes.extraSmall)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+            if (showIndicatorBar) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(28.dp)
+                        .background(
+                            indicatorColor.copy(alpha = if (isDoneToday) 0.4f else 1f),
+                            shape = MaterialTheme.shapes.extraSmall
+                        )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Column {
             Text(
                 text = item.name,
@@ -1487,6 +1496,7 @@ fun MainScreenContent(
     eventSetColors: List<Int>,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    eventBackgroundTransparency: EventBackgroundTransparency,
     eventTitleColorChoice: EventTitleColorChoice,
     eventTitleCustomColor: Int,
     activeSetIds: Set<Int>,
@@ -1688,7 +1698,10 @@ fun ScheduleItemView(
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
     val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
-    val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
+    val showIndicatorBar = eventIndicatorDisplayCondition != EventColorDisplayCondition.NEVER
+    val showIndicatorColor = showIndicatorBar &&
+        showSeriesColor &&
+        eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
     val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
     val rowBackgroundColor = if (showBackgroundColor) {
         val baseAlpha = if (isEffectivelyActiveNow) {
@@ -1738,13 +1751,14 @@ fun ScheduleItemView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(rowBackgroundColor)
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .background(rowBackgroundColor, shape = MaterialTheme.shapes.medium)
             .combinedClickable(
                 onClick = { },
                 onDoubleClick = { isExpanded = !isExpanded },
                 onLongClick = { onLongPress(item) }
             )
-            .padding(vertical = 4.dp, horizontal = 2.dp)
+            .padding(vertical = 6.dp, horizontal = 8.dp)
     ) {
         Row(
             verticalAlignment = Alignment.Top,
@@ -1755,15 +1769,17 @@ fun ScheduleItemView(
                 showSeriesColor -> Color.Transparent
                 else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             }
-            Box(
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .width(4.dp)
-                    .height(20.dp)
-                    .background(indicatorColor.copy(alpha = doneAlpha), shape = MaterialTheme.shapes.extraSmall)
-            )
+            if (showIndicatorBar) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .width(4.dp)
+                        .height(20.dp)
+                        .background(indicatorColor.copy(alpha = doneAlpha), shape = MaterialTheme.shapes.extraSmall)
+                )
 
-            Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+            }
 
             // LEFT COLUMN: start time + ONE TIME / REPEATS under it
             Column(
@@ -1879,8 +1895,7 @@ fun ScheduleItemView(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(rowBackgroundColor)
-                    .padding(vertical = 0.dp, horizontal = 2.dp)
+                    .padding(vertical = 2.dp, horizontal = 2.dp)
                     .animateContentSize()
             ) {
                 visibleChecklistLines.forEachIndexed { index, line ->
