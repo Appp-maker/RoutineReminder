@@ -1,12 +1,11 @@
 package com.example.routinereminder.data.entities
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "schedule_done")
+@Entity(
+    tableName = "schedule_done",
+    primaryKeys = ["scheduleId", "dateEpochDay"]
+)
 data class ScheduleDone(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
     val scheduleId: Long,
     val dateEpochDay: Long
 )

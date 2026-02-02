@@ -63,6 +63,27 @@ val MIGRATION_11_12 = object : Migration(11, 12) {
     }
 }
 
+val MIGRATION_12_13 = object : Migration(12, 13) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS schedule_done_new (
+                scheduleId INTEGER NOT NULL,
+                dateEpochDay INTEGER NOT NULL,
+                PRIMARY KEY(scheduleId, dateEpochDay)
+            )
+            """.trimIndent()
+        )
+        database.execSQL(
+            """
+            INSERT OR IGNORE INTO schedule_done_new (scheduleId, dateEpochDay)
+            SELECT DISTINCT scheduleId, dateEpochDay FROM schedule_done
+            """.trimIndent()
+        )
+        database.execSQL("DROP TABLE schedule_done")
+        database.execSQL("ALTER TABLE schedule_done_new RENAME TO schedule_done")
+    }
+}
 
 @Database(
     entities = [
@@ -80,7 +101,7 @@ val MIGRATION_11_12 = object : Migration(11, 12) {
         RecipeIngredient::class
 
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(Converters::class, DayOfWeekSetConverter::class, LocalDateConverter::class)
