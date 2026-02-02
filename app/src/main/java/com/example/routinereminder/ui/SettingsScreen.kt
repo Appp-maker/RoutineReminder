@@ -2197,7 +2197,17 @@ private fun EventSetsSettingsSection(
 ) {
     val context = LocalContext.current
     var showResetDialog by remember { mutableStateOf(false) }
-    Text(stringResource(R.string.settings_event_sets_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
+    Text(
+        stringResource(R.string.settings_event_sets_title),
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+    )
+    Text(
+        text = stringResource(R.string.settings_event_sets_intro),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
     SettingSwitchItem(
         text = stringResource(R.string.settings_events_enabled_title),
         checked = eventSetsEnabled,
@@ -2214,6 +2224,11 @@ private fun EventSetsSettingsSection(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         modifier = Modifier.padding(bottom = 12.dp)
+    )
+    Text(
+        text = stringResource(R.string.settings_event_sets_options_title),
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(bottom = 8.dp)
     )
     OutlinedButton(
         onClick = { showResetDialog = true },
