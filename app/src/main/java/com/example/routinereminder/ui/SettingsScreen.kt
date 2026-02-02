@@ -2110,10 +2110,9 @@ private fun eventConditionLabel(condition: EventColorDisplayCondition): String {
     return stringResource(
         when (condition) {
             EventColorDisplayCondition.ALWAYS -> R.string.settings_event_color_condition_always
-            EventColorDisplayCondition.DONE -> R.string.settings_event_color_condition_done
-            EventColorDisplayCondition.PAST -> R.string.settings_event_color_condition_past
-            EventColorDisplayCondition.DONE_OR_PAST -> R.string.settings_event_color_condition_done_or_past
             EventColorDisplayCondition.NEVER -> R.string.settings_event_color_condition_never
+            EventColorDisplayCondition.NEXT_UPCOMING -> R.string.settings_event_color_condition_next_upcoming
+            EventColorDisplayCondition.FUTURE_EVENTS -> R.string.settings_event_color_condition_future_events
         }
     )
 }
@@ -2124,6 +2123,7 @@ private fun eventTitleColorLabel(choice: EventTitleColorChoice): String {
         when (choice) {
             EventTitleColorChoice.PRIMARY -> R.string.settings_event_title_color_primary
             EventTitleColorChoice.SECONDARY -> R.string.settings_event_title_color_secondary
+            EventTitleColorChoice.WHITE -> R.string.settings_event_title_color_white
             EventTitleColorChoice.EVENT_COLOR -> R.string.settings_event_title_color_event
             EventTitleColorChoice.CUSTOM -> R.string.settings_event_title_color_custom
         }

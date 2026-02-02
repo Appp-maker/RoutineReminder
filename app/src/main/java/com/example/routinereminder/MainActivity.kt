@@ -970,6 +970,13 @@ private fun ScheduleItemListContent(
             }
         }
     }
+    val nextUpcomingItemId = remember(distinctItems, currentDate, showNowIndicator, nowIndicatorIndex) {
+        if (!showNowIndicator || nowIndicatorIndex < 0) {
+            null
+        } else {
+            distinctItems.getOrNull(nowIndicatorIndex)?.id
+        }
+    }
     val displayItems: List<DisplayScheduleItem> = remember(
         distinctItems,
         showNowIndicator,
@@ -1038,11 +1045,13 @@ private fun ScheduleItemListContent(
                         val item = displayItem.item
                         val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
                         val isDoneToday = doneStates[key] == true
+                        val isNextUpcoming = item.id == nextUpcomingItemId
 
                         CompactScheduleItemCard(
                             item = item,
                             currentDate = currentDate,
                             isDoneToday = isDoneToday,
+                            isNextUpcoming = isNextUpcoming,
                             eventSetColors = eventSetColors,
                             eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
                             eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
@@ -1085,11 +1094,13 @@ private fun ScheduleItemListContent(
                         val item = displayItem.item
                         val key: Pair<Long, Long> = item.id to currentDate.toEpochDay()
                         val isDoneToday = doneStates[key] == true
+                        val isNextUpcoming = item.id == nextUpcomingItemId
 
                         ScheduleItemView(
                             item = item,
                             currentDate = currentDate,
                             isDoneToday = isDoneToday,
+                            isNextUpcoming = isNextUpcoming,
                             eventSetColors = eventSetColors,
                             eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
                             eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
@@ -1129,6 +1140,7 @@ private fun CompactScheduleItemCard(
     item: ScheduleItem,
     currentDate: LocalDate,
     isDoneToday: Boolean,
+    isNextUpcoming: Boolean,
     eventSetColors: List<Int>,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
@@ -1150,13 +1162,14 @@ private fun CompactScheduleItemCard(
     val itemAbsoluteStartDateTime = currentDate.atTime(item.hour, item.minute)
     val itemAbsoluteEndDateTime = itemAbsoluteStartDateTime.plusMinutes(item.durationMinutes.toLong())
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
+    val isFutureEvent = itemAbsoluteStartDateTime.isAfter(realNowDateTime)
     val resolvedColorArgb = item.setId?.let { setId ->
         eventSetColors.getOrNull(setId - 1)
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
     val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
-    val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isDoneToday, isEffectivelyPastNow)
-    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isDoneToday, isEffectivelyPastNow)
+    val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
+    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
     val indicatorColor = when {
         showIndicatorColor -> seriesColor
         showSeriesColor -> Color.Transparent
@@ -1639,6 +1652,7 @@ fun ScheduleItemView(
     item: ScheduleItem,
     currentDate: LocalDate,
     isDoneToday: Boolean,
+    isNextUpcoming: Boolean,
     eventSetColors: List<Int>,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
@@ -1660,13 +1674,14 @@ fun ScheduleItemView(
             !realNowDateTime.isBefore(itemAbsoluteStartDateTime) &&
             realNowDateTime.isBefore(itemAbsoluteEndDateTime)
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
+    val isFutureEvent = itemAbsoluteStartDateTime.isAfter(realNowDateTime)
     val resolvedColorArgb = item.setId?.let { setId ->
         eventSetColors.getOrNull(setId - 1)
     } ?: item.colorArgb
     val seriesColor = resolveEventFoodColor(resolvedColorArgb, MaterialTheme.colorScheme.outlineVariant)
     val showSeriesColor = !isNoEventFoodColor(resolvedColorArgb)
-    val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isDoneToday, isEffectivelyPastNow)
-    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isDoneToday, isEffectivelyPastNow)
+    val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
+    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
     val rowBackgroundColor = if (showBackgroundColor) {
         val baseAlpha = if (isEffectivelyActiveNow) 0.3f else 0.2f
         seriesColor.copy(alpha = baseAlpha)

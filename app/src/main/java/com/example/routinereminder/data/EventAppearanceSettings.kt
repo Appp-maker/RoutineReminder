@@ -2,24 +2,31 @@ package com.example.routinereminder.data
 
 enum class EventColorDisplayCondition {
     ALWAYS,
-    DONE,
-    PAST,
-    DONE_OR_PAST,
-    NEVER;
+    NEVER,
+    NEXT_UPCOMING,
+    FUTURE_EVENTS;
 
-    fun shouldShow(isDone: Boolean, isPast: Boolean): Boolean {
+    fun shouldShow(isNextUpcoming: Boolean, isFutureEvent: Boolean): Boolean {
         return when (this) {
             ALWAYS -> true
-            DONE -> isDone
-            PAST -> isPast
-            DONE_OR_PAST -> isDone || isPast
             NEVER -> false
+            NEXT_UPCOMING -> isNextUpcoming
+            FUTURE_EVENTS -> isFutureEvent
         }
     }
 
     companion object {
         fun fromName(name: String?): EventColorDisplayCondition {
-            return entries.find { it.name == name } ?: ALWAYS
+            return when (name) {
+                ALWAYS.name -> ALWAYS
+                NEVER.name -> NEVER
+                NEXT_UPCOMING.name -> NEXT_UPCOMING
+                FUTURE_EVENTS.name -> FUTURE_EVENTS
+                "DONE",
+                "PAST",
+                "DONE_OR_PAST" -> ALWAYS
+                else -> ALWAYS
+            }
         }
     }
 }
@@ -27,6 +34,7 @@ enum class EventColorDisplayCondition {
 enum class EventTitleColorChoice {
     PRIMARY,
     SECONDARY,
+    WHITE,
     EVENT_COLOR,
     CUSTOM;
 
