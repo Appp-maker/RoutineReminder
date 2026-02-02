@@ -101,7 +101,6 @@
     <string name="settings_event_color_condition_always">Always</string>
     <string name="settings_event_color_condition_never">Never</string>
     <string name="settings_event_color_condition_next_upcoming">Only next upcoming</string>
-    <string name="settings_event_color_condition_future_events">Only future events</string>
     <string name="settings_event_title_color_primary">Primary color</string>
     <string name="settings_event_title_color_secondary">Secondary color</string>
     <string name="settings_event_title_color_white">White</string>

@@ -1200,7 +1200,6 @@ private fun CompactScheduleItemCard(
     val itemAbsoluteStartDateTime = currentDate.atTime(item.hour, item.minute)
     val itemAbsoluteEndDateTime = itemAbsoluteStartDateTime.plusMinutes(item.durationMinutes.toLong())
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
-    val isFutureEvent = itemAbsoluteStartDateTime.isAfter(realNowDateTime)
     val isPastEvent = isEffectivelyPastNow && !isDoneToday
     val resolvedColorArgb = item.setId?.let { setId ->
         eventSetColors.getOrNull(setId - 1)
@@ -1210,8 +1209,8 @@ private fun CompactScheduleItemCard(
     val showIndicatorBar = eventIndicatorDisplayCondition != EventColorDisplayCondition.NEVER
     val showIndicatorColor = showIndicatorBar &&
         showSeriesColor &&
-        eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
-    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
+        eventIndicatorDisplayCondition.shouldShow(isNextUpcoming)
+    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming)
     val indicatorColor = when {
         showIndicatorColor -> seriesColor
         showSeriesColor -> Color.Transparent
@@ -1803,7 +1802,6 @@ fun ScheduleItemView(
             !realNowDateTime.isBefore(itemAbsoluteStartDateTime) &&
             realNowDateTime.isBefore(itemAbsoluteEndDateTime)
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
-    val isFutureEvent = itemAbsoluteStartDateTime.isAfter(realNowDateTime)
     val isPastEvent = isEffectivelyPastNow && !isDoneToday
     val resolvedColorArgb = item.setId?.let { setId ->
         eventSetColors.getOrNull(setId - 1)
@@ -1813,8 +1811,8 @@ fun ScheduleItemView(
     val showIndicatorBar = eventIndicatorDisplayCondition != EventColorDisplayCondition.NEVER
     val showIndicatorColor = showIndicatorBar &&
         showSeriesColor &&
-        eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
-    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
+        eventIndicatorDisplayCondition.shouldShow(isNextUpcoming)
+    val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming)
     val defaultBackgroundColor = if (showBackgroundColor) {
         val baseAlpha = if (isEffectivelyActiveNow) {
             (eventBackgroundTransparency.alpha + 0.1f).coerceAtMost(1f)
