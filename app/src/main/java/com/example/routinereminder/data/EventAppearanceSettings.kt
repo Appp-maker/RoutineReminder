@@ -58,6 +58,7 @@ enum class PastEventColorTreatment {
 }
 
 enum class EventBackgroundTransparency(val percent: Int, val alpha: Float) {
+    PERCENT_0(0, 0f),
     PERCENT_40(40, 0.4f),
     PERCENT_30(30, 0.3f),
     PERCENT_20(20, 0.2f),
@@ -66,6 +67,7 @@ enum class EventBackgroundTransparency(val percent: Int, val alpha: Float) {
     companion object {
         fun fromName(name: String?): EventBackgroundTransparency {
             return when (name) {
+                PERCENT_0.name,
                 PERCENT_40.name,
                 PERCENT_30.name,
                 PERCENT_20.name,

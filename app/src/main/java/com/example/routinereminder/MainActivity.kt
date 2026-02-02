@@ -1255,9 +1255,7 @@ private fun CompactScheduleItemCard(
         } else {
             MaterialTheme.colorScheme.surface
         }
-        PastEventColorTreatment.GREYED_OUT -> MaterialTheme.colorScheme.surfaceVariant.copy(
-            alpha = pastEventBackgroundTransparency.alpha
-        )
+        PastEventColorTreatment.GREYED_OUT -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f)
         PastEventColorTreatment.CUSTOM -> Color(pastEventBackgroundCustomColor)
             .copy(alpha = pastEventBackgroundTransparency.alpha)
     }
@@ -1831,9 +1829,7 @@ fun ScheduleItemView(
         } else {
             Color.Transparent
         }
-        PastEventColorTreatment.GREYED_OUT -> MaterialTheme.colorScheme.surfaceVariant.copy(
-            alpha = pastEventBackgroundTransparency.alpha
-        )
+        PastEventColorTreatment.GREYED_OUT -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f)
         PastEventColorTreatment.CUSTOM -> Color(pastEventBackgroundCustomColor)
             .copy(alpha = pastEventBackgroundTransparency.alpha)
     }
