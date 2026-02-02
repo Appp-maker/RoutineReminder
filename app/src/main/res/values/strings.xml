@@ -96,7 +96,7 @@
     <string name="settings_past_event_background_custom_color_label">Custom past background color</string>
     <string name="settings_past_event_background_transparency_label">Past background transparency</string>
     <string name="settings_past_event_color_treatment_selected">Show selected color</string>
-    <string name="settings_past_event_color_treatment_greyed">Grey out</string>
+    <string name="settings_past_event_color_treatment_greyed">No color</string>
     <string name="settings_past_event_color_treatment_custom">Custom color</string>
     <string name="settings_event_color_condition_always">Always</string>
     <string name="settings_event_color_condition_never">Never</string>

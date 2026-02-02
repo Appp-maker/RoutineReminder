@@ -829,6 +829,9 @@ fun SettingsScreen(
                         pastEventBackgroundTreatment = pastEventBackgroundTreatmentState,
                         onPastEventBackgroundTreatmentChange = { treatment ->
                             pastEventBackgroundTreatmentState = treatment
+                            if (treatment == PastEventColorTreatment.GREYED_OUT) {
+                                pastEventBackgroundTransparencyState = EventBackgroundTransparency.PERCENT_0
+                            }
                             justSavedSuccessfully = false
                         },
                         pastEventBackgroundCustomColor = pastEventBackgroundCustomColorState,
