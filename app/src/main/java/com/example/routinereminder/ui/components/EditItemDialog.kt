@@ -362,47 +362,66 @@ fun EditItemDialog(
                     }
                     val displayColorArgb = eventSetColorArgb ?: selectedColorArgb
 
-                    ExposedDropdownMenuBox(
-                        expanded = setMenuExpanded,
-                        onExpandedChange = { setMenuExpanded = !setMenuExpanded }
-                    ) {
-                        val selectedSetLabel = selectedSetId?.let { id ->
-                            eventSetNames.getOrNull(id - 1)
-                        } ?: stringResource(R.string.event_set_none)
+                    val selectedSetLabel = selectedSetId?.let { id ->
+                        eventSetNames.getOrNull(id - 1)
+                    } ?: stringResource(R.string.event_set_none)
+
+                    if (isNewItem) {
+                        ExposedDropdownMenuBox(
+                            expanded = setMenuExpanded,
+                            onExpandedChange = { setMenuExpanded = !setMenuExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedSetLabel,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text(stringResource(R.string.event_set_label)) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = setMenuExpanded) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = setMenuExpanded,
+                                onDismissRequest = { setMenuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.event_set_none)) },
+                                    onClick = {
+                                        selectedSetId = null
+                                        setMenuExpanded = false
+                                    }
+                                )
+                                eventSetNames.forEachIndexed { index, name ->
+                                    val setId = index + 1
+                                    DropdownMenuItem(
+                                        text = { Text(name) },
+                                        onClick = {
+                                            selectedSetId = setId
+                                            setMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    } else if (selectedSetId != null) {
                         OutlinedTextField(
                             value = selectedSetLabel,
                             onValueChange = {},
                             readOnly = true,
+                            enabled = false,
                             label = { Text(stringResource(R.string.event_set_label)) },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = setMenuExpanded) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = setMenuExpanded,
-                            onDismissRequest = { setMenuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.event_set_none)) },
-                                onClick = {
-                                    selectedSetId = null
-                                    setMenuExpanded = false
-                                }
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            eventSetNames.forEachIndexed { index, name ->
-                                val setId = index + 1
-                                DropdownMenuItem(
-                                    text = { Text(name) },
-                                    onClick = {
-                                        selectedSetId = setId
-                                        setMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
+                        )
+                        Spacer(Modifier.height(16.dp))
                     }
-                    Spacer(Modifier.height(16.dp))
 
                     if (isUsingSetColor) {
                         Row(
