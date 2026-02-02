@@ -1244,7 +1244,12 @@ class MainViewModel @Inject constructor(
                 return@launch
             }
             val items = scheduleDao.getAllOnce().map { it.toItem() }
-            val insights = calculateRoutineInsights(items, _selectedDate.value)
+            val insights = calculateRoutineInsights(
+                items,
+                _selectedDate.value,
+                _activeSetIds.value,
+                _eventSetsEnabled.value
+            )
             withContext(Dispatchers.Main) {
                 _routineInsights.value = insights
             }
@@ -1253,15 +1258,22 @@ class MainViewModel @Inject constructor(
 
     private suspend fun calculateRoutineInsights(
         items: List<ScheduleItem>,
-        endDate: LocalDate
+        endDate: LocalDate,
+        activeSetIds: Set<Int>,
+        eventSetsEnabled: Boolean
     ): RoutineInsights {
+        val filteredItems = if (eventSetsEnabled) {
+            items.filter { item -> item.setId == null || item.setId in activeSetIds }
+        } else {
+            items
+        }
         val weeklyDays = (0..6).map { endDate.minusDays(it.toLong()) }
         var totalScheduled = 0
         var totalCompleted = 0
         val dailyRatios = mutableListOf<Double>()
 
         weeklyDays.forEach { day ->
-            val itemsForDay = items.filter { it.occursOnDate(day) }
+            val itemsForDay = filteredItems.filter { it.occursOnDate(day) }
             if (itemsForDay.isEmpty()) return@forEach
             val doneIds = scheduleDoneDao.getDoneStatesForDay(day.toEpochDay()).toSet()
             val doneCount = itemsForDay.count { it.id in doneIds }
@@ -1285,7 +1297,7 @@ class MainViewModel @Inject constructor(
         var dayOffset = 0L
         while (true) {
             val day = endDate.minusDays(dayOffset)
-            val itemsForDay = items.filter { it.occursOnDate(day) }
+            val itemsForDay = filteredItems.filter { it.occursOnDate(day) }
             if (itemsForDay.isEmpty()) break
             val doneIds = scheduleDoneDao.getDoneStatesForDay(day.toEpochDay()).toSet()
             val doneCount = itemsForDay.count { it.id in doneIds }
