@@ -2243,14 +2243,24 @@ private fun QuickDoneToggle(
             )
         }
     } else {
+        val buttonModifier = Modifier.defaultMinSize(minHeight = 36.dp)
+        val buttonPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
         if (isDone) {
-            FilledTonalButton(onClick = action) {
+            FilledTonalButton(
+                onClick = action,
+                modifier = buttonModifier,
+                contentPadding = buttonPadding
+            ) {
                 Icon(imageVector = icon, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(text = label)
             }
         } else {
-            OutlinedButton(onClick = action) {
+            OutlinedButton(
+                onClick = action,
+                modifier = buttonModifier,
+                contentPadding = buttonPadding
+            ) {
                 Icon(imageVector = icon, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(text = label)
