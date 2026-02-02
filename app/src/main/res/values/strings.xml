@@ -84,6 +84,8 @@
     <string name="settings_event_appearance_title">Event appearance</string>
     <string name="settings_event_color_indicator_label">Event color indicator</string>
     <string name="settings_event_color_background_label">Event background color</string>
+    <string name="settings_event_background_transparency_label">Background color transparency</string>
+    <string name="settings_event_background_transparency_option">%1$d%%</string>
     <string name="settings_event_title_color_label">Event title color</string>
     <string name="settings_event_title_custom_color_label">Custom title color</string>
     <string name="settings_event_color_condition_always">Always</string>

@@ -66,6 +66,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val RECENT_CUSTOM_EVENT_COLORS = stringPreferencesKey("recent_custom_event_colors")
     val EVENT_INDICATOR_DISPLAY_CONDITION = stringPreferencesKey("event_indicator_display_condition")
     val EVENT_BACKGROUND_DISPLAY_CONDITION = stringPreferencesKey("event_background_display_condition")
+    val EVENT_BACKGROUND_TRANSPARENCY = stringPreferencesKey("event_background_transparency")
     val EVENT_TITLE_COLOR_CHOICE = stringPreferencesKey("event_title_color_choice")
     val EVENT_TITLE_CUSTOM_COLOR = intPreferencesKey("event_title_custom_color")
     val ROUTINE_INSIGHTS_ENABLED = booleanPreferencesKey("routine_insights_enabled")
@@ -375,6 +376,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
                 preferences[EVENT_BACKGROUND_DISPLAY_CONDITION]
                     ?: EventColorDisplayCondition.NEVER.name
             )
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveEventBackgroundTransparency(transparency: EventBackgroundTransparency) {
+        dataStore.edit { preferences ->
+            preferences[EVENT_BACKGROUND_TRANSPARENCY] = transparency.name
+        }
+    }
+
+    fun getEventBackgroundTransparency(): Flow<EventBackgroundTransparency> {
+        return dataStore.data.map { preferences ->
+            EventBackgroundTransparency.fromName(preferences[EVENT_BACKGROUND_TRANSPARENCY])
         }.distinctUntilChanged()
     }
 

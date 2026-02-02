@@ -161,6 +161,7 @@ fun SettingsScreen(
     val appThemeColors by viewModel.appThemeColors.collectAsState()
     val eventIndicatorDisplayCondition by viewModel.eventIndicatorDisplayCondition.collectAsState()
     val eventBackgroundDisplayCondition by viewModel.eventBackgroundDisplayCondition.collectAsState()
+    val eventBackgroundTransparency by viewModel.eventBackgroundTransparency.collectAsState()
     val eventTitleColorChoice by viewModel.eventTitleColorChoice.collectAsState()
     val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
     val defaultActiveSetsByWeekday by viewModel.defaultActiveSetsByWeekday.collectAsState()
@@ -204,6 +205,7 @@ fun SettingsScreen(
     var defaultActiveSetSelections by remember { mutableStateOf<Map<DayOfWeek, Set<Int>>>(emptyMap()) }
     var indicatorDisplayConditionState by remember(eventIndicatorDisplayCondition) { mutableStateOf(eventIndicatorDisplayCondition) }
     var backgroundDisplayConditionState by remember(eventBackgroundDisplayCondition) { mutableStateOf(eventBackgroundDisplayCondition) }
+    var backgroundTransparencyState by remember(eventBackgroundTransparency) { mutableStateOf(eventBackgroundTransparency) }
     var eventTitleColorChoiceState by remember(eventTitleColorChoice) { mutableStateOf(eventTitleColorChoice) }
     var eventTitleCustomColorState by remember(eventTitleCustomColor) { mutableStateOf(eventTitleCustomColor) }
 
@@ -601,6 +603,7 @@ fun SettingsScreen(
                         )
                         viewModel.saveEventIndicatorDisplayCondition(indicatorDisplayConditionState)
                         viewModel.saveEventBackgroundDisplayCondition(backgroundDisplayConditionState)
+                        viewModel.saveEventBackgroundTransparency(backgroundTransparencyState)
                         viewModel.saveEventTitleColorChoice(eventTitleColorChoiceState)
                         viewModel.saveEventTitleCustomColor(eventTitleCustomColorState)
                         viewModel.saveDefaultActiveSetsByWeekday(defaultActiveSetSelections)
@@ -780,6 +783,11 @@ fun SettingsScreen(
                         eventBackgroundDisplayCondition = backgroundDisplayConditionState,
                         onEventBackgroundDisplayConditionChange = { condition ->
                             backgroundDisplayConditionState = condition
+                            justSavedSuccessfully = false
+                        },
+                        eventBackgroundTransparency = backgroundTransparencyState,
+                        onEventBackgroundTransparencyChange = { transparency ->
+                            backgroundTransparencyState = transparency
                             justSavedSuccessfully = false
                         },
                         eventTitleColorChoice = eventTitleColorChoiceState,
@@ -1834,6 +1842,8 @@ private fun DefaultEventsSettingsSection(
     onEventIndicatorDisplayConditionChange: (EventColorDisplayCondition) -> Unit,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
     onEventBackgroundDisplayConditionChange: (EventColorDisplayCondition) -> Unit,
+    eventBackgroundTransparency: EventBackgroundTransparency,
+    onEventBackgroundTransparencyChange: (EventBackgroundTransparency) -> Unit,
     eventTitleColorChoice: EventTitleColorChoice,
     onEventTitleColorChoiceChange: (EventTitleColorChoice) -> Unit,
     eventTitleCustomColor: Int,
@@ -1857,6 +1867,12 @@ private fun DefaultEventsSettingsSection(
         label = stringResource(R.string.settings_event_color_background_label),
         selectedCondition = eventBackgroundDisplayCondition,
         onConditionChange = onEventBackgroundDisplayConditionChange
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    EventBackgroundTransparencyDropdown(
+        label = stringResource(R.string.settings_event_background_transparency_label),
+        selectedTransparency = eventBackgroundTransparency,
+        onTransparencyChange = onEventBackgroundTransparencyChange
     )
     Spacer(modifier = Modifier.height(8.dp))
     EventTitleColorDropdown(
@@ -2034,6 +2050,58 @@ private fun EventColorConditionDropdown(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun EventBackgroundTransparencyDropdown(
+    label: String,
+    selectedTransparency: EventBackgroundTransparency,
+    onTransparencyChange: (EventBackgroundTransparency) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = eventBackgroundTransparencyLabel(selectedTransparency)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = selectedLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        Box {
+            FilledTonalButton(
+                onClick = { expanded = true }
+            ) {
+                Text(selectedLabel)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                EventBackgroundTransparency.entries.forEach { transparency ->
+                    DropdownMenuItem(
+                        text = { Text(eventBackgroundTransparencyLabel(transparency)) },
+                        onClick = {
+                            onTransparencyChange(transparency)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun EventTitleColorDropdown(
     label: String,
     selectedChoice: EventTitleColorChoice,
@@ -2094,6 +2162,11 @@ private fun eventConditionLabel(condition: EventColorDisplayCondition): String {
             EventColorDisplayCondition.FUTURE_EVENTS -> R.string.settings_event_color_condition_future_events
         }
     )
+}
+
+@Composable
+private fun eventBackgroundTransparencyLabel(transparency: EventBackgroundTransparency): String {
+    return stringResource(R.string.settings_event_background_transparency_option, transparency.percent)
 }
 
 @Composable
