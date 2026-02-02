@@ -448,15 +448,27 @@ fun CalorieTrackerScreen(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let { millis ->
-                        val newDate = java.time.Instant.ofEpochMilli(millis)
-                            .atZone(java.time.ZoneId.systemDefault())
-                            .toLocalDate()
-                        viewModel.setSelectedDate(newDate)
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
+                Row {
+                    TextButton(onClick = {
+                        val today = LocalDate.now()
+                        pickerState.selectedDateMillis = today
+                            .atStartOfDay(java.time.ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli()
+                        viewModel.setSelectedDate(today)
+                        showDatePicker = false
+                    }) { Text("Today") }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        pickerState.selectedDateMillis?.let { millis ->
+                            val newDate = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            viewModel.setSelectedDate(newDate)
+                        }
+                        showDatePicker = false
+                    }) { Text("OK") }
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
