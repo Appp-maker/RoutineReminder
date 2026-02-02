@@ -15,6 +15,7 @@ import com.example.routinereminder.data.UserSettings
 import com.example.routinereminder.data.AppThemeColors
 import com.example.routinereminder.data.DEFAULT_PRIMARY_COLOR_ARGB
 import com.example.routinereminder.data.defaultSeriesColorForIndex
+import com.example.routinereminder.data.EventBackgroundTransparency
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.model.ActiveRunState
@@ -181,6 +182,11 @@ class MainViewModel @Inject constructor(
         MutableStateFlow(EventColorDisplayCondition.NEVER)
     val eventBackgroundDisplayCondition: StateFlow<EventColorDisplayCondition> =
         _eventBackgroundDisplayCondition.asStateFlow()
+
+    private val _eventBackgroundTransparency =
+        MutableStateFlow(EventBackgroundTransparency.PERCENT_20)
+    val eventBackgroundTransparency: StateFlow<EventBackgroundTransparency> =
+        _eventBackgroundTransparency.asStateFlow()
 
     private val _eventTitleColorChoice = MutableStateFlow(EventTitleColorChoice.PRIMARY)
     val eventTitleColorChoice: StateFlow<EventTitleColorChoice> =
@@ -377,6 +383,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEventBackgroundDisplayCondition().collectLatest { condition ->
                 _eventBackgroundDisplayCondition.value = condition
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventBackgroundTransparency().collectLatest { transparency ->
+                _eventBackgroundTransparency.value = transparency
             }
         }
         viewModelScope.launch {
@@ -664,6 +675,12 @@ class MainViewModel @Inject constructor(
     fun saveEventBackgroundDisplayCondition(condition: EventColorDisplayCondition) {
         viewModelScope.launch {
             settingsRepository.saveEventBackgroundDisplayCondition(condition)
+        }
+    }
+
+    fun saveEventBackgroundTransparency(transparency: EventBackgroundTransparency) {
+        viewModelScope.launch {
+            settingsRepository.saveEventBackgroundTransparency(transparency)
         }
     }
 

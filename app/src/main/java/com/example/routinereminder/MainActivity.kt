@@ -28,6 +28,7 @@ import java.io.FileOutputStream
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.TextStyle
 import com.example.routinereminder.data.entities.ScheduleDone
+import com.example.routinereminder.data.EventBackgroundTransparency
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.SettingsRepository
@@ -388,6 +389,7 @@ fun MainAppUI(
         val eventSetColors by viewModel.eventSetColors.collectAsState()
         val eventIndicatorDisplayCondition by viewModel.eventIndicatorDisplayCondition.collectAsState()
         val eventBackgroundDisplayCondition by viewModel.eventBackgroundDisplayCondition.collectAsState()
+        val eventBackgroundTransparency by viewModel.eventBackgroundTransparency.collectAsState()
         val eventTitleColorChoice by viewModel.eventTitleColorChoice.collectAsState()
         val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
         val recentCustomEventColors by viewModel.recentCustomEventColors.collectAsState()
@@ -946,6 +948,7 @@ private fun ScheduleItemListContent(
     eventSetColors: List<Int>,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    eventBackgroundTransparency: EventBackgroundTransparency,
     eventTitleColorChoice: EventTitleColorChoice,
     eventTitleCustomColor: Int,
     isCompactView: Boolean,
@@ -1055,6 +1058,7 @@ private fun ScheduleItemListContent(
                             eventSetColors = eventSetColors,
                             eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
                             eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                            eventBackgroundTransparency = eventBackgroundTransparency,
                             eventTitleColorChoice = eventTitleColorChoice,
                             eventTitleCustomColor = eventTitleCustomColor,
                             onLongPress = onLongPress
@@ -1104,6 +1108,7 @@ private fun ScheduleItemListContent(
                             eventSetColors = eventSetColors,
                             eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
                             eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                            eventBackgroundTransparency = eventBackgroundTransparency,
                             eventTitleColorChoice = eventTitleColorChoice,
                             eventTitleCustomColor = eventTitleCustomColor,
                             onLongPress = onLongPress,
@@ -1144,6 +1149,7 @@ private fun CompactScheduleItemCard(
     eventSetColors: List<Int>,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    eventBackgroundTransparency: EventBackgroundTransparency,
     eventTitleColorChoice: EventTitleColorChoice,
     eventTitleCustomColor: Int,
     onLongPress: (ScheduleItem) -> Unit
@@ -1194,7 +1200,7 @@ private fun CompactScheduleItemCard(
                 onLongClick = { onLongPress(item) }
             ),
         shape = RoundedCornerShape(12.dp),
-        color = if (showBackgroundColor) seriesColor.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+        color = if (showBackgroundColor) seriesColor.copy(alpha = eventBackgroundTransparency.alpha) else MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
@@ -1576,6 +1582,7 @@ fun MainScreenContent(
                 eventSetColors = eventSetColors,
                 eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
                 eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                eventBackgroundTransparency = eventBackgroundTransparency,
                 eventTitleColorChoice = eventTitleColorChoice,
                 eventTitleCustomColor = eventTitleCustomColor,
                 isCompactView = isCompactView,
@@ -1656,6 +1663,7 @@ fun ScheduleItemView(
     eventSetColors: List<Int>,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     eventBackgroundDisplayCondition: EventColorDisplayCondition,
+    eventBackgroundTransparency: EventBackgroundTransparency,
     eventTitleColorChoice: EventTitleColorChoice,
     eventTitleCustomColor: Int,
     onLongPress: (ScheduleItem) -> Unit,
@@ -1683,7 +1691,11 @@ fun ScheduleItemView(
     val showIndicatorColor = showSeriesColor && eventIndicatorDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
     val showBackgroundColor = showSeriesColor && eventBackgroundDisplayCondition.shouldShow(isNextUpcoming, isFutureEvent)
     val rowBackgroundColor = if (showBackgroundColor) {
-        val baseAlpha = if (isEffectivelyActiveNow) 0.3f else 0.2f
+        val baseAlpha = if (isEffectivelyActiveNow) {
+            (eventBackgroundTransparency.alpha + 0.1f).coerceAtMost(1f)
+        } else {
+            eventBackgroundTransparency.alpha
+        }
         seriesColor.copy(alpha = baseAlpha)
     } else {
         Color.Transparent
