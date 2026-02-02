@@ -1770,6 +1770,14 @@ fun MainScreenContent(
             onUndoDone = { itemFromDialog ->
                 onUndoDone(itemFromDialog)
                 showItemActionDialog = false
+            },
+            onMute = { itemFromDialog ->
+                viewModel.setScheduleItemMuted(itemFromDialog, currentDate.toEpochDay(), true)
+                showItemActionDialog = false
+            },
+            onUnmute = { itemFromDialog ->
+                viewModel.setScheduleItemMuted(itemFromDialog, currentDate.toEpochDay(), false)
+                showItemActionDialog = false
             }
         )
 
@@ -2060,6 +2068,18 @@ fun ScheduleItemView(
 
                     }
                 }
+
+                if (item.isMuted) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.event_muted_badge),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.extraSmall)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
         if (notesText.isNotBlank()) {
@@ -2142,7 +2162,9 @@ fun ItemActionDialog(
     onEdit: (ScheduleItem) -> Unit,
     onDelete: (ScheduleItem) -> Unit,
     onMarkDone: (ScheduleItem) -> Unit,
-    onUndoDone: (ScheduleItem) -> Unit
+    onUndoDone: (ScheduleItem) -> Unit,
+    onMute: (ScheduleItem) -> Unit,
+    onUnmute: (ScheduleItem) -> Unit
 ) {
     val isDone = isDoneToday
 
@@ -2150,8 +2172,8 @@ fun ItemActionDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Action for '${item.name}'") },
-        text = { Text("What would you like to do?") },
+        title = { Text(stringResource(R.string.event_action_dialog_title, item.name)) },
+        text = { Text(stringResource(R.string.event_action_dialog_body)) },
         confirmButton = {
             Column(modifier = Modifier.fillMaxWidth()) {
 
@@ -2160,7 +2182,7 @@ fun ItemActionDialog(
                     onClick = { onEdit(item) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Edit")
+                    Text(stringResource(R.string.event_action_edit))
                 }
 
                 Spacer(Modifier.height(6.dp))
@@ -2171,14 +2193,32 @@ fun ItemActionDialog(
                         onClick = { onMarkDone(item) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Mark as Done")
+                        Text(stringResource(R.string.event_action_mark_done))
                     }
                 } else {
                     Button(
                         onClick = { onUndoDone(item) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Undo Done")
+                        Text(stringResource(R.string.event_action_undo_done))
+                    }
+                }
+
+                Spacer(Modifier.height(6.dp))
+
+                if (!item.isMuted) {
+                    Button(
+                        onClick = { onMute(item) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.event_action_mute))
+                    }
+                } else {
+                    Button(
+                        onClick = { onUnmute(item) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.event_action_unmute))
                     }
                 }
 
@@ -2189,12 +2229,12 @@ fun ItemActionDialog(
                     onClick = { onDelete(item) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.event_action_delete))
                 }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.event_action_cancel)) }
         }
     )
 
