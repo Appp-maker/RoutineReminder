@@ -146,6 +146,8 @@
     <string name="settings_calorie_track_consumed">Track consumed foods with checkboxes</string>
     <string name="settings_calorie_track_consumed_hint">When enabled, calories start at 0 until you check foods as consumed.</string>
     <string name="settings_event_sets_title">Event Sets</string>
+    <string name="settings_event_sets_intro">Event sets are named groups of routines you can turn on or off to swap between different plans.</string>
+    <string name="settings_event_sets_options_title">Event set options</string>
     <string name="settings_event_sets_description">Name up to 20 sets to organize alternative plans.</string>
     <string name="settings_event_sets_reset_manual_action">Reset manual active sets</string>
     <string name="settings_event_sets_reset_manual_warning">Warning: This clears all manually selected active sets for specific dates.</string>
