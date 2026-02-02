@@ -19,6 +19,7 @@ import com.example.routinereminder.data.EventBackgroundTransparency
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.PastEventColorTreatment
+import com.example.routinereminder.data.PastEventTextColorChoice
 import com.example.routinereminder.data.model.ActiveRunState
 import com.example.routinereminder.data.model.TrailPoint
 import com.example.routinereminder.data.mappers.toEntity
@@ -196,9 +197,9 @@ class MainViewModel @Inject constructor(
     private val _eventTitleCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
     val eventTitleCustomColor: StateFlow<Int> = _eventTitleCustomColor.asStateFlow()
 
-    private val _pastEventTextTreatment = MutableStateFlow(PastEventColorTreatment.GREYED_OUT)
-    val pastEventTextTreatment: StateFlow<PastEventColorTreatment> =
-        _pastEventTextTreatment.asStateFlow()
+    private val _pastEventTextColorChoice = MutableStateFlow(PastEventTextColorChoice.GREYED_OUT)
+    val pastEventTextColorChoice: StateFlow<PastEventTextColorChoice> =
+        _pastEventTextColorChoice.asStateFlow()
 
     private val _pastEventTextCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
     val pastEventTextCustomColor: StateFlow<Int> = _pastEventTextCustomColor.asStateFlow()
@@ -422,8 +423,8 @@ class MainViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            settingsRepository.getPastEventTextTreatment().collectLatest { treatment ->
-                _pastEventTextTreatment.value = treatment
+            settingsRepository.getPastEventTextColorChoice().collectLatest { choice ->
+                _pastEventTextColorChoice.value = choice
             }
         }
         viewModelScope.launch {
@@ -742,9 +743,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun savePastEventTextTreatment(treatment: PastEventColorTreatment) {
+    fun savePastEventTextColorChoice(choice: PastEventTextColorChoice) {
         viewModelScope.launch {
-            settingsRepository.savePastEventTextTreatment(treatment)
+            settingsRepository.savePastEventTextColorChoice(choice)
         }
     }
 

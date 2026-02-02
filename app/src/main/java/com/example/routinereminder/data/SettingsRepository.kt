@@ -422,15 +422,15 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }.distinctUntilChanged()
     }
 
-    suspend fun savePastEventTextTreatment(treatment: PastEventColorTreatment) {
+    suspend fun savePastEventTextColorChoice(choice: PastEventTextColorChoice) {
         dataStore.edit { preferences ->
-            preferences[PAST_EVENT_TEXT_TREATMENT] = treatment.name
+            preferences[PAST_EVENT_TEXT_TREATMENT] = choice.name
         }
     }
 
-    fun getPastEventTextTreatment(): Flow<PastEventColorTreatment> {
+    fun getPastEventTextColorChoice(): Flow<PastEventTextColorChoice> {
         return dataStore.data.map { preferences ->
-            PastEventColorTreatment.fromName(preferences[PAST_EVENT_TEXT_TREATMENT])
+            PastEventTextColorChoice.fromName(preferences[PAST_EVENT_TEXT_TREATMENT])
         }.distinctUntilChanged()
     }
 
