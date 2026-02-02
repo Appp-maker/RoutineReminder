@@ -81,6 +81,32 @@ enum class PastEventTextColorChoice {
     }
 }
 
+enum class PastEventDetailTextColorChoice {
+    GREYED_OUT,
+    WHITE,
+    CUSTOM;
+
+    companion object {
+        fun fromName(name: String?): PastEventDetailTextColorChoice {
+            return when (name) {
+                WHITE.name -> WHITE
+                CUSTOM.name -> CUSTOM
+                GREYED_OUT.name -> GREYED_OUT
+                else -> GREYED_OUT
+            }
+        }
+
+        fun fromTitleChoice(choice: PastEventTextColorChoice): PastEventDetailTextColorChoice {
+            return when (choice) {
+                PastEventTextColorChoice.WHITE -> WHITE
+                PastEventTextColorChoice.CUSTOM -> CUSTOM
+                PastEventTextColorChoice.GREYED_OUT -> GREYED_OUT
+                else -> GREYED_OUT
+            }
+        }
+    }
+}
+
 enum class EventBackgroundTransparency(val percent: Int, val alpha: Float) {
     PERCENT_0(0, 0f),
     PERCENT_40(40, 0.4f),

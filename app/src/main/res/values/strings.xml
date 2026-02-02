@@ -93,8 +93,10 @@
     <string name="settings_event_title_custom_color_label">Custom upcoming title color</string>
     <string name="settings_event_appearance_upcoming_title">Upcoming events</string>
     <string name="settings_event_appearance_past_title">Past events</string>
-    <string name="settings_past_event_text_color_label">Past event text color</string>
-    <string name="settings_past_event_text_custom_color_label">Custom past text color</string>
+    <string name="settings_past_event_text_color_label">Past event title color</string>
+    <string name="settings_past_event_text_custom_color_label">Custom past title color</string>
+    <string name="settings_past_event_detail_text_color_label">Past event details color</string>
+    <string name="settings_past_event_detail_text_custom_color_label">Custom past details color</string>
     <string name="settings_past_event_background_color_label">Past event background color</string>
     <string name="settings_past_event_background_custom_color_label">Custom past background color</string>
     <string name="settings_past_event_background_transparency_label">Past background transparency</string>

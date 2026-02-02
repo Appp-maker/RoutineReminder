@@ -73,6 +73,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EVENT_TITLE_CUSTOM_COLOR = intPreferencesKey("event_title_custom_color")
     val PAST_EVENT_TEXT_TREATMENT = stringPreferencesKey("past_event_text_treatment")
     val PAST_EVENT_TEXT_CUSTOM_COLOR = intPreferencesKey("past_event_text_custom_color")
+    val PAST_EVENT_DETAIL_TEXT_TREATMENT = stringPreferencesKey("past_event_detail_text_treatment")
+    val PAST_EVENT_DETAIL_TEXT_CUSTOM_COLOR = intPreferencesKey("past_event_detail_text_custom_color")
     val PAST_EVENT_BACKGROUND_TREATMENT = stringPreferencesKey("past_event_background_treatment")
     val PAST_EVENT_BACKGROUND_CUSTOM_COLOR = intPreferencesKey("past_event_background_custom_color")
     val PAST_EVENT_BACKGROUND_TRANSPARENCY = stringPreferencesKey("past_event_background_transparency")
@@ -443,6 +445,39 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getPastEventTextCustomColor(): Flow<Int> {
         return dataStore.data.map { preferences ->
             preferences[PAST_EVENT_TEXT_CUSTOM_COLOR] ?: DEFAULT_PRIMARY_COLOR_ARGB
+        }.distinctUntilChanged()
+    }
+
+    suspend fun savePastEventDetailTextColorChoice(choice: PastEventDetailTextColorChoice) {
+        dataStore.edit { preferences ->
+            preferences[PAST_EVENT_DETAIL_TEXT_TREATMENT] = choice.name
+        }
+    }
+
+    fun getPastEventDetailTextColorChoice(): Flow<PastEventDetailTextColorChoice> {
+        return dataStore.data.map { preferences ->
+            val storedChoice = preferences[PAST_EVENT_DETAIL_TEXT_TREATMENT]
+            if (storedChoice != null) {
+                PastEventDetailTextColorChoice.fromName(storedChoice)
+            } else {
+                PastEventDetailTextColorChoice.fromTitleChoice(
+                    PastEventTextColorChoice.fromName(preferences[PAST_EVENT_TEXT_TREATMENT])
+                )
+            }
+        }.distinctUntilChanged()
+    }
+
+    suspend fun savePastEventDetailTextCustomColor(colorArgb: Int) {
+        dataStore.edit { preferences ->
+            preferences[PAST_EVENT_DETAIL_TEXT_CUSTOM_COLOR] = colorArgb
+        }
+    }
+
+    fun getPastEventDetailTextCustomColor(): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            preferences[PAST_EVENT_DETAIL_TEXT_CUSTOM_COLOR]
+                ?: preferences[PAST_EVENT_TEXT_CUSTOM_COLOR]
+                ?: DEFAULT_PRIMARY_COLOR_ARGB
         }.distinctUntilChanged()
     }
 

@@ -19,6 +19,7 @@ import com.example.routinereminder.data.EventBackgroundTransparency
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.PastEventColorTreatment
+import com.example.routinereminder.data.PastEventDetailTextColorChoice
 import com.example.routinereminder.data.PastEventTextColorChoice
 import com.example.routinereminder.data.model.ActiveRunState
 import com.example.routinereminder.data.model.TrailPoint
@@ -203,6 +204,13 @@ class MainViewModel @Inject constructor(
 
     private val _pastEventTextCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
     val pastEventTextCustomColor: StateFlow<Int> = _pastEventTextCustomColor.asStateFlow()
+
+    private val _pastEventDetailTextColorChoice = MutableStateFlow(PastEventDetailTextColorChoice.GREYED_OUT)
+    val pastEventDetailTextColorChoice: StateFlow<PastEventDetailTextColorChoice> =
+        _pastEventDetailTextColorChoice.asStateFlow()
+
+    private val _pastEventDetailTextCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
+    val pastEventDetailTextCustomColor: StateFlow<Int> = _pastEventDetailTextCustomColor.asStateFlow()
 
     private val _pastEventBackgroundTreatment = MutableStateFlow(PastEventColorTreatment.GREYED_OUT)
     val pastEventBackgroundTreatment: StateFlow<PastEventColorTreatment> =
@@ -430,6 +438,16 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getPastEventTextCustomColor().collectLatest { color ->
                 _pastEventTextCustomColor.value = color
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getPastEventDetailTextColorChoice().collectLatest { choice ->
+                _pastEventDetailTextColorChoice.value = choice
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getPastEventDetailTextCustomColor().collectLatest { color ->
+                _pastEventDetailTextCustomColor.value = color
             }
         }
         viewModelScope.launch {
@@ -752,6 +770,18 @@ class MainViewModel @Inject constructor(
     fun savePastEventTextCustomColor(colorArgb: Int) {
         viewModelScope.launch {
             settingsRepository.savePastEventTextCustomColor(colorArgb)
+        }
+    }
+
+    fun savePastEventDetailTextColorChoice(choice: PastEventDetailTextColorChoice) {
+        viewModelScope.launch {
+            settingsRepository.savePastEventDetailTextColorChoice(choice)
+        }
+    }
+
+    fun savePastEventDetailTextCustomColor(colorArgb: Int) {
+        viewModelScope.launch {
+            settingsRepository.savePastEventDetailTextCustomColor(colorArgb)
         }
     }
 

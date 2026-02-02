@@ -166,6 +166,8 @@ fun SettingsScreen(
     val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
     val pastEventTextColorChoice by viewModel.pastEventTextColorChoice.collectAsState()
     val pastEventTextCustomColor by viewModel.pastEventTextCustomColor.collectAsState()
+    val pastEventDetailTextColorChoice by viewModel.pastEventDetailTextColorChoice.collectAsState()
+    val pastEventDetailTextCustomColor by viewModel.pastEventDetailTextCustomColor.collectAsState()
     val pastEventBackgroundTreatment by viewModel.pastEventBackgroundTreatment.collectAsState()
     val pastEventBackgroundCustomColor by viewModel.pastEventBackgroundCustomColor.collectAsState()
     val pastEventBackgroundTransparency by viewModel.pastEventBackgroundTransparency.collectAsState()
@@ -217,6 +219,8 @@ fun SettingsScreen(
     var eventTitleCustomColorState by remember(eventTitleCustomColor) { mutableStateOf(eventTitleCustomColor) }
     var pastEventTextColorChoiceState by remember(pastEventTextColorChoice) { mutableStateOf(pastEventTextColorChoice) }
     var pastEventTextCustomColorState by remember(pastEventTextCustomColor) { mutableStateOf(pastEventTextCustomColor) }
+    var pastEventDetailTextColorChoiceState by remember(pastEventDetailTextColorChoice) { mutableStateOf(pastEventDetailTextColorChoice) }
+    var pastEventDetailTextCustomColorState by remember(pastEventDetailTextCustomColor) { mutableStateOf(pastEventDetailTextCustomColor) }
     var pastEventBackgroundTreatmentState by remember(pastEventBackgroundTreatment) { mutableStateOf(pastEventBackgroundTreatment) }
     var pastEventBackgroundCustomColorState by remember(pastEventBackgroundCustomColor) { mutableStateOf(pastEventBackgroundCustomColor) }
     var pastEventBackgroundTransparencyState by remember(pastEventBackgroundTransparency) { mutableStateOf(pastEventBackgroundTransparency) }
@@ -626,6 +630,8 @@ fun SettingsScreen(
                         viewModel.saveEventTitleCustomColor(eventTitleCustomColorState)
                         viewModel.savePastEventTextColorChoice(pastEventTextColorChoiceState)
                         viewModel.savePastEventTextCustomColor(pastEventTextCustomColorState)
+                        viewModel.savePastEventDetailTextColorChoice(pastEventDetailTextColorChoiceState)
+                        viewModel.savePastEventDetailTextCustomColor(pastEventDetailTextCustomColorState)
                         viewModel.savePastEventBackgroundTreatment(pastEventBackgroundTreatmentState)
                         viewModel.savePastEventBackgroundCustomColor(pastEventBackgroundCustomColorState)
                         viewModel.savePastEventBackgroundTransparency(pastEventBackgroundTransparencyState)
@@ -836,6 +842,16 @@ fun SettingsScreen(
                         pastEventTextCustomColor = pastEventTextCustomColorState,
                         onPastEventTextCustomColorChange = { color ->
                             pastEventTextCustomColorState = color
+                            justSavedSuccessfully = false
+                        },
+                        pastEventDetailTextColorChoice = pastEventDetailTextColorChoiceState,
+                        onPastEventDetailTextColorChoiceChange = { choice ->
+                            pastEventDetailTextColorChoiceState = choice
+                            justSavedSuccessfully = false
+                        },
+                        pastEventDetailTextCustomColor = pastEventDetailTextCustomColorState,
+                        onPastEventDetailTextCustomColorChange = { color ->
+                            pastEventDetailTextCustomColorState = color
                             justSavedSuccessfully = false
                         },
                         pastEventBackgroundTreatment = pastEventBackgroundTreatmentState,
@@ -1912,6 +1928,10 @@ private fun DefaultEventsSettingsSection(
     onPastEventTextColorChoiceChange: (PastEventTextColorChoice) -> Unit,
     pastEventTextCustomColor: Int,
     onPastEventTextCustomColorChange: (Int) -> Unit,
+    pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
+    onPastEventDetailTextColorChoiceChange: (PastEventDetailTextColorChoice) -> Unit,
+    pastEventDetailTextCustomColor: Int,
+    onPastEventDetailTextCustomColorChange: (Int) -> Unit,
     pastEventBackgroundTreatment: PastEventColorTreatment,
     onPastEventBackgroundTreatmentChange: (PastEventColorTreatment) -> Unit,
     pastEventBackgroundCustomColor: Int,
@@ -1983,6 +2003,24 @@ private fun DefaultEventsSettingsSection(
             label = stringResource(R.string.settings_past_event_text_custom_color_label),
             selectedColor = Color(pastEventTextCustomColor),
             onColorSelected = { onPastEventTextCustomColorChange(it.toArgb()) },
+            modifier = Modifier.padding(bottom = 8.dp),
+            colorOptions = SeriesColorOptions,
+            allowCustomColor = true,
+            recentCustomColors = recentCustomEventColors
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    PastEventDetailTextColorDropdown(
+        label = stringResource(R.string.settings_past_event_detail_text_color_label),
+        selectedChoice = pastEventDetailTextColorChoice,
+        onChoiceChange = onPastEventDetailTextColorChoiceChange
+    )
+    if (pastEventDetailTextColorChoice == PastEventDetailTextColorChoice.CUSTOM) {
+        Spacer(modifier = Modifier.height(8.dp))
+        SeriesColorPicker(
+            label = stringResource(R.string.settings_past_event_detail_text_custom_color_label),
+            selectedColor = Color(pastEventDetailTextCustomColor),
+            onColorSelected = { onPastEventDetailTextCustomColorChange(it.toArgb()) },
             modifier = Modifier.padding(bottom = 8.dp),
             colorOptions = SeriesColorOptions,
             allowCustomColor = true,
@@ -2351,6 +2389,58 @@ private fun PastEventTextColorDropdown(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun PastEventDetailTextColorDropdown(
+    label: String,
+    selectedChoice: PastEventDetailTextColorChoice,
+    onChoiceChange: (PastEventDetailTextColorChoice) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = pastEventDetailTextColorLabel(selectedChoice)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = selectedLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        Box {
+            FilledTonalButton(
+                onClick = { expanded = true }
+            ) {
+                Text(selectedLabel)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                PastEventDetailTextColorChoice.entries.forEach { choice ->
+                    DropdownMenuItem(
+                        text = { Text(pastEventDetailTextColorLabel(choice)) },
+                        onClick = {
+                            onChoiceChange(choice)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun PastEventColorTreatmentDropdown(
     label: String,
     selectedTreatment: PastEventColorTreatment,
@@ -2440,6 +2530,17 @@ private fun pastEventTextColorLabel(choice: PastEventTextColorChoice): String {
             PastEventTextColorChoice.EVENT_COLOR -> R.string.settings_event_title_color_event
             PastEventTextColorChoice.CUSTOM -> R.string.settings_event_title_color_custom
             PastEventTextColorChoice.GREYED_OUT -> R.string.settings_past_event_color_treatment_greyed
+        }
+    )
+}
+
+@Composable
+private fun pastEventDetailTextColorLabel(choice: PastEventDetailTextColorChoice): String {
+    return stringResource(
+        when (choice) {
+            PastEventDetailTextColorChoice.GREYED_OUT -> R.string.settings_past_event_color_treatment_greyed
+            PastEventDetailTextColorChoice.WHITE -> R.string.settings_event_title_color_white
+            PastEventDetailTextColorChoice.CUSTOM -> R.string.settings_event_title_color_custom
         }
     )
 }
