@@ -1185,10 +1185,17 @@ private fun CompactScheduleItemCard(
         showSeriesColor -> Color.Transparent
         else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     }
+    val resolvedTitleColor = resolveEventTitleColor(
+        choice = eventTitleColorChoice,
+        seriesColor = seriesColor,
+        baseColor = LocalContentColor.current,
+        showSeriesColor = showSeriesColor,
+        customColorArgb = eventTitleCustomColor
+    )
     val titleColor = when {
         isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
         isEffectivelyPastNow -> MaterialTheme.colorScheme.outline
-        else -> Color.White
+        else -> resolvedTitleColor
     }
     val timeColor = if (isDoneToday) {
         MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -1263,6 +1270,23 @@ private fun NowIndicatorRow() {
                 .height(1.dp)
                 .background(lineColor)
         )
+    }
+}
+
+@Composable
+private fun resolveEventTitleColor(
+    choice: EventTitleColorChoice,
+    seriesColor: Color,
+    baseColor: Color,
+    showSeriesColor: Boolean,
+    customColorArgb: Int
+): Color {
+    return when (choice) {
+        EventTitleColorChoice.PRIMARY -> MaterialTheme.colorScheme.primary
+        EventTitleColorChoice.SECONDARY -> MaterialTheme.colorScheme.secondary
+        EventTitleColorChoice.WHITE -> Color.White
+        EventTitleColorChoice.EVENT_COLOR -> if (showSeriesColor) seriesColor else baseColor
+        EventTitleColorChoice.CUSTOM -> Color(customColorArgb)
     }
 }
 
@@ -1729,10 +1753,17 @@ fun ScheduleItemView(
     val doneTextStyle = MaterialTheme.typography.titleMedium.copy(
         textDecoration = doneDecoration
     )
+    val resolvedTitleColor = resolveEventTitleColor(
+        choice = eventTitleColorChoice,
+        seriesColor = seriesColor,
+        baseColor = baseTextColor,
+        showSeriesColor = showSeriesColor,
+        customColorArgb = eventTitleCustomColor
+    )
     val titleColor = when {
         isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
         isEffectivelyPastNow -> MaterialTheme.colorScheme.outline
-        else -> Color.White
+        else -> resolvedTitleColor
     }
 
 
