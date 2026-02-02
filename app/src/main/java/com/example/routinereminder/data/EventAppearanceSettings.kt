@@ -44,3 +44,25 @@ enum class EventTitleColorChoice {
         }
     }
 }
+
+enum class EventBackgroundTransparency(val percent: Int, val alpha: Float) {
+    PERCENT_40(40, 0.4f),
+    PERCENT_30(30, 0.3f),
+    PERCENT_20(20, 0.2f),
+    PERCENT_10(10, 0.1f);
+
+    companion object {
+        fun fromName(name: String?): EventBackgroundTransparency {
+            return when (name) {
+                PERCENT_40.name,
+                PERCENT_30.name,
+                PERCENT_20.name,
+                PERCENT_10.name -> entries.first { it.name == name }
+                "PERCENT_60",
+                "PERCENT_80",
+                "PERCENT_100" -> PERCENT_40
+                else -> PERCENT_20
+            }
+        }
+    }
+}
