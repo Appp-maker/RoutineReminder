@@ -610,6 +610,8 @@ fun WorkoutScreen(
             isOneTime = defaultEventSettings.isOneTime,
             notifyEnabled = defaultEventSettings.systemNotification,
             showDetailsInNotification = defaultEventSettings.showDetailsInNotification,
+            reminderCount = defaultEventSettings.reminderCount,
+            reminderIntervalMinutes = defaultEventSettings.reminderIntervalMinutes,
             addToCalendarOnSave = defaultEventSettings.createCalendarEntry,
             targetCalendarSystem = defaultEventSettings.targetCalendarId
         )

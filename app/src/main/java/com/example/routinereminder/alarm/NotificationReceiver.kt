@@ -29,6 +29,9 @@ class NotificationReceiver : BroadcastReceiver() {
         const val EXTRA_ITEM_TITLE = "extra_item_title"
         const val EXTRA_ITEM_NOTES = "extra_item_notes"
         const val EXTRA_ITEM_SHOW_DETAILS = "extra_item_show_details"
+        const val EXTRA_REMINDER_MINUTES_BEFORE = "extra_reminder_minutes_before"
+        const val EXTRA_SHOULD_RESCHEDULE = "extra_should_reschedule"
+        const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
         private const val CHANNEL_ID = "routine_reminders_channel"
         private const val CHANNEL_NAME = "Routine Reminders"
     }
@@ -49,18 +52,21 @@ class NotificationReceiver : BroadcastReceiver() {
             item?.let {
                 if (!it.notifyEnabled) return@launch
 
+                val minutesBefore = intent.getIntExtra(EXTRA_REMINDER_MINUTES_BEFORE, 0)
                 val notificationTitle = it.name
                 val notificationText = when {
                     it.showDetailsInNotification && it.notes?.isNotBlank() == true -> it.notes
-                    else -> "Event starting now."
+                    minutesBefore > 0 -> context.getString(R.string.notification_event_starts_in, minutesBefore)
+                    else -> context.getString(R.string.notification_event_starting_now)
                 }
 
                 val activityIntent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
+                val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, itemId.toInt())
                 val pendingActivityIntent = PendingIntent.getActivity(
                     context,
-                    itemId.toInt(),
+                    notificationId,
                     activityIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
@@ -75,9 +81,10 @@ class NotificationReceiver : BroadcastReceiver() {
                     .setAutoCancel(true)
                     .build()
 
-                notificationManager.notify(itemId.toInt(), notification)
+                notificationManager.notify(notificationId, notification)
 
-                if (!it.isOneTime) {
+                val shouldReschedule = intent.getBooleanExtra(EXTRA_SHOULD_RESCHEDULE, true)
+                if (shouldReschedule && !it.isOneTime) {
                     val alarmScheduler = AlarmScheduler(context.applicationContext)
                     alarmScheduler.schedule(it)
                 }

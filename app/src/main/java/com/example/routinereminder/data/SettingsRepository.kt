@@ -38,6 +38,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val DEFAULT_EVENT_CREATE_CALENDAR_ENTRY = booleanPreferencesKey("default_event_create_calendar_entry")
     val DEFAULT_EVENT_SYSTEM_NOTIFICATION = booleanPreferencesKey("default_event_system_notification")
     val DEFAULT_EVENT_SHOW_DETAILS_IN_NOTIFICATION = booleanPreferencesKey("default_event_show_details_in_notification")
+    val DEFAULT_EVENT_REMINDER_COUNT = intPreferencesKey("default_event_reminder_count")
+    val DEFAULT_EVENT_REMINDER_INTERVAL_MINUTES = intPreferencesKey("default_event_reminder_interval_minutes")
     val START_TIME_OPTION_NAME = stringPreferencesKey("start_time_option_name")
     val TARGET_CALENDAR_ID = stringPreferencesKey("target_calendar_id")
     val ON_CALENDAR_DELETE_ACTION = stringPreferencesKey("on_calendar_delete_action")
@@ -566,6 +568,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             preferences[DEFAULT_EVENT_CREATE_CALENDAR_ENTRY] = settings.createCalendarEntry
             preferences[DEFAULT_EVENT_SYSTEM_NOTIFICATION] = settings.systemNotification
             preferences[DEFAULT_EVENT_SHOW_DETAILS_IN_NOTIFICATION] = settings.showDetailsInNotification
+            preferences[DEFAULT_EVENT_REMINDER_COUNT] = settings.reminderCount
+            preferences[DEFAULT_EVENT_REMINDER_INTERVAL_MINUTES] = settings.reminderIntervalMinutes
             preferences[START_TIME_OPTION_NAME] = settings.startTimeOptionName
             preferences[TARGET_CALENDAR_ID] = settings.targetCalendarId
         }
@@ -582,6 +586,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
                 createCalendarEntry = preferences[DEFAULT_EVENT_CREATE_CALENDAR_ENTRY] ?: true,
                 systemNotification = preferences[DEFAULT_EVENT_SYSTEM_NOTIFICATION] ?: true,
                 showDetailsInNotification = preferences[DEFAULT_EVENT_SHOW_DETAILS_IN_NOTIFICATION] ?: true,
+                reminderCount = preferences[DEFAULT_EVENT_REMINDER_COUNT] ?: 0,
+                reminderIntervalMinutes = preferences[DEFAULT_EVENT_REMINDER_INTERVAL_MINUTES] ?: 60,
                 startTimeOptionName = preferences[START_TIME_OPTION_NAME] ?: "NEXT_FULL_HOUR",
                 targetCalendarId = preferences[TARGET_CALENDAR_ID] ?: IMPORT_TARGET_CALENDAR_LOCAL
             )

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.routinereminder.R
 import com.example.routinereminder.data.DefaultEventSettings
 import kotlinx.serialization.json.Json
 
@@ -21,6 +22,11 @@ private fun loadSettings(context: Context): DefaultEventSettings? {
 
 
 class ReminderReceiver : BroadcastReceiver() {
+
+    companion object {
+        const val EXTRA_MINUTES_BEFORE = "extra_minutes_before"
+        const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
+    }
 
     override fun onReceive(context: Context, intent: Intent) {
         val showDetails = intent.getBooleanExtra("showDetails", true)
@@ -40,12 +46,16 @@ class ReminderReceiver : BroadcastReceiver() {
         val notes = intent.getStringExtra("notes") ?: ""
 
         // Build text: notes only, no duration, no repeats
+        val minutesBefore = intent.getIntExtra(EXTRA_MINUTES_BEFORE, 0)
         val message =
             if (showDetails && notes.isNotBlank()) notes
-            else "Scheduled reminder"
+            else if (minutesBefore > 0) {
+                context.getString(R.string.notification_event_starts_in, minutesBefore)
+            } else {
+                context.getString(R.string.notification_event_starting_now)
+            }
 
-
-        val notificationId = System.currentTimeMillis().toInt()
+        val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, System.currentTimeMillis().toInt())
 
         // Close button
         val closeIntent = Intent(context, ReminderReceiver::class.java).apply {

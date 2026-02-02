@@ -3,7 +3,7 @@ package com.example.routinereminder.data.di
 import android.content.Context
 import androidx.room.Room
 import com.example.routinereminder.data.AppDatabase
-import com.example.routinereminder.data.MIGRATION_1_2
+import com.example.routinereminder.data.MIGRATION_11_12
 import com.example.routinereminder.data.dao.*
 import dagger.Module
 import dagger.Provides
@@ -24,6 +24,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "routine_reminder_db"
         )
+            .addMigrations(MIGRATION_11_12)
             .fallbackToDestructiveMigration()
             .build()
 

@@ -192,6 +192,8 @@ fun SettingsScreen(
     var selectedCalendarIdForNewEvents by remember { mutableStateOf(currentDefaultEventSettings.targetCalendarId) }
     var systemNotificationChecked by remember { mutableStateOf(currentDefaultEventSettings.systemNotification) }
     var showDetailsInNotificationChecked by remember { mutableStateOf(currentDefaultEventSettings.showDetailsInNotification) }
+    var reminderCountText by remember { mutableStateOf(currentDefaultEventSettings.reminderCount.toString()) }
+    var reminderIntervalMinutesText by remember { mutableStateOf(currentDefaultEventSettings.reminderIntervalMinutes.toString()) }
     var selectedOnCalendarDeleteAction by remember(currentOnCalendarDeleteAction) { mutableStateOf(currentOnCalendarDeleteAction) }
     var selectedImportTargetCalendarId by remember(currentImportTargetCalendarId) { mutableStateOf(currentImportTargetCalendarId) }
     var selectedOnAppDeleteImportedAction by remember(currentOnAppDeleteImportedAction) { mutableStateOf(currentOnAppDeleteImportedAction) }
@@ -464,6 +466,8 @@ fun SettingsScreen(
             if (selectedCalendarIdForNewEvents != currentDefaultEventSettings.targetCalendarId) return@derivedStateOf true
             if (systemNotificationChecked != currentDefaultEventSettings.systemNotification) return@derivedStateOf true
             if ((if (systemNotificationChecked) showDetailsInNotificationChecked else false) != currentDefaultEventSettings.showDetailsInNotification) return@derivedStateOf true
+            if ((reminderCountText.toIntOrNull() ?: currentDefaultEventSettings.reminderCount) != currentDefaultEventSettings.reminderCount) return@derivedStateOf true
+            if ((reminderIntervalMinutesText.toIntOrNull() ?: currentDefaultEventSettings.reminderIntervalMinutes) != currentDefaultEventSettings.reminderIntervalMinutes) return@derivedStateOf true
             if (selectedOnCalendarDeleteAction != currentOnCalendarDeleteAction) return@derivedStateOf true
             // Logic for selectedImportTargetCalendarId might need adjustment
             if (selectedImportTargetCalendarId != currentImportTargetCalendarId) return@derivedStateOf true
@@ -582,6 +586,10 @@ fun SettingsScreen(
                             createCalendarEntry = if (useGoogleBackupModeChecked) false else createCalendarEntryChecked,
                             systemNotification = systemNotificationChecked,
                             showDetailsInNotification = if (systemNotificationChecked) showDetailsInNotificationChecked else false,
+                            reminderCount = reminderCountText.toIntOrNull()?.coerceAtLeast(0) ?: 0,
+                            reminderIntervalMinutes = reminderIntervalMinutesText.toIntOrNull()
+                                ?.coerceAtLeast(1)
+                                ?: currentDefaultEventSettings.reminderIntervalMinutes,
                             startTimeOptionName = startTimeOption.name,
                             targetCalendarId = if (useGoogleBackupModeChecked && currentTargetCalId.startsWith("google")) SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL else currentTargetCalId
                         )
@@ -789,6 +797,10 @@ fun SettingsScreen(
                         onSystemNotificationChange = { newValue -> systemNotificationChecked = newValue; if (!newValue) showDetailsInNotificationChecked = false; justSavedSuccessfully = false },
                         showDetailsInNotificationChecked = showDetailsInNotificationChecked,
                         onShowDetailsInNotificationChange = { showDetailsInNotificationChecked = it; justSavedSuccessfully = false },
+                        reminderCountText = reminderCountText,
+                        onReminderCountChange = { reminderCountText = it.filter(Char::isDigit); justSavedSuccessfully = false },
+                        reminderIntervalMinutesText = reminderIntervalMinutesText,
+                        onReminderIntervalMinutesChange = { reminderIntervalMinutesText = it.filter(Char::isDigit); justSavedSuccessfully = false },
                         selectedGoogleAccountName = selectedGoogleAccountName,
                         eventIndicatorDisplayCondition = indicatorDisplayConditionState,
                         onEventIndicatorDisplayConditionChange = { condition ->
@@ -1880,6 +1892,10 @@ private fun DefaultEventsSettingsSection(
     onSystemNotificationChange: (Boolean) -> Unit,
     showDetailsInNotificationChecked: Boolean,
     onShowDetailsInNotificationChange: (Boolean) -> Unit,
+    reminderCountText: String,
+    onReminderCountChange: (String) -> Unit,
+    reminderIntervalMinutesText: String,
+    onReminderIntervalMinutesChange: (String) -> Unit,
     selectedGoogleAccountName: String?,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     onEventIndicatorDisplayConditionChange: (EventColorDisplayCondition) -> Unit,
@@ -2098,6 +2114,26 @@ private fun DefaultEventsSettingsSection(
     Text(stringResource(R.string.settings_default_events_notification_options_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
     SettingSwitchItem(text = stringResource(R.string.settings_default_events_system_notification), checked = systemNotificationChecked, onCheckedChange = onSystemNotificationChange)
     SettingSwitchItem(text = stringResource(R.string.settings_default_events_show_details_notification), checked = showDetailsInNotificationChecked, enabled = systemNotificationChecked, onCheckedChange = onShowDetailsInNotificationChange)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.titleSmall)
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+        value = reminderCountText,
+        onValueChange = onReminderCountChange,
+        label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        enabled = systemNotificationChecked,
+        modifier = Modifier.fillMaxWidth()
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+        value = reminderIntervalMinutesText,
+        onValueChange = onReminderIntervalMinutesChange,
+        label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        enabled = systemNotificationChecked,
+        modifier = Modifier.fillMaxWidth()
+    )
     Spacer(modifier = Modifier.height(16.dp))
 }
 

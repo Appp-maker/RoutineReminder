@@ -124,6 +124,12 @@ fun EditItemDialog(
 
     var notifyEnabled by remember(initialItem, defaultEventSettings) { mutableStateOf(initialItem?.notifyEnabled ?: defaultEventSettings.systemNotification) }
     var showDetailsInNotification by remember(initialItem, defaultEventSettings) { mutableStateOf(initialItem?.showDetailsInNotification ?: defaultEventSettings.showDetailsInNotification) }
+    var reminderCountInput by remember(initialItem, defaultEventSettings) {
+        mutableStateOf((initialItem?.reminderCount ?: defaultEventSettings.reminderCount).toString())
+    }
+    var reminderIntervalInput by remember(initialItem, defaultEventSettings) {
+        mutableStateOf((initialItem?.reminderIntervalMinutes ?: defaultEventSettings.reminderIntervalMinutes).toString())
+    }
     var selectedColorArgb by remember(initialItem) {
         mutableStateOf(initialItem?.colorArgb ?: NO_EVENT_FOOD_COLOR_ARGB)
     }
@@ -167,6 +173,10 @@ fun EditItemDialog(
         val hours = durationInputHours.toIntOrNull() ?: 0
         val parsedMinutes = durationInputMinutes.toIntOrNull() ?: 0
         val finalTotalDurationMinutes = ((hours * 60) + parsedMinutes).coerceAtLeast(1)
+        val reminderCount = reminderCountInput.toIntOrNull()?.coerceAtLeast(0) ?: 0
+        val reminderIntervalMinutes = reminderIntervalInput.toIntOrNull()
+            ?.coerceAtLeast(1)
+            ?: defaultEventSettings.reminderIntervalMinutes
 
         val finalAddToCalendar = if (useGoogleBackupMode) false else addToCalendar
         val finalTargetCalendarSystem = if (useGoogleBackupMode || !finalAddToCalendar) null else targetCalendarSystemForEntry
@@ -177,6 +187,8 @@ fun EditItemDialog(
             minute = 0,
             notifyEnabled = defaultEventSettings.systemNotification,
             showDetailsInNotification = defaultEventSettings.showDetailsInNotification,
+            reminderCount = defaultEventSettings.reminderCount,
+            reminderIntervalMinutes = defaultEventSettings.reminderIntervalMinutes,
             isOneTime = defaultEventSettings.isOneTime,
             durationMinutes = (defaultEventSettings.durationHours * 60) + defaultEventSettings.durationMinutes,
             addToCalendarOnSave = if (useGoogleBackupMode) false else defaultEventSettings.createCalendarEntry,
@@ -201,6 +213,8 @@ fun EditItemDialog(
                 targetCalendarSystem = finalTargetCalendarSystem,
                 notifyEnabled = notifyEnabled,
                 showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false,
+                reminderCount = reminderCount,
+                reminderIntervalMinutes = reminderIntervalMinutes,
                 colorArgb = selectedColorArgb,
                 setId = selectedSetId
             )
@@ -235,6 +249,8 @@ fun EditItemDialog(
                 targetCalendarSystem = finalTargetCalendarSystem,
                 notifyEnabled = notifyEnabled,
                 showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false,
+                reminderCount = reminderCount,
+                reminderIntervalMinutes = reminderIntervalMinutes,
                 colorArgb = selectedColorArgb,
                 setId = selectedSetId
             )
@@ -654,6 +670,26 @@ fun EditItemDialog(
                             color = if (notifyEnabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                         )
                     }
+                    Spacer(Modifier.height(12.dp))
+                    Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = reminderCountInput,
+                        onValueChange = { reminderCountInput = it.filter(Char::isDigit) },
+                        label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        enabled = notifyEnabled,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = reminderIntervalInput,
+                        onValueChange = { reminderIntervalInput = it.filter(Char::isDigit) },
+                        label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        enabled = notifyEnabled,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(Modifier.height(64.dp))
                 }
             }

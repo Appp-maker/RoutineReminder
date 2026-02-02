@@ -29,6 +29,10 @@ data class Schedule(
     val repeatEveryWeeks: Int = 1,
     val notifyEnabled: Boolean = true,
     val showDetailsInNotification: Boolean = false,
+    @ColumnInfo(defaultValue = "0")
+    val reminderCount: Int = 0,
+    @ColumnInfo(defaultValue = "60")
+    val reminderIntervalMinutes: Int = 60,
     val addToCalendarOnSave: Boolean = false,
     val calendarEventId: Long? = null,
     val origin: String = "APP_CREATED",
