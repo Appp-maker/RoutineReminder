@@ -2230,18 +2230,6 @@ private fun EventSetsSettingsSection(
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(bottom = 8.dp)
     )
-    OutlinedButton(
-        onClick = { showResetDialog = true },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(stringResource(R.string.settings_event_sets_reset_manual_action))
-    }
-    Text(
-        text = stringResource(R.string.settings_event_sets_reset_manual_warning),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.error,
-        modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
-    )
 
     if (showResetDialog) {
         AlertDialog(
@@ -2330,6 +2318,18 @@ private fun EventSetsSettingsSection(
     }
 
     Spacer(modifier = Modifier.height(16.dp))
+    OutlinedButton(
+        onClick = { showResetDialog = true },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(stringResource(R.string.settings_event_sets_reset_manual_action))
+    }
+    Text(
+        text = stringResource(R.string.settings_event_sets_reset_manual_warning),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
