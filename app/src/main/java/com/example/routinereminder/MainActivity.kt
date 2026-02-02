@@ -1726,13 +1726,14 @@ fun ScheduleItemView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(rowBackgroundColor)
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .background(rowBackgroundColor, shape = MaterialTheme.shapes.medium)
             .combinedClickable(
                 onClick = { },
                 onDoubleClick = { isExpanded = !isExpanded },
                 onLongClick = { onLongPress(item) }
             )
-            .padding(vertical = 4.dp, horizontal = 2.dp)
+            .padding(vertical = 6.dp, horizontal = 8.dp)
     ) {
         Row(
             verticalAlignment = Alignment.Top,
@@ -1867,8 +1868,7 @@ fun ScheduleItemView(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(rowBackgroundColor)
-                    .padding(vertical = 0.dp, horizontal = 2.dp)
+                    .padding(vertical = 2.dp, horizontal = 2.dp)
                     .animateContentSize()
             ) {
                 visibleChecklistLines.forEachIndexed { index, line ->
