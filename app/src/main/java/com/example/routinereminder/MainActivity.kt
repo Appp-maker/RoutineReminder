@@ -1792,14 +1792,32 @@ fun MainScreenContent(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            onDateSelected(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate())
+                Row {
+                    TextButton(
+                        onClick = {
+                            val today = LocalDate.now()
+                            datePickerState.selectedDateMillis = today
+                                .atStartOfDay(ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()
+                            onDateSelected(today)
+                            showDatePicker = false
                         }
-                        showDatePicker = false
-                    }
-                ) { Text("OK") }
+                    ) { Text("Today") }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                onDateSelected(
+                                    Instant.ofEpochMilli(millis)
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                )
+                            }
+                            showDatePicker = false
+                        }
+                    ) { Text("OK") }
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
