@@ -32,6 +32,7 @@ import com.example.routinereminder.data.EventBackgroundTransparency
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.PastEventColorTreatment
+import com.example.routinereminder.data.PastEventDetailTextColorChoice
 import com.example.routinereminder.data.PastEventTextColorChoice
 import com.example.routinereminder.data.SettingsRepository
 import androidx.navigation.NavController
@@ -396,6 +397,8 @@ fun MainAppUI(
         val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
         val pastEventTextColorChoice by viewModel.pastEventTextColorChoice.collectAsState()
         val pastEventTextCustomColor by viewModel.pastEventTextCustomColor.collectAsState()
+        val pastEventDetailTextColorChoice by viewModel.pastEventDetailTextColorChoice.collectAsState()
+        val pastEventDetailTextCustomColor by viewModel.pastEventDetailTextCustomColor.collectAsState()
         val pastEventBackgroundTreatment by viewModel.pastEventBackgroundTreatment.collectAsState()
         val pastEventBackgroundCustomColor by viewModel.pastEventBackgroundCustomColor.collectAsState()
         val pastEventBackgroundTransparency by viewModel.pastEventBackgroundTransparency.collectAsState()
@@ -543,6 +546,8 @@ fun MainAppUI(
                                 eventTitleCustomColor = eventTitleCustomColor,
                                 pastEventTextColorChoice = pastEventTextColorChoice,
                                 pastEventTextCustomColor = pastEventTextCustomColor,
+                                pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
+                                pastEventDetailTextCustomColor = pastEventDetailTextCustomColor,
                                 pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                                 pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                                 pastEventBackgroundTransparency = pastEventBackgroundTransparency,
@@ -966,6 +971,8 @@ private fun ScheduleItemListContent(
     eventTitleCustomColor: Int,
     pastEventTextColorChoice: PastEventTextColorChoice,
     pastEventTextCustomColor: Int,
+    pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
+    pastEventDetailTextCustomColor: Int,
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
@@ -1081,6 +1088,8 @@ private fun ScheduleItemListContent(
                             eventTitleCustomColor = eventTitleCustomColor,
                             pastEventTextColorChoice = pastEventTextColorChoice,
                             pastEventTextCustomColor = pastEventTextCustomColor,
+                            pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
+                            pastEventDetailTextCustomColor = pastEventDetailTextCustomColor,
                             pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                             pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                             pastEventBackgroundTransparency = pastEventBackgroundTransparency,
@@ -1136,6 +1145,8 @@ private fun ScheduleItemListContent(
                             eventTitleCustomColor = eventTitleCustomColor,
                             pastEventTextColorChoice = pastEventTextColorChoice,
                             pastEventTextCustomColor = pastEventTextCustomColor,
+                            pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
+                            pastEventDetailTextCustomColor = pastEventDetailTextCustomColor,
                             pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                             pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                             pastEventBackgroundTransparency = pastEventBackgroundTransparency,
@@ -1182,6 +1193,8 @@ private fun CompactScheduleItemCard(
     eventTitleCustomColor: Int,
     pastEventTextColorChoice: PastEventTextColorChoice,
     pastEventTextCustomColor: Int,
+    pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
+    pastEventDetailTextCustomColor: Int,
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
@@ -1236,12 +1249,9 @@ private fun CompactScheduleItemCard(
         isPastEvent -> pastTitleColor
         else -> resolvedTitleColor
     }
-    val pastTimeColor = resolvePastEventTextColor(
-        choice = pastEventTextColorChoice,
-        seriesColor = seriesColor,
-        baseColor = MaterialTheme.colorScheme.secondary,
-        showSeriesColor = showSeriesColor,
-        customColorArgb = pastEventTextCustomColor
+    val pastTimeColor = resolvePastEventDetailTextColor(
+        choice = pastEventDetailTextColorChoice,
+        customColorArgb = pastEventDetailTextCustomColor
     )
     val timeColor = when {
         isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -1366,6 +1376,18 @@ private fun resolvePastEventTextColor(
         PastEventTextColorChoice.EVENT_COLOR -> if (showSeriesColor) seriesColor else baseColor
         PastEventTextColorChoice.CUSTOM -> Color(customColorArgb)
         PastEventTextColorChoice.GREYED_OUT -> MaterialTheme.colorScheme.outline
+    }
+}
+
+@Composable
+private fun resolvePastEventDetailTextColor(
+    choice: PastEventDetailTextColorChoice,
+    customColorArgb: Int
+): Color {
+    return when (choice) {
+        PastEventDetailTextColorChoice.GREYED_OUT -> MaterialTheme.colorScheme.outline
+        PastEventDetailTextColorChoice.WHITE -> Color.White
+        PastEventDetailTextColorChoice.CUSTOM -> Color(customColorArgb)
     }
 }
 
@@ -1604,6 +1626,8 @@ fun MainScreenContent(
     eventTitleCustomColor: Int,
     pastEventTextColorChoice: PastEventTextColorChoice,
     pastEventTextCustomColor: Int,
+    pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
+    pastEventDetailTextCustomColor: Int,
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
@@ -1705,6 +1729,8 @@ fun MainScreenContent(
                 eventTitleCustomColor = eventTitleCustomColor,
                 pastEventTextColorChoice = pastEventTextColorChoice,
                 pastEventTextCustomColor = pastEventTextCustomColor,
+                pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
+                pastEventDetailTextCustomColor = pastEventDetailTextCustomColor,
                 pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                 pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                 pastEventBackgroundTransparency = pastEventBackgroundTransparency,
@@ -1791,6 +1817,8 @@ fun ScheduleItemView(
     eventTitleCustomColor: Int,
     pastEventTextColorChoice: PastEventTextColorChoice,
     pastEventTextCustomColor: Int,
+    pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
+    pastEventDetailTextCustomColor: Int,
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
@@ -1845,12 +1873,9 @@ fun ScheduleItemView(
 
 
 // Base text color logic
-    val pastBaseTextColor = resolvePastEventTextColor(
-        choice = pastEventTextColorChoice,
-        seriesColor = seriesColor,
-        baseColor = LocalContentColor.current,
-        showSeriesColor = showSeriesColor,
-        customColorArgb = pastEventTextCustomColor
+    val pastBaseTextColor = resolvePastEventDetailTextColor(
+        choice = pastEventDetailTextColorChoice,
+        customColorArgb = pastEventDetailTextCustomColor
     )
     val baseTextColor = when {
         isDoneToday -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -2041,12 +2066,9 @@ fun ScheduleItemView(
             val checklistLines = remember(notesText) { parseChecklistLines(notesText) }
             val visibleChecklistLines = if (isExpanded) checklistLines else checklistLines.take(3)
             val checklistTextIndent = 24.dp
-            val pastDescriptionColor = resolvePastEventTextColor(
-                choice = pastEventTextColorChoice,
-                seriesColor = seriesColor,
-                baseColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                showSeriesColor = showSeriesColor,
-                customColorArgb = pastEventTextCustomColor
+            val pastDescriptionColor = resolvePastEventDetailTextColor(
+                choice = pastEventDetailTextColorChoice,
+                customColorArgb = pastEventDetailTextCustomColor
             )
             val descriptionTextColor = (if (isPastEvent) pastDescriptionColor else MaterialTheme.colorScheme.onSurfaceVariant)
                 .copy(alpha = doneAlpha)
