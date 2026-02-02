@@ -79,6 +79,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -977,7 +979,10 @@ private fun ScheduleItemListContent(
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
     isCompactView: Boolean,
+    showQuickDoneToggle: Boolean,
     onLongPress: (ScheduleItem) -> Unit,
+    onMarkDone: (ScheduleItem) -> Unit,
+    onUndoDone: (ScheduleItem) -> Unit,
     viewModel: MainViewModel
 )
  {
@@ -1093,7 +1098,10 @@ private fun ScheduleItemListContent(
                             pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                             pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                             pastEventBackgroundTransparency = pastEventBackgroundTransparency,
-                            onLongPress = onLongPress
+                            showQuickDoneToggle = showQuickDoneToggle,
+                            onLongPress = onLongPress,
+                            onMarkDone = { onMarkDone(item) },
+                            onUndoDone = { onUndoDone(item) }
                         )
                     }
                     DisplayScheduleItem.NowIndicator -> {
@@ -1150,7 +1158,10 @@ private fun ScheduleItemListContent(
                             pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                             pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                             pastEventBackgroundTransparency = pastEventBackgroundTransparency,
+                            showQuickDoneToggle = showQuickDoneToggle,
                             onLongPress = onLongPress,
+                            onMarkDone = { onMarkDone(item) },
+                            onUndoDone = { onUndoDone(item) },
                             onChecklistUpdate = { updatedItem, updatedNotes, completion ->
                                 viewModel.upsertScheduleItem(updatedItem.copy(notes = updatedNotes))
                                 if (completion.hasCheckboxes) {
@@ -1198,7 +1209,10 @@ private fun CompactScheduleItemCard(
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
-    onLongPress: (ScheduleItem) -> Unit
+    showQuickDoneToggle: Boolean,
+    onLongPress: (ScheduleItem) -> Unit,
+    onMarkDone: () -> Unit,
+    onUndoDone: () -> Unit
 ) {
     val startTime = remember(item.hour, item.minute) { LocalTime.of(item.hour, item.minute) }
     val endTime = remember(item.hour, item.minute, item.durationMinutes) {
@@ -1299,22 +1313,30 @@ private fun CompactScheduleItemCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            Column {
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.labelLarge,
-                color = titleColor,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textDecoration = decoration
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = timeRange,
-                style = MaterialTheme.typography.labelSmall,
-                color = timeColor,
-                maxLines = 1
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = titleColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = decoration
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = timeRange,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = timeColor,
+                    maxLines = 1
+                )
+            }
+            if (showQuickDoneToggle) {
+                QuickDoneToggle(
+                    isDone = isDoneToday,
+                    compact = true,
+                    onMarkDone = onMarkDone,
+                    onUndoDone = onUndoDone
+                )
             }
         }
     }
@@ -1735,6 +1757,7 @@ fun MainScreenContent(
                 pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                 pastEventBackgroundTransparency = pastEventBackgroundTransparency,
                 isCompactView = isCompactView,
+                showQuickDoneToggle = routineInsightsEnabled && routineInsights != null,
                 onLongPress = { item ->
                     selectedItemForAction = item
                     coroutineScope.launch {
@@ -1742,6 +1765,8 @@ fun MainScreenContent(
                         showItemActionDialog = true
                     }
                 },
+                onMarkDone = { item -> onMarkDone(item) },
+                onUndoDone = { item -> onUndoDone(item) },
                 viewModel = viewModel
             )
 
@@ -1848,7 +1873,10 @@ fun ScheduleItemView(
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
+    showQuickDoneToggle: Boolean,
     onLongPress: (ScheduleItem) -> Unit,
+    onMarkDone: (ScheduleItem) -> Unit,
+    onUndoDone: (ScheduleItem) -> Unit,
     onChecklistUpdate: (ScheduleItem, String, com.example.routinereminder.ui.components.ChecklistCompletion) -> Unit
 ) {
     var isExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
@@ -2167,8 +2195,68 @@ fun ScheduleItemView(
                 }
             }
         }
+        if (showQuickDoneToggle) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                QuickDoneToggle(
+                    isDone = isDoneToday,
+                    compact = false,
+                    onMarkDone = { onMarkDone(item) },
+                    onUndoDone = { onUndoDone(item) }
+                )
+            }
+        }
     }
 
+}
+
+@Composable
+private fun QuickDoneToggle(
+    isDone: Boolean,
+    compact: Boolean,
+    onMarkDone: () -> Unit,
+    onUndoDone: () -> Unit
+) {
+    val label = stringResource(
+        if (isDone) {
+            R.string.event_action_undo_done
+        } else {
+            R.string.event_action_mark_done
+        }
+    )
+    val icon = if (isDone) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked
+    val action = if (isDone) onUndoDone else onMarkDone
+    if (compact) {
+        IconButton(onClick = action) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (isDone) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+    } else {
+        if (isDone) {
+            FilledTonalButton(onClick = action) {
+                Icon(imageVector = icon, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = label)
+            }
+        } else {
+            OutlinedButton(onClick = action) {
+                Icon(imageVector = icon, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = label)
+            }
+        }
+    }
 }
 
 
