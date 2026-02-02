@@ -43,5 +43,7 @@ data class Schedule(
 
     // NEW FIELD — Marks event as completed.
     // If true: UI shows it as finished AND notifications must not fire.
-    val isDone: Boolean = false
+    val isDone: Boolean = false,
+    @ColumnInfo(defaultValue = "0")
+    val isMuted: Boolean = false
 )

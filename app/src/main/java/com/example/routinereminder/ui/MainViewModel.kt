@@ -930,7 +930,7 @@ class MainViewModel @Inject constructor(
                 )
             }
 
-            if (item.notifyEnabled) {
+            if (item.notifyEnabled && !item.isMuted) {
                 notificationScheduler.scheduleSingleOccurrence(item, epochDay)
             }
 
@@ -981,9 +981,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             scheduleDoneDao.markDone(item.id, day)
 
-            if (item.notifyEnabled) {
-                notificationScheduler.cancelSingleOccurrence(item, day)
-            }
+            notificationScheduler.cancelSingleOccurrence(item, day)
 
 
             refreshDoneStatesForDate(day)
@@ -997,7 +995,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             scheduleDoneDao.unmarkDone(item.id, day)
 
-            if (item.notifyEnabled) {
+            if (item.notifyEnabled && !item.isMuted) {
                 notificationScheduler.scheduleSingleOccurrence(item, day)
             }
 
@@ -1024,6 +1022,27 @@ class MainViewModel @Inject constructor(
     suspend fun getScheduleItemForEditing(itemId: Long): ScheduleItem? {
         return withContext(Dispatchers.IO) {
             scheduleDao.getItemById(itemId)?.toItem()
+        }
+    }
+
+    fun setScheduleItemMuted(item: ScheduleItem, day: Long, muted: Boolean) {
+        viewModelScope.launch {
+            val updated = item.copy(isMuted = muted)
+            scheduleDao.update(updated.toEntity())
+            if (muted) {
+                notificationScheduler.cancelSingleOccurrence(updated, day)
+            } else if (updated.notifyEnabled) {
+                val isDone = scheduleDoneDao.isDone(updated.id, day) > 0
+                val isActive = if (_eventSetsEnabled.value) {
+                    updated.setId == null || updated.setId in _activeSetIds.value
+                } else {
+                    true
+                }
+                if (isActive && !isDone) {
+                    notificationScheduler.scheduleSingleOccurrence(updated, day)
+                }
+            }
+            refreshScheduleItems()
         }
     }
 
@@ -1295,6 +1314,10 @@ class MainViewModel @Inject constructor(
         val epochDay = date.toEpochDay()
         val doneIds = scheduleDoneDao.getDoneStatesForDay(epochDay).toSet()
         itemsForDate.forEach { item ->
+            if (item.isMuted) {
+                notificationScheduler.cancelSingleOccurrence(item, epochDay)
+                return@forEach
+            }
             if (!item.notifyEnabled) return@forEach
             val isActive = item.setId == null || item.setId in activeSetIds
             val isDone = item.id in doneIds

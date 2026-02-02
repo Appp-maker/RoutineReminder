@@ -29,7 +29,8 @@ data class ScheduleItem(
     val setId: Int? = null,
 
     // ⭐ REQUIRED for Done/Undo UI
-    val isDone: Boolean = false
+    val isDone: Boolean = false,
+    val isMuted: Boolean = false
 ) {
     fun occursOnDate(date: LocalDate): Boolean {
         return ScheduleUtils.occursOnDate(this, date)
