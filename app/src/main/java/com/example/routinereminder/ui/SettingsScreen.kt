@@ -2313,7 +2313,6 @@ private fun eventConditionLabel(condition: EventColorDisplayCondition): String {
             EventColorDisplayCondition.ALWAYS -> R.string.settings_event_color_condition_always
             EventColorDisplayCondition.NEVER -> R.string.settings_event_color_condition_never
             EventColorDisplayCondition.NEXT_UPCOMING -> R.string.settings_event_color_condition_next_upcoming
-            EventColorDisplayCondition.FUTURE_EVENTS -> R.string.settings_event_color_condition_future_events
         }
     )
 }
