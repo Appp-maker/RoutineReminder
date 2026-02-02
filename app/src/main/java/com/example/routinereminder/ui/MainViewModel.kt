@@ -18,6 +18,7 @@ import com.example.routinereminder.data.defaultSeriesColorForIndex
 import com.example.routinereminder.data.EventBackgroundTransparency
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
+import com.example.routinereminder.data.PastEventColorTreatment
 import com.example.routinereminder.data.model.ActiveRunState
 import com.example.routinereminder.data.model.TrailPoint
 import com.example.routinereminder.data.mappers.toEntity
@@ -194,6 +195,26 @@ class MainViewModel @Inject constructor(
 
     private val _eventTitleCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
     val eventTitleCustomColor: StateFlow<Int> = _eventTitleCustomColor.asStateFlow()
+
+    private val _pastEventTextTreatment = MutableStateFlow(PastEventColorTreatment.GREYED_OUT)
+    val pastEventTextTreatment: StateFlow<PastEventColorTreatment> =
+        _pastEventTextTreatment.asStateFlow()
+
+    private val _pastEventTextCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
+    val pastEventTextCustomColor: StateFlow<Int> = _pastEventTextCustomColor.asStateFlow()
+
+    private val _pastEventBackgroundTreatment = MutableStateFlow(PastEventColorTreatment.GREYED_OUT)
+    val pastEventBackgroundTreatment: StateFlow<PastEventColorTreatment> =
+        _pastEventBackgroundTreatment.asStateFlow()
+
+    private val _pastEventBackgroundCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
+    val pastEventBackgroundCustomColor: StateFlow<Int> =
+        _pastEventBackgroundCustomColor.asStateFlow()
+
+    private val _pastEventBackgroundTransparency =
+        MutableStateFlow(EventBackgroundTransparency.PERCENT_20)
+    val pastEventBackgroundTransparency: StateFlow<EventBackgroundTransparency> =
+        _pastEventBackgroundTransparency.asStateFlow()
 
     private val _availableSetIds = MutableStateFlow<Set<Int>>(emptySet())
     val availableSetIds: StateFlow<Set<Int>> = _availableSetIds.asStateFlow()
@@ -398,6 +419,31 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEventTitleCustomColor().collectLatest { color ->
                 _eventTitleCustomColor.value = color
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getPastEventTextTreatment().collectLatest { treatment ->
+                _pastEventTextTreatment.value = treatment
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getPastEventTextCustomColor().collectLatest { color ->
+                _pastEventTextCustomColor.value = color
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getPastEventBackgroundTreatment().collectLatest { treatment ->
+                _pastEventBackgroundTreatment.value = treatment
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getPastEventBackgroundCustomColor().collectLatest { color ->
+                _pastEventBackgroundCustomColor.value = color
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getPastEventBackgroundTransparency().collectLatest { transparency ->
+                _pastEventBackgroundTransparency.value = transparency
             }
         }
         viewModelScope.launch {
@@ -693,6 +739,36 @@ class MainViewModel @Inject constructor(
     fun saveEventTitleCustomColor(colorArgb: Int) {
         viewModelScope.launch {
             settingsRepository.saveEventTitleCustomColor(colorArgb)
+        }
+    }
+
+    fun savePastEventTextTreatment(treatment: PastEventColorTreatment) {
+        viewModelScope.launch {
+            settingsRepository.savePastEventTextTreatment(treatment)
+        }
+    }
+
+    fun savePastEventTextCustomColor(colorArgb: Int) {
+        viewModelScope.launch {
+            settingsRepository.savePastEventTextCustomColor(colorArgb)
+        }
+    }
+
+    fun savePastEventBackgroundTreatment(treatment: PastEventColorTreatment) {
+        viewModelScope.launch {
+            settingsRepository.savePastEventBackgroundTreatment(treatment)
+        }
+    }
+
+    fun savePastEventBackgroundCustomColor(colorArgb: Int) {
+        viewModelScope.launch {
+            settingsRepository.savePastEventBackgroundCustomColor(colorArgb)
+        }
+    }
+
+    fun savePastEventBackgroundTransparency(transparency: EventBackgroundTransparency) {
+        viewModelScope.launch {
+            settingsRepository.savePastEventBackgroundTransparency(transparency)
         }
     }
 
