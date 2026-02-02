@@ -164,6 +164,11 @@ fun SettingsScreen(
     val eventBackgroundTransparency by viewModel.eventBackgroundTransparency.collectAsState()
     val eventTitleColorChoice by viewModel.eventTitleColorChoice.collectAsState()
     val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
+    val pastEventTextTreatment by viewModel.pastEventTextTreatment.collectAsState()
+    val pastEventTextCustomColor by viewModel.pastEventTextCustomColor.collectAsState()
+    val pastEventBackgroundTreatment by viewModel.pastEventBackgroundTreatment.collectAsState()
+    val pastEventBackgroundCustomColor by viewModel.pastEventBackgroundCustomColor.collectAsState()
+    val pastEventBackgroundTransparency by viewModel.pastEventBackgroundTransparency.collectAsState()
     val defaultActiveSetsByWeekday by viewModel.defaultActiveSetsByWeekday.collectAsState()
     //val blockedCalendarImports by viewModel.blockedCalendarImportsForDisplay.collectAsState(initial = emptyList())
 
@@ -208,6 +213,11 @@ fun SettingsScreen(
     var backgroundTransparencyState by remember(eventBackgroundTransparency) { mutableStateOf(eventBackgroundTransparency) }
     var eventTitleColorChoiceState by remember(eventTitleColorChoice) { mutableStateOf(eventTitleColorChoice) }
     var eventTitleCustomColorState by remember(eventTitleCustomColor) { mutableStateOf(eventTitleCustomColor) }
+    var pastEventTextTreatmentState by remember(pastEventTextTreatment) { mutableStateOf(pastEventTextTreatment) }
+    var pastEventTextCustomColorState by remember(pastEventTextCustomColor) { mutableStateOf(pastEventTextCustomColor) }
+    var pastEventBackgroundTreatmentState by remember(pastEventBackgroundTreatment) { mutableStateOf(pastEventBackgroundTreatment) }
+    var pastEventBackgroundCustomColorState by remember(pastEventBackgroundCustomColor) { mutableStateOf(pastEventBackgroundCustomColor) }
+    var pastEventBackgroundTransparencyState by remember(pastEventBackgroundTransparency) { mutableStateOf(pastEventBackgroundTransparency) }
 
 
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
@@ -606,6 +616,11 @@ fun SettingsScreen(
                         viewModel.saveEventBackgroundTransparency(backgroundTransparencyState)
                         viewModel.saveEventTitleColorChoice(eventTitleColorChoiceState)
                         viewModel.saveEventTitleCustomColor(eventTitleCustomColorState)
+                        viewModel.savePastEventTextTreatment(pastEventTextTreatmentState)
+                        viewModel.savePastEventTextCustomColor(pastEventTextCustomColorState)
+                        viewModel.savePastEventBackgroundTreatment(pastEventBackgroundTreatmentState)
+                        viewModel.savePastEventBackgroundCustomColor(pastEventBackgroundCustomColorState)
+                        viewModel.savePastEventBackgroundTransparency(pastEventBackgroundTransparencyState)
                         viewModel.saveDefaultActiveSetsByWeekday(defaultActiveSetSelections)
                         if (selectedTabs.isNotEmpty()) {
                             viewModel.saveEnabledTabs(selectedTabs)
@@ -800,7 +815,32 @@ fun SettingsScreen(
                             eventTitleCustomColorState = color
                             justSavedSuccessfully = false
                         },
-                        recentCustomEventColors = recentCustomEventColors
+                        recentCustomEventColors = recentCustomEventColors,
+                        pastEventTextTreatment = pastEventTextTreatmentState,
+                        onPastEventTextTreatmentChange = { treatment ->
+                            pastEventTextTreatmentState = treatment
+                            justSavedSuccessfully = false
+                        },
+                        pastEventTextCustomColor = pastEventTextCustomColorState,
+                        onPastEventTextCustomColorChange = { color ->
+                            pastEventTextCustomColorState = color
+                            justSavedSuccessfully = false
+                        },
+                        pastEventBackgroundTreatment = pastEventBackgroundTreatmentState,
+                        onPastEventBackgroundTreatmentChange = { treatment ->
+                            pastEventBackgroundTreatmentState = treatment
+                            justSavedSuccessfully = false
+                        },
+                        pastEventBackgroundCustomColor = pastEventBackgroundCustomColorState,
+                        onPastEventBackgroundCustomColorChange = { color ->
+                            pastEventBackgroundCustomColorState = color
+                            justSavedSuccessfully = false
+                        },
+                        pastEventBackgroundTransparency = pastEventBackgroundTransparencyState,
+                        onPastEventBackgroundTransparencyChange = { transparency ->
+                            pastEventBackgroundTransparencyState = transparency
+                            justSavedSuccessfully = false
+                        }
                     )
                     SettingsCategory.EVENT_SETS -> EventSetsSettingsSection(
                         eventSetsEnabled = eventSetsEnabledChecked,
@@ -1848,7 +1888,17 @@ private fun DefaultEventsSettingsSection(
     onEventTitleColorChoiceChange: (EventTitleColorChoice) -> Unit,
     eventTitleCustomColor: Int,
     onEventTitleCustomColorChange: (Int) -> Unit,
-    recentCustomEventColors: List<Int>
+    recentCustomEventColors: List<Int>,
+    pastEventTextTreatment: PastEventColorTreatment,
+    onPastEventTextTreatmentChange: (PastEventColorTreatment) -> Unit,
+    pastEventTextCustomColor: Int,
+    onPastEventTextCustomColorChange: (Int) -> Unit,
+    pastEventBackgroundTreatment: PastEventColorTreatment,
+    onPastEventBackgroundTreatmentChange: (PastEventColorTreatment) -> Unit,
+    pastEventBackgroundCustomColor: Int,
+    onPastEventBackgroundCustomColorChange: (Int) -> Unit,
+    pastEventBackgroundTransparency: EventBackgroundTransparency,
+    onPastEventBackgroundTransparencyChange: (EventBackgroundTransparency) -> Unit
 ) {
     Text(stringResource(R.string.settings_default_events_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
     Text(
@@ -1857,6 +1907,11 @@ private fun DefaultEventsSettingsSection(
         color = MaterialTheme.colorScheme.primary
     )
     Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = stringResource(R.string.settings_event_appearance_upcoming_title),
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(bottom = 4.dp)
+    )
     EventColorConditionDropdown(
         label = stringResource(R.string.settings_event_color_indicator_label),
         selectedCondition = eventIndicatorDisplayCondition,
@@ -1892,6 +1947,53 @@ private fun DefaultEventsSettingsSection(
             recentCustomColors = recentCustomEventColors
         )
     }
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        text = stringResource(R.string.settings_event_appearance_past_title),
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(bottom = 4.dp)
+    )
+    PastEventColorTreatmentDropdown(
+        label = stringResource(R.string.settings_past_event_text_color_label),
+        selectedTreatment = pastEventTextTreatment,
+        onTreatmentChange = onPastEventTextTreatmentChange
+    )
+    if (pastEventTextTreatment == PastEventColorTreatment.CUSTOM) {
+        Spacer(modifier = Modifier.height(8.dp))
+        SeriesColorPicker(
+            label = stringResource(R.string.settings_past_event_text_custom_color_label),
+            selectedColor = Color(pastEventTextCustomColor),
+            onColorSelected = { onPastEventTextCustomColorChange(it.toArgb()) },
+            modifier = Modifier.padding(bottom = 8.dp),
+            colorOptions = SeriesColorOptions,
+            allowCustomColor = true,
+            recentCustomColors = recentCustomEventColors
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    PastEventColorTreatmentDropdown(
+        label = stringResource(R.string.settings_past_event_background_color_label),
+        selectedTreatment = pastEventBackgroundTreatment,
+        onTreatmentChange = onPastEventBackgroundTreatmentChange
+    )
+    if (pastEventBackgroundTreatment == PastEventColorTreatment.CUSTOM) {
+        Spacer(modifier = Modifier.height(8.dp))
+        SeriesColorPicker(
+            label = stringResource(R.string.settings_past_event_background_custom_color_label),
+            selectedColor = Color(pastEventBackgroundCustomColor),
+            onColorSelected = { onPastEventBackgroundCustomColorChange(it.toArgb()) },
+            modifier = Modifier.padding(bottom = 8.dp),
+            colorOptions = SeriesColorOptions,
+            allowCustomColor = true,
+            recentCustomColors = recentCustomEventColors
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    EventBackgroundTransparencyDropdown(
+        label = stringResource(R.string.settings_past_event_background_transparency_label),
+        selectedTransparency = pastEventBackgroundTransparency,
+        onTransparencyChange = onPastEventBackgroundTransparencyChange
+    )
     Spacer(modifier = Modifier.height(16.dp))
     Text(stringResource(R.string.settings_default_events_start_time), style = MaterialTheme.typography.titleMedium)
     Column(Modifier.selectableGroup()) {
@@ -2152,6 +2254,58 @@ private fun EventTitleColorDropdown(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PastEventColorTreatmentDropdown(
+    label: String,
+    selectedTreatment: PastEventColorTreatment,
+    onTreatmentChange: (PastEventColorTreatment) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = pastEventColorTreatmentLabel(selectedTreatment)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = selectedLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        Box {
+            FilledTonalButton(
+                onClick = { expanded = true }
+            ) {
+                Text(selectedLabel)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                PastEventColorTreatment.entries.forEach { treatment ->
+                    DropdownMenuItem(
+                        text = { Text(pastEventColorTreatmentLabel(treatment)) },
+                        onClick = {
+                            onTreatmentChange(treatment)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun eventConditionLabel(condition: EventColorDisplayCondition): String {
     return stringResource(
@@ -2178,6 +2332,17 @@ private fun eventTitleColorLabel(choice: EventTitleColorChoice): String {
             EventTitleColorChoice.WHITE -> R.string.settings_event_title_color_white
             EventTitleColorChoice.EVENT_COLOR -> R.string.settings_event_title_color_event
             EventTitleColorChoice.CUSTOM -> R.string.settings_event_title_color_custom
+        }
+    )
+}
+
+@Composable
+private fun pastEventColorTreatmentLabel(treatment: PastEventColorTreatment): String {
+    return stringResource(
+        when (treatment) {
+            PastEventColorTreatment.SHOW_SELECTED -> R.string.settings_past_event_color_treatment_selected
+            PastEventColorTreatment.GREYED_OUT -> R.string.settings_past_event_color_treatment_greyed
+            PastEventColorTreatment.CUSTOM -> R.string.settings_past_event_color_treatment_custom
         }
     )
 }

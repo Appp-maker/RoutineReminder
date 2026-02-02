@@ -69,6 +69,11 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EVENT_BACKGROUND_TRANSPARENCY = stringPreferencesKey("event_background_transparency")
     val EVENT_TITLE_COLOR_CHOICE = stringPreferencesKey("event_title_color_choice")
     val EVENT_TITLE_CUSTOM_COLOR = intPreferencesKey("event_title_custom_color")
+    val PAST_EVENT_TEXT_TREATMENT = stringPreferencesKey("past_event_text_treatment")
+    val PAST_EVENT_TEXT_CUSTOM_COLOR = intPreferencesKey("past_event_text_custom_color")
+    val PAST_EVENT_BACKGROUND_TREATMENT = stringPreferencesKey("past_event_background_treatment")
+    val PAST_EVENT_BACKGROUND_CUSTOM_COLOR = intPreferencesKey("past_event_background_custom_color")
+    val PAST_EVENT_BACKGROUND_TRANSPARENCY = stringPreferencesKey("past_event_background_transparency")
     val ROUTINE_INSIGHTS_ENABLED = booleanPreferencesKey("routine_insights_enabled")
     val EXAMPLE_DATA_SEEDED = booleanPreferencesKey("example_data_seeded")
     val DRIVE_BACKUP_URI = stringPreferencesKey("drive_backup_uri")
@@ -412,6 +417,66 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getEventTitleCustomColor(): Flow<Int> {
         return dataStore.data.map { preferences ->
             preferences[EVENT_TITLE_CUSTOM_COLOR] ?: DEFAULT_PRIMARY_COLOR_ARGB
+        }.distinctUntilChanged()
+    }
+
+    suspend fun savePastEventTextTreatment(treatment: PastEventColorTreatment) {
+        dataStore.edit { preferences ->
+            preferences[PAST_EVENT_TEXT_TREATMENT] = treatment.name
+        }
+    }
+
+    fun getPastEventTextTreatment(): Flow<PastEventColorTreatment> {
+        return dataStore.data.map { preferences ->
+            PastEventColorTreatment.fromName(preferences[PAST_EVENT_TEXT_TREATMENT])
+        }.distinctUntilChanged()
+    }
+
+    suspend fun savePastEventTextCustomColor(colorArgb: Int) {
+        dataStore.edit { preferences ->
+            preferences[PAST_EVENT_TEXT_CUSTOM_COLOR] = colorArgb
+        }
+    }
+
+    fun getPastEventTextCustomColor(): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            preferences[PAST_EVENT_TEXT_CUSTOM_COLOR] ?: DEFAULT_PRIMARY_COLOR_ARGB
+        }.distinctUntilChanged()
+    }
+
+    suspend fun savePastEventBackgroundTreatment(treatment: PastEventColorTreatment) {
+        dataStore.edit { preferences ->
+            preferences[PAST_EVENT_BACKGROUND_TREATMENT] = treatment.name
+        }
+    }
+
+    fun getPastEventBackgroundTreatment(): Flow<PastEventColorTreatment> {
+        return dataStore.data.map { preferences ->
+            PastEventColorTreatment.fromName(preferences[PAST_EVENT_BACKGROUND_TREATMENT])
+        }.distinctUntilChanged()
+    }
+
+    suspend fun savePastEventBackgroundCustomColor(colorArgb: Int) {
+        dataStore.edit { preferences ->
+            preferences[PAST_EVENT_BACKGROUND_CUSTOM_COLOR] = colorArgb
+        }
+    }
+
+    fun getPastEventBackgroundCustomColor(): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            preferences[PAST_EVENT_BACKGROUND_CUSTOM_COLOR] ?: DEFAULT_PRIMARY_COLOR_ARGB
+        }.distinctUntilChanged()
+    }
+
+    suspend fun savePastEventBackgroundTransparency(transparency: EventBackgroundTransparency) {
+        dataStore.edit { preferences ->
+            preferences[PAST_EVENT_BACKGROUND_TRANSPARENCY] = transparency.name
+        }
+    }
+
+    fun getPastEventBackgroundTransparency(): Flow<EventBackgroundTransparency> {
+        return dataStore.data.map { preferences ->
+            EventBackgroundTransparency.fromName(preferences[PAST_EVENT_BACKGROUND_TRANSPARENCY])
         }.distinctUntilChanged()
     }
 
