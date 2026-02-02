@@ -194,7 +194,7 @@
     <string name="event_sets_dialog_body">Sets let you switch between alternate plans (like Gym / Movie / Friends). Turn on the sets you want active today to show those events. Rename sets in Settings if you want.</string>
     <string name="event_sets_dialog_active_label">Active today</string>
     <string name="event_sets_dialog_settings_action">Event set settings</string>
-    <string name="event_sets_dialog_done">Done</string>
+    <string name="event_sets_dialog_done">Completed</string>
     <string name="routine_insights_title">Consistency insights</string>
     <string name="routine_insights_summary">%1$d/%2$d routines completed this week</string>
     <string name="routine_insights_weekly_adherence">Overall completion</string>
@@ -225,8 +225,8 @@
     <string name="event_action_dialog_title">Action for “%1$s”</string>
     <string name="event_action_dialog_body">Muted events show no notifications.</string>
     <string name="event_action_edit">Edit</string>
-    <string name="event_action_mark_done">Mark as Done</string>
-    <string name="event_action_undo_done">Undo Done</string>
+    <string name="event_action_mark_done">Mark as Completed</string>
+    <string name="event_action_undo_done">Mark as Incomplete</string>
     <string name="event_action_mute">Mute (no notifications)</string>
     <string name="event_action_unmute">Unmute</string>
     <string name="event_action_delete">Delete</string>
