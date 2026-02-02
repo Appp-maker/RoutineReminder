@@ -1282,13 +1282,29 @@ class MainViewModel @Inject constructor(
             dailyRatios.add(doneCount.toDouble() / itemsForDay.size.toDouble())
         }
 
-        val weeklyAdherencePercent = if (totalScheduled > 0) {
+        val overallCompletionPercent = if (totalScheduled > 0) {
             ((totalCompleted.toDouble() / totalScheduled.toDouble()) * 100).roundToInt()
         } else {
             0
         }
-        val consistencyScorePercent = if (dailyRatios.isNotEmpty()) {
+        val averageDailyConsistencyPercent = if (dailyRatios.isNotEmpty()) {
             (dailyRatios.average() * 100).roundToInt()
+        } else {
+            0
+        }
+        val todayCompletionPercent = run {
+            val itemsForToday = filteredItems.filter { it.occursOnDate(endDate) }
+            if (itemsForToday.isEmpty()) {
+                0
+            } else {
+                val doneIds = scheduleDoneDao.getDoneStatesForDay(endDate.toEpochDay()).toSet()
+                val doneCount = itemsForToday.count { it.id in doneIds }
+                ((doneCount.toDouble() / itemsForToday.size.toDouble()) * 100).roundToInt()
+            }
+        }
+        val weeklyCompletionPercent = if (dailyRatios.isNotEmpty()) {
+            val daysFullyComplete = dailyRatios.count { it >= 1.0 }
+            ((daysFullyComplete.toDouble() / dailyRatios.size.toDouble()) * 100).roundToInt()
         } else {
             0
         }
@@ -1310,8 +1326,10 @@ class MainViewModel @Inject constructor(
         }
 
         return RoutineInsights(
-            weeklyAdherencePercent = weeklyAdherencePercent,
-            consistencyScorePercent = consistencyScorePercent,
+            todayCompletionPercent = todayCompletionPercent,
+            weeklyCompletionPercent = weeklyCompletionPercent,
+            averageDailyConsistencyPercent = averageDailyConsistencyPercent,
+            overallCompletionPercent = overallCompletionPercent,
             currentStreakDays = streakDays,
             totalScheduled = totalScheduled,
             totalCompleted = totalCompleted

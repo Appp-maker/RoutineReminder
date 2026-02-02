@@ -197,9 +197,11 @@
     <string name="event_sets_dialog_done">Completed</string>
     <string name="routine_insights_title">Consistency insights</string>
     <string name="routine_insights_summary">%1$d/%2$d routines completed this week</string>
-    <string name="routine_insights_weekly_adherence">Overall completion</string>
-    <string name="routine_insights_consistency_score">Daily consistency</string>
-    <string name="routine_insights_current_streak">Current streak</string>
+    <string name="routine_insights_today_completion">Today’s completion</string>
+    <string name="routine_insights_weekly_completion">Weekly completion</string>
+    <string name="routine_insights_average_daily_consistency">Average daily consistency</string>
+    <string name="routine_insights_overall_completion">Overall completion</string>
+    <string name="routine_insights_streak">Streak</string>
     <string name="map_calories_log_empty_toast">No run calories saved for today yet.</string>
     <string name="map_weather_title">Weather</string>
     <string name="map_weather_temperature">Temperature</string>
