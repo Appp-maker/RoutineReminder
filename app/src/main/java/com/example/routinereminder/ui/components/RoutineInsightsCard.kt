@@ -43,17 +43,34 @@ fun RoutineInsightsCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 InsightMetric(
-                    label = stringResource(R.string.routine_insights_weekly_adherence),
-                    value = "${insights.weeklyAdherencePercent}%",
+                    label = stringResource(R.string.routine_insights_today_completion),
+                    value = "${insights.todayCompletionPercent}%",
                     modifier = Modifier.weight(1f)
                 )
                 InsightMetric(
-                    label = stringResource(R.string.routine_insights_consistency_score),
-                    value = "${insights.consistencyScorePercent}%",
+                    label = stringResource(R.string.routine_insights_weekly_completion),
+                    value = "${insights.weeklyCompletionPercent}%",
                     modifier = Modifier.weight(1f)
                 )
                 InsightMetric(
-                    label = stringResource(R.string.routine_insights_current_streak),
+                    label = stringResource(R.string.routine_insights_average_daily_consistency),
+                    value = "${insights.averageDailyConsistencyPercent}%",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                InsightMetric(
+                    label = stringResource(R.string.routine_insights_overall_completion),
+                    value = "${insights.overallCompletionPercent}%",
+                    modifier = Modifier.weight(1f)
+                )
+                InsightMetric(
+                    label = stringResource(R.string.routine_insights_streak),
                     value = "${insights.currentStreakDays}d",
                     modifier = Modifier.weight(1f)
                 )
