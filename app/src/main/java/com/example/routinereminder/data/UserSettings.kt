@@ -42,6 +42,8 @@ data class DefaultEventSettings(
     val createCalendarEntry: Boolean,
     val systemNotification: Boolean,
     val showDetailsInNotification: Boolean,
+    val reminderCount: Int = 0,
+    val reminderIntervalMinutes: Int = 60,
     val startTimeOptionName: String,
     val targetCalendarId: String
 )

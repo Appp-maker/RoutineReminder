@@ -87,7 +87,7 @@ class MainViewModel @Inject constructor(
     val syncIntervalMinutes: StateFlow<Long> = _syncIntervalMinutes.asStateFlow()
 
     private val _defaultEventSettings = MutableStateFlow(
-        DefaultEventSettings(0, 0, 0, 0, false, false, false, false, "", "")
+        DefaultEventSettings(0, 0, 0, 0, false, false, false, false, 0, 60, "", "")
     )
     val defaultEventSettings: StateFlow<DefaultEventSettings> = _defaultEventSettings.asStateFlow()
 

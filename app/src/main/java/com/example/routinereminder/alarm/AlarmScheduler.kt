@@ -9,6 +9,7 @@ import android.util.Log
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.util.RecurrenceUtil
 import java.time.ZoneId
+import kotlin.math.abs
 
 sealed class ScheduleResult {
     object Success : ScheduleResult()
@@ -19,6 +20,7 @@ sealed class ScheduleResult {
 class AlarmScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private val maxPreReminders = 10
 
     fun schedule(item: ScheduleItem): ScheduleResult {
         Log.i("AlarmScheduler", "Attempting to schedule item id: ${item.id}, notifyEnabled: ${item.notifyEnabled}")
@@ -28,6 +30,8 @@ class AlarmScheduler(private val context: Context) {
             Log.w("AlarmScheduler", "Notifications disabled for item id: ${item.id}. Scheduling skipped, permission check bypassed.")
             return ScheduleResult.Success
         }
+
+        cancel(item.id)
 
         val nextOccurrenceMillis = RecurrenceUtil.nextOccurrenceMillis(item, java.time.ZonedDateTime.now(ZoneId.systemDefault()))
 
@@ -49,26 +53,39 @@ class AlarmScheduler(private val context: Context) {
             Log.i("AlarmScheduler", "Device API level ${Build.VERSION.SDK_INT} is less than S (31). No explicit runtime permission check needed for SCHEDULE_EXACT_ALARM. Proceeding to schedule item id: ${item.id}")
         }
 
-        val intent = Intent(context, NotificationReceiver::class.java).apply {
-            putExtra(NotificationReceiver.EXTRA_ITEM_ID, item.id)
-            putExtra(NotificationReceiver.EXTRA_ITEM_TITLE, item.name)
-            putExtra(NotificationReceiver.EXTRA_ITEM_NOTES, item.notes)
-            putExtra(NotificationReceiver.EXTRA_ITEM_SHOW_DETAILS, item.showDetailsInNotification)
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            item.id.toInt(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         return try {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                nextOccurrenceMillis,
-                pendingIntent
-            )
+            val reminderCount = item.reminderCount.coerceIn(0, maxPreReminders)
+            val reminderIntervalMinutes = item.reminderIntervalMinutes.coerceAtLeast(1)
+
+            for (index in 0..reminderCount) {
+                val minutesBefore = index * reminderIntervalMinutes
+                val reminderMillis = nextOccurrenceMillis - (minutesBefore * 60_000L)
+                if (reminderMillis <= System.currentTimeMillis()) continue
+
+                val intent = Intent(context, NotificationReceiver::class.java).apply {
+                    putExtra(NotificationReceiver.EXTRA_ITEM_ID, item.id)
+                    putExtra(NotificationReceiver.EXTRA_ITEM_TITLE, item.name)
+                    putExtra(NotificationReceiver.EXTRA_ITEM_NOTES, item.notes)
+                    putExtra(NotificationReceiver.EXTRA_ITEM_SHOW_DETAILS, item.showDetailsInNotification)
+                    putExtra(NotificationReceiver.EXTRA_REMINDER_MINUTES_BEFORE, minutesBefore)
+                    putExtra(NotificationReceiver.EXTRA_SHOULD_RESCHEDULE, index == 0)
+                    putExtra(NotificationReceiver.EXTRA_NOTIFICATION_ID, stableId(makeRequestCode(item.id, index)))
+                }
+
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    makeRequestCode(item.id, index),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    reminderMillis,
+                    pendingIntent
+                )
+            }
+
             Log.i("AlarmScheduler", "Alarm scheduled successfully for item id: ${item.id} at $nextOccurrenceMillis")
             ScheduleResult.Success
         } catch (se: SecurityException) {
@@ -85,18 +102,32 @@ class AlarmScheduler(private val context: Context) {
 
     fun cancel(itemId: Long) {
         val intent = Intent(context, NotificationReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            itemId.toInt(),
-            intent,
-            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-        )
-        if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
-            pendingIntent.cancel()
-            Log.i("AlarmScheduler", "Canceled alarm for item id: $itemId")
-        } else {
-            Log.i("AlarmScheduler", "No alarm found to cancel for item id: $itemId")
+        var canceledAny = false
+        for (index in 0..maxPreReminders) {
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                makeRequestCode(itemId, index),
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent)
+                pendingIntent.cancel()
+                canceledAny = true
+            }
         }
+        if (canceledAny) {
+            Log.i("AlarmScheduler", "Canceled alarms for item id: $itemId")
+        } else {
+            Log.i("AlarmScheduler", "No alarms found to cancel for item id: $itemId")
+        }
+    }
+
+    private fun makeRequestCode(itemId: Long, index: Int): Int {
+        return "$itemId-$index".hashCode()
+    }
+
+    private fun stableId(value: Int): Int {
+        return if (value == Int.MIN_VALUE) 0 else kotlin.math.abs(value)
     }
 }

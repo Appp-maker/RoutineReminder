@@ -79,6 +79,9 @@
     <string name="settings_default_events_notification_options_title">Notification Options</string>
     <string name="settings_default_events_system_notification">Show system notification</string>
     <string name="settings_default_events_show_details_notification">Show details in notification</string>
+    <string name="settings_default_events_reminder_options_title">Reminder timing</string>
+    <string name="settings_default_events_reminder_count_label">Reminders before event</string>
+    <string name="settings_default_events_reminder_interval_label">Minutes between reminders</string>
     <string name="settings_events_enabled_title">Enable event sets</string>
     <string name="settings_events_enabled_description">Turn this off to disable event sets. When disabled, all entries with an event set attached are shown.</string>
     <string name="settings_event_appearance_title">Event appearance</string>
@@ -215,6 +218,8 @@
 
     <!-- Tabs -->
     <string name="tab_events">Events</string>
+    <string name="notification_event_starting_now">Event starting now.</string>
+    <string name="notification_event_starts_in">Event starts in %1$d minutes.</string>
     <string name="tab_calories">Calories</string>
     <string name="tab_running">Running</string>
     <string name="tab_workout">Workout</string>
