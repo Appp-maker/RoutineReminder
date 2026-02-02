@@ -2016,13 +2016,9 @@ private fun EventColorConditionDropdown(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
+        Box {
             FilledTonalButton(
-                onClick = { expanded = !expanded },
-                modifier = Modifier.menuAnchor()
+                onClick = { expanded = true }
             ) {
                 Text(selectedLabel)
                 Spacer(modifier = Modifier.width(6.dp))
@@ -2031,7 +2027,7 @@ private fun EventColorConditionDropdown(
                     contentDescription = null
                 )
             }
-            ExposedDropdownMenu(
+            DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
@@ -2072,13 +2068,9 @@ private fun EventTitleColorDropdown(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
+        Box {
             FilledTonalButton(
-                onClick = { expanded = !expanded },
-                modifier = Modifier.menuAnchor()
+                onClick = { expanded = true }
             ) {
                 Text(selectedLabel)
                 Spacer(modifier = Modifier.width(6.dp))
@@ -2087,7 +2079,7 @@ private fun EventTitleColorDropdown(
                     contentDescription = null
                 )
             }
-            ExposedDropdownMenu(
+            DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
