@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.WorkManager
 import com.example.routinereminder.data.AppDatabase
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.EventPredictionService
 import com.example.routinereminder.data.Gender
 import com.example.routinereminder.data.RunSessionRepository
 import com.example.routinereminder.data.ScheduleItem
@@ -853,22 +854,23 @@ class MainViewModel @Inject constructor(
 
     fun upsertScheduleItem(item: ScheduleItem) {
         viewModelScope.launch(Dispatchers.IO) {
+            val enrichedItem = EventPredictionService.enrich(item)
             // Delete exact duplicates with same name/time and matching recurrence details.
             val existing = scheduleDao.getAllOnce().filter {
-                it.name == item.name &&
-                    it.hour == item.hour &&
-                    it.minute == item.minute &&
+                it.name == enrichedItem.name &&
+                    it.hour == enrichedItem.hour &&
+                    it.minute == enrichedItem.minute &&
                     it.origin == "APP_CREATED" &&
-                    it.id != item.id
+                    it.id != enrichedItem.id
             }
             val duplicates = existing.filter { candidate ->
-                if (item.isOneTime) {
-                    candidate.isOneTime && candidate.dateEpochDay == item.dateEpochDay
+                if (enrichedItem.isOneTime) {
+                    candidate.isOneTime && candidate.dateEpochDay == enrichedItem.dateEpochDay
                 } else {
                     !candidate.isOneTime &&
-                        candidate.startEpochDay == item.startEpochDay &&
-                        candidate.repeatEveryWeeks == item.repeatEveryWeeks &&
-                        candidate.repeatOnDays == item.repeatOnDays
+                        candidate.startEpochDay == enrichedItem.startEpochDay &&
+                        candidate.repeatEveryWeeks == enrichedItem.repeatEveryWeeks &&
+                        candidate.repeatOnDays == enrichedItem.repeatOnDays
                 }
             }
             for (dup in duplicates) {
@@ -876,44 +878,44 @@ class MainViewModel @Inject constructor(
             }
 
             // Ensure start date is valid
-            val startDate = item.startEpochDay?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.now()
+            val startDate = enrichedItem.startEpochDay?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.now()
             val epochDay = startDate.toEpochDay()
 
             // Insert once
             val shouldSyncToCalendar = shouldSyncAppToCalendar() &&
-                (item.addToCalendarOnSave || item.calendarEventId != null)
+                (enrichedItem.addToCalendarOnSave || enrichedItem.calendarEventId != null)
             val context = getApplication<Application>()
             val calendars = if (shouldSyncToCalendar && CalendarSyncManager.hasCalendarPermissions(context)) {
                 CalendarSyncManager.queryCalendars(context)
             } else {
                 emptyList()
             }
-            val targetCalendarSystem = item.targetCalendarSystem ?: _defaultEventSettings.value.targetCalendarId
+            val targetCalendarSystem = enrichedItem.targetCalendarSystem ?: _defaultEventSettings.value.targetCalendarId
             val targetCalendarId = if (shouldSyncToCalendar && calendars.isNotEmpty()) {
                 CalendarSyncManager.resolveTargetCalendarId(calendars, targetCalendarSystem, _selectedGoogleAccountName.value)
             } else {
                 null
             }
-            val matchingEventId = if (shouldSyncToCalendar && targetCalendarId != null && item.calendarEventId == null) {
-                CalendarSyncManager.findMatchingEventId(context, targetCalendarId, item)
+            val matchingEventId = if (shouldSyncToCalendar && targetCalendarId != null && enrichedItem.calendarEventId == null) {
+                CalendarSyncManager.findMatchingEventId(context, targetCalendarId, enrichedItem)
             } else {
                 null
             }
-            val calendarEventId = if (shouldSyncToCalendar && targetCalendarId != null && item.calendarEventId == null) {
-                matchingEventId ?: CalendarSyncManager.upsertEvent(context, item, targetCalendarId)
+            val calendarEventId = if (shouldSyncToCalendar && targetCalendarId != null && enrichedItem.calendarEventId == null) {
+                matchingEventId ?: CalendarSyncManager.upsertEvent(context, enrichedItem, targetCalendarId)
             } else {
-                item.calendarEventId
+                enrichedItem.calendarEventId
             }
-            val resolvedOrigin = if (calendarEventId != null && item.origin == "APP_CREATED") {
+            val resolvedOrigin = if (calendarEventId != null && enrichedItem.origin == "APP_CREATED") {
                 if (targetCalendarId != null && CalendarSyncManager.isGoogleCalendar(targetCalendarId, calendars)) {
                     "APP_CREATED_GOOGLE"
                 } else {
                     "APP_CREATED_LOCAL"
                 }
             } else {
-                item.origin
+                enrichedItem.origin
             }
-            val entity = item.copy(
+            val entity = enrichedItem.copy(
                 startEpochDay = epochDay,
                 calendarEventId = calendarEventId,
                 origin = resolvedOrigin,
@@ -922,16 +924,16 @@ class MainViewModel @Inject constructor(
 
             scheduleDao.upsert(entity)
 
-            if (shouldSyncToCalendar && item.calendarEventId != null && targetCalendarId != null) {
+            if (shouldSyncToCalendar && enrichedItem.calendarEventId != null && targetCalendarId != null) {
                 CalendarSyncManager.upsertEvent(
                     context,
-                    item.copy(calendarEventId = item.calendarEventId),
+                    enrichedItem.copy(calendarEventId = enrichedItem.calendarEventId),
                     targetCalendarId
                 )
             }
 
-            if (item.notifyEnabled && !item.isMuted) {
-                notificationScheduler.scheduleSingleOccurrence(item, epochDay)
+            if (enrichedItem.notifyEnabled && !enrichedItem.isMuted) {
+                notificationScheduler.scheduleSingleOccurrence(enrichedItem, epochDay)
             }
 
 

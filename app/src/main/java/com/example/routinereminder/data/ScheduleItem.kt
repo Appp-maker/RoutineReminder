@@ -27,6 +27,11 @@ data class ScheduleItem(
     val targetCalendarSystem: String? = null,
     val colorArgb: Int = NO_EVENT_FOOD_COLOR_ARGB,
     val setId: Int? = null,
+    val location: String? = null,
+    val routeStart: String? = null,
+    val routeEnd: String? = null,
+    val predictedTravelMinutes: Int? = null,
+    val weatherSummary: String? = null,
 
     // ⭐ REQUIRED for Done/Undo UI
     val isDone: Boolean = false,
