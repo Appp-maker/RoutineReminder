@@ -26,6 +26,7 @@ data class CalendarEventDetails(
     val id: Long,
     val title: String,
     val description: String?,
+    val location: String?,
     val startMillis: Long,
     val endMillis: Long,
     val rrule: String?,
@@ -44,6 +45,7 @@ object CalendarSyncManager {
         CalendarContract.Events._ID,
         CalendarContract.Events.TITLE,
         CalendarContract.Events.DESCRIPTION,
+        CalendarContract.Events.EVENT_LOCATION,
         CalendarContract.Events.DTSTART,
         CalendarContract.Events.DTEND,
         CalendarContract.Events.RRULE,
@@ -184,6 +186,7 @@ object CalendarSyncManager {
             val endIndex = cursor.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
             val rruleIndex = cursor.getColumnIndexOrThrow(CalendarContract.Events.RRULE)
             val calendarIdIndex = cursor.getColumnIndexOrThrow(CalendarContract.Events.CALENDAR_ID)
+            val locationIndex = cursor.getColumnIndexOrThrow(CalendarContract.Events.EVENT_LOCATION)
             while (cursor.moveToNext()) {
                 val startMillis = cursor.getLong(startIndex)
                 val endMillis = cursor.getLong(endIndex)
@@ -192,6 +195,7 @@ object CalendarSyncManager {
                         id = cursor.getLong(idIndex),
                         title = cursor.getString(titleIndex) ?: "",
                         description = cursor.getString(descriptionIndex),
+                        location = cursor.getString(locationIndex),
                         startMillis = startMillis,
                         endMillis = endMillis,
                         rrule = cursor.getString(rruleIndex),
@@ -322,6 +326,7 @@ object CalendarSyncManager {
             id = existingId,
             name = event.title.ifBlank { "Untitled Event" },
             notes = event.description,
+            location = event.location,
             hour = startDateTime.hour,
             minute = startDateTime.minute,
             durationMinutes = durationMinutes,
@@ -350,6 +355,10 @@ object CalendarSyncManager {
             put(CalendarContract.Events.DTEND, endMillis)
             put(CalendarContract.Events.TITLE, item.name)
             put(CalendarContract.Events.DESCRIPTION, item.notes)
+            put(
+                CalendarContract.Events.EVENT_LOCATION,
+                item.location ?: listOfNotNull(item.routeStart, item.routeEnd).takeIf { it.isNotEmpty() }?.joinToString(" → ")
+            )
             put(CalendarContract.Events.CALENDAR_ID, calendarId)
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
             if (!item.isOneTime && !item.repeatOnDays.isNullOrEmpty()) {

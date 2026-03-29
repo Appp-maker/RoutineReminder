@@ -1329,6 +1329,48 @@ private fun CompactScheduleItemCard(
                     color = timeColor,
                     maxLines = 1
                 )
+                val routeSummary = remember(item.routeStart, item.routeEnd, item.predictedTravelMinutes) {
+                    if (!item.routeStart.isNullOrBlank() && !item.routeEnd.isNullOrBlank()) {
+                        buildString {
+                            append("${item.routeStart} → ${item.routeEnd}")
+                            item.predictedTravelMinutes?.let { append(" • ${it} min") }
+                        }
+                    } else {
+                        null
+                    }
+                }
+                val locationSummary = item.location?.takeIf { it.isNotBlank() }
+                val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }
+                if (locationSummary != null || routeSummary != null || weatherSummary != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                locationSummary?.let {
+                    Text(
+                        text = "Location: $it",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                routeSummary?.let {
+                    Text(
+                        text = "Route: $it",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                weatherSummary?.let {
+                    Text(
+                        text = "Weather: $it",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
             if (showQuickDoneToggle) {
                 QuickDoneToggle(

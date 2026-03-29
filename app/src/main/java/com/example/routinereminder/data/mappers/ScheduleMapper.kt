@@ -26,6 +26,12 @@ fun ScheduleItem.toEntity(): Schedule = Schedule(
     targetCalendarSystem = targetCalendarSystem,
     colorArgb = colorArgb,
     setId = setId,
+    location = location,
+    routeStart = routeStart,
+    routeEnd = routeEnd,
+    predictedTravelMinutes = predictedTravelMinutes,
+    weatherSummary = weatherSummary,
+    isDone = isDone,
     isMuted = isMuted
 )
 
@@ -53,6 +59,11 @@ fun Schedule.toItem(): ScheduleItem =
         targetCalendarSystem = targetCalendarSystem,
         colorArgb = colorArgb,
         setId = setId,
+        location = location,
+        routeStart = routeStart,
+        routeEnd = routeEnd,
+        predictedTravelMinutes = predictedTravelMinutes,
+        weatherSummary = weatherSummary,
         isDone = isDone,
         isMuted = isMuted
     )
