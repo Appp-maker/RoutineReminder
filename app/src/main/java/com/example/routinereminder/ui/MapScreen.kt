@@ -1723,9 +1723,9 @@ private suspend fun fetchWeatherTrafficPenaltyPercent(
             val refHourText = buildOpenMeteoHourKey(referenceEpochMs)
             val index = times.indexOfFirst { it.jsonPrimitive.content == refHourText }
                 .takeIf { it >= 0 } ?: return 0
-            val rainChance = precip.getOrNull(index)?.jsonPrimitive?.intOrNull ?: 0
-            val weatherCode = codes.getOrNull(index)?.jsonPrimitive?.intOrNull ?: 0
-            val windKmh = wind.getOrNull(index)?.jsonPrimitive?.doubleOrNull ?: 0.0
+            val rainChance = precip.getOrNull(index)?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+            val weatherCode = codes.getOrNull(index)?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+            val windKmh = wind.getOrNull(index)?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0
             val severeCodePenalty = if (weatherCode in setOf(95, 96, 99, 65, 67, 75, 82)) 12 else 0
             val rainPenalty = (rainChance / 8).coerceIn(0, 10)
             val windPenalty = (windKmh / 10.0).toInt().coerceIn(0, 8)
