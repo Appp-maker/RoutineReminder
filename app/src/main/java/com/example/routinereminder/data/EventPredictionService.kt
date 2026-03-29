@@ -15,28 +15,22 @@ object EventPredictionService {
     suspend fun enrich(item: ScheduleItem): ScheduleItem = withContext(Dispatchers.IO) {
         val location = item.location?.trim().orEmpty().ifBlank { null }
         val routeStart = item.routeStart?.trim().orEmpty().ifBlank { null }
-        val routeDestination = location ?: item.routeEnd?.trim().orEmpty().ifBlank { null }
-
-        val (weatherLat, weatherLon) = when {
-            routeDestination != null -> geocode(routeDestination)
         val routeEnd = item.routeEnd?.trim().orEmpty().ifBlank { null }
+        val weatherTarget = routeEnd ?: location
 
         val (weatherLat, weatherLon) = when {
+            weatherTarget != null -> geocode(weatherTarget)
             routeStart != null -> geocode(routeStart)
-            location != null -> geocode(location)
             else -> null
         } ?: return@withContext item.copy(
             location = location,
             routeStart = routeStart,
-            routeEnd = routeDestination,
             routeEnd = routeEnd,
             predictedTravelMinutes = null,
             weatherSummary = null
         )
 
         val weatherSummary = fetchWeatherSummary(weatherLat, weatherLon)
-        val predictedTravelMinutes = if (routeStart != null && routeDestination != null) {
-            predictTravelMinutes(routeStart, routeDestination)
         val predictedTravelMinutes = if (routeStart != null && routeEnd != null) {
             predictTravelMinutes(routeStart, routeEnd)
         } else {
@@ -44,9 +38,6 @@ object EventPredictionService {
         }
 
         item.copy(
-            location = routeDestination,
-            routeStart = routeStart,
-            routeEnd = routeDestination,
             location = location,
             routeStart = routeStart,
             routeEnd = routeEnd,

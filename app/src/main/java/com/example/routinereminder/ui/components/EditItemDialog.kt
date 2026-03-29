@@ -375,28 +375,20 @@ fun EditItemDialog(
                                 tint = MaterialTheme.colorScheme.secondary
                             )
                         }
-                    TextField(
-                        value = location,
-                        onValueChange = { location = it },
-                        label = { Text("Location (optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
                     )
                     Spacer(Modifier.height(8.dp))
-                    TextField(
-                        value = routeStart,
-                        onValueChange = { routeStart = it },
-                        label = { Text("Route start (optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    TextField(
+                    AddressAutocompleteField(
                         value = routeEnd,
                         onValueChange = { routeEnd = it },
-                        label = { Text("Route destination (optional)") },
+                        label = "Route destination (optional)",
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                        }
                     )
                     Spacer(Modifier.height(8.dp))
 
