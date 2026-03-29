@@ -63,9 +63,10 @@ fun EditItemDialog(
 
     var title by remember(initialItem) { mutableStateOf(initialItem?.name ?: "") }
     var notes by remember(initialItem) { mutableStateOf(initialItem?.notes ?: "") }
-    var location by remember(initialItem) { mutableStateOf(initialItem?.location ?: "") }
+    var location by remember(initialItem) {
+        mutableStateOf(initialItem?.location ?: initialItem?.routeEnd ?: "")
+    }
     var routeStart by remember(initialItem) { mutableStateOf(initialItem?.routeStart ?: "") }
-    var routeEnd by remember(initialItem) { mutableStateOf(initialItem?.routeEnd ?: "") }
 
     var selectedDate by remember(initialItem) {
         val initialEventDate = initialItem?.takeIf { it.isOneTime && it.dateEpochDay != null }?.let { LocalDate.ofEpochDay(it.dateEpochDay!!) }
@@ -209,7 +210,7 @@ fun EditItemDialog(
                 notes = notes.trim().takeIf { it.isNotEmpty() },
                 location = location.trim().takeIf { it.isNotEmpty() },
                 routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
-                routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
+                routeEnd = location.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
                 durationMinutes = finalTotalDurationMinutes,
@@ -248,7 +249,7 @@ fun EditItemDialog(
                 notes = notes.trim().takeIf { it.isNotEmpty() },
                 location = location.trim().takeIf { it.isNotEmpty() },
                 routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
-                routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
+                routeEnd = location.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
                 durationMinutes = finalTotalDurationMinutes,
@@ -373,21 +374,6 @@ fun EditItemDialog(
                         }
                     )
                     Spacer(Modifier.height(8.dp))
-                    AddressAutocompleteField(
-                        value = routeEnd,
-                        onValueChange = { routeEnd = it },
-                        label = "Route destination (optional)",
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
-                        }
-                    )
-                    Spacer(Modifier.height(8.dp))
-
                     Box(modifier = Modifier.clickable { timePickerDialog.show() }) {
                         OutlinedTextField(
                             value = selectedTime.format(timeFormatter),
