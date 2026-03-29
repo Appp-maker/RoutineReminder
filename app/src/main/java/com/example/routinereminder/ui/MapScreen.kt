@@ -262,7 +262,6 @@ fun MapScreen(
     var showManualEntry by rememberSaveable { mutableStateOf(false) }
     var manualDistanceKm by rememberSaveable { mutableStateOf("") }
     var manualDurationMin by rememberSaveable { mutableStateOf("") }
-    var goalDistanceKmInput by rememberSaveable { mutableStateOf("") }
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
     val trailPoints by viewModel.trailPoints.collectAsState()
@@ -275,18 +274,8 @@ fun MapScreen(
     val distanceMeters = runState?.distanceMeters ?: 0.0
     val durationSec = runState?.durationSec ?: 0L
     val calories = runState?.calories ?: 0.0
-    val goalDistanceKm = goalDistanceKmInput.toDoubleOrNull()?.takeIf { it > 0.0 }
     var routeAdjustment by remember { mutableStateOf<RouteAdjustment?>(null) }
     var routeAdjustmentLoading by remember { mutableStateOf(false) }
-    val routeEstimateSec = estimateRouteDurationSec(
-        goalDistanceKm = goalDistanceKm,
-        distanceMeters = distanceMeters,
-        durationSec = durationSec,
-        activityType = activity,
-        trafficImpactPercent = routeAdjustment?.trafficImpactPercent ?: 0,
-        constructionDelayMin = routeAdjustment?.constructionDelayMin ?: 0
-    )?.takeIf { mapRouteEstimationEnabled }
-
     // timer
     val scope = rememberCoroutineScope()
     var timerJob by remember { mutableStateOf<Job?>(null) }
@@ -431,7 +420,7 @@ fun MapScreen(
         }
     }
 
-    LaunchedEffect(lastKnownCoordinates, runState?.startEpochMs, goalDistanceKm, trailPoints.size, mapRouteEstimationEnabled) {
+    LaunchedEffect(lastKnownCoordinates, runState?.startEpochMs, trailPoints.size, mapRouteEstimationEnabled) {
         if (!mapRouteEstimationEnabled) {
             routeAdjustment = null
             routeAdjustmentLoading = false
@@ -440,7 +429,7 @@ fun MapScreen(
         val startCoordinates = trailPoints.firstOrNull()?.let {
             WeatherCoordinates(latitude = it.latitude(), longitude = it.longitude())
         } ?: lastKnownCoordinates
-        val hasDestination = goalDistanceKm != null || trailPoints.size > 1
+        val hasDestination = trailPoints.size > 1
         if (startCoordinates == null && !hasDestination) {
             routeAdjustment = null
             routeAdjustmentLoading = false
@@ -852,15 +841,6 @@ fun MapScreen(
                         StatBlock(title = "Duration", value = formatHMS(durationSec))
                         StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
                         StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
-                        StatBlock(
-                            title = "Est. Route Time",
-                            value = when {
-                                !mapRouteEstimationEnabled -> "Off"
-                                routeEstimateSec != null -> formatHMS(routeEstimateSec)
-                                routeAdjustmentLoading -> "Calculating..."
-                                else -> "--:--:--"
-                            }
-                        )
                         StatBlock(title = "Calories", value = calories.roundToInt().toString())
                     }
                 }
@@ -1061,17 +1041,6 @@ fun MapScreen(
                     Spacer(Modifier.height(12.dp))
 
                     if (!isRecording) {
-                        OutlinedTextField(
-                            value = goalDistanceKmInput,
-                            onValueChange = { goalDistanceKmInput = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp),
-                            singleLine = true,
-                            label = { Text("Goal distance (km)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                        )
-                        Spacer(Modifier.height(12.dp))
                         // Show activity selector only before recording
                         ActivitySelector(
                             current = selectedActivity,
