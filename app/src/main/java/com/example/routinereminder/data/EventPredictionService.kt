@@ -11,6 +11,7 @@ import kotlin.math.roundToInt
 
 object EventPredictionService {
     private val client = OkHttpClient()
+    private const val NOMINATIM_USER_AGENT = "RoutineReminder/1.0 (contact: support@routine-reminder.app)"
 
     suspend fun enrich(item: ScheduleItem): ScheduleItem = withContext(Dispatchers.IO) {
         val location = item.location?.trim().orEmpty().ifBlank { null }
@@ -49,14 +50,46 @@ object EventPredictionService {
     suspend fun addressSuggestions(query: String): List<String> = withContext(Dispatchers.IO) {
         val trimmed = query.trim()
         if (trimmed.length < 3) return@withContext emptyList()
-        val encoded = URLEncoder.encode(trimmed, "UTF-8")
+        queryNominatimSuggestions(trimmed).ifEmpty {
+            queryOpenMeteoSuggestions(trimmed)
+        }
+    }
+
+    private fun geocode(query: String): Pair<Double, Double>? {
+        val encoded = URLEncoder.encode(query, "UTF-8")
+        geocodeWithNominatim(encoded) ?: geocodeWithOpenMeteo(encoded)
+    }
+
+    private fun queryNominatimSuggestions(query: String): List<String> {
+        val encoded = URLEncoder.encode(query, "UTF-8")
+        val url = "https://nominatim.openstreetmap.org/search?q=$encoded&format=jsonv2&addressdetails=1&dedupe=1&limit=5"
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", NOMINATIM_USER_AGENT)
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return emptyList()
+            val body = response.body?.string() ?: return emptyList()
+            val results = org.json.JSONArray(body)
+            return buildList {
+                for (index in 0 until results.length()) {
+                    val entry = results.optJSONObject(index) ?: continue
+                    val displayName = entry.optString("display_name").trim()
+                    if (displayName.isNotBlank()) add(displayName)
+                }
+            }.distinct()
+        }
+    }
+
+    private fun queryOpenMeteoSuggestions(query: String): List<String> {
+        val encoded = URLEncoder.encode(query, "UTF-8")
         val url = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=5&language=en&format=json"
         val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return@withContext emptyList()
-            val body = response.body?.string() ?: return@withContext emptyList()
-            val results = JSONObject(body).optJSONArray("results") ?: return@withContext emptyList()
-            buildList {
+            if (!response.isSuccessful) return emptyList()
+            val body = response.body?.string() ?: return emptyList()
+            val results = JSONObject(body).optJSONArray("results") ?: return emptyList()
+            return buildList {
                 for (index in 0 until results.length()) {
                     val entry = results.optJSONObject(index) ?: continue
                     val name = entry.optString("name")
@@ -69,9 +102,26 @@ object EventPredictionService {
         }
     }
 
-    private fun geocode(query: String): Pair<Double, Double>? {
-        val encoded = URLEncoder.encode(query, "UTF-8")
-        val url = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=1&language=en&format=json"
+    private fun geocodeWithNominatim(encodedQuery: String): Pair<Double, Double>? {
+        val url = "https://nominatim.openstreetmap.org/search?q=$encodedQuery&format=jsonv2&limit=1"
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", NOMINATIM_USER_AGENT)
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            val body = response.body?.string() ?: return null
+            val results = org.json.JSONArray(body)
+            if (results.length() == 0) return null
+            val first = results.optJSONObject(0) ?: return null
+            val lat = first.optString("lat").toDoubleOrNull() ?: return null
+            val lon = first.optString("lon").toDoubleOrNull() ?: return null
+            return lat to lon
+        }
+    }
+
+    private fun geocodeWithOpenMeteo(encodedQuery: String): Pair<Double, Double>? {
+        val url = "https://geocoding-api.open-meteo.com/v1/search?name=$encodedQuery&count=1&language=en&format=json"
         val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return null
