@@ -1329,20 +1329,18 @@ private fun CompactScheduleItemCard(
                     color = timeColor,
                     maxLines = 1
                 )
-                val routeSummary = remember(item.routeStart, item.location, item.routeEnd, item.predictedTravelMinutes) {
+                val routeSummary = remember(item.routeStart, item.location, item.routeEnd) {
                     val destination = item.location ?: item.routeEnd
                     if (!item.routeStart.isNullOrBlank() && !destination.isNullOrBlank()) {
-                        buildString {
-                            append("${item.routeStart} → $destination")
-                            item.predictedTravelMinutes?.let { append(" • ${it} min") }
-                        }
+                        "${item.routeStart} → $destination"
                     } else {
                         null
                     }
                 }
+                val etaSummary = item.predictedTravelMinutes?.let { "$it min" }
                 val locationSummary = (item.location ?: item.routeEnd)?.takeIf { it.isNotBlank() }
                 val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }
-                if (locationSummary != null || routeSummary != null || weatherSummary != null) {
+                if (locationSummary != null || routeSummary != null || etaSummary != null || weatherSummary != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 locationSummary?.let {
@@ -1357,6 +1355,15 @@ private fun CompactScheduleItemCard(
                 routeSummary?.let {
                     Text(
                         text = "Route: $it",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                etaSummary?.let {
+                    Text(
+                        text = "ETA: $it",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.secondary,
                         maxLines = 1,
