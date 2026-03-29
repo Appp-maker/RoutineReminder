@@ -102,9 +102,13 @@ import com.example.routinereminder.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 
 
 enum class ActivityType(val label: String) {
@@ -176,10 +180,18 @@ private data class OpenMeteoCurrent(
 
 private val weatherJson = Json { ignoreUnknownKeys = true }
 private val weatherClient = OkHttpClient()
+private const val ROUTE_ADJUSTMENT_REFRESH_MS = 10 * 60_000L
+private const val FAR_FUTURE_THRESHOLD_DAYS = 21L
 
 private data class WeatherCoordinates(
     val latitude: Double,
     val longitude: Double
+)
+
+private data class RouteAdjustment(
+    val trafficImpactPercent: Int,
+    val constructionDelayMin: Int,
+    val sampledAtMs: Long
 )
 
 private data class TerrainSample(
@@ -250,17 +262,30 @@ fun MapScreen(
     var showManualEntry by rememberSaveable { mutableStateOf(false) }
     var manualDistanceKm by rememberSaveable { mutableStateOf("") }
     var manualDurationMin by rememberSaveable { mutableStateOf("") }
+    var goalDistanceKmInput by rememberSaveable { mutableStateOf("") }
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
     val trailPoints by viewModel.trailPoints.collectAsState()
     val splitDurations by viewModel.splitDurations.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
+    val mapRouteEstimationEnabled by viewModel.mapRouteEstimationEnabled.collectAsState()
     val isRecording = runState?.isRecording == true
     val activity = runState?.activity?.let { ActivityType.fromLabel(it) } ?: selectedActivity
     val trackingMode = TrackingMode.fromValue(runState?.trackingMode ?: mapTrackingMode)
     val distanceMeters = runState?.distanceMeters ?: 0.0
     val durationSec = runState?.durationSec ?: 0L
     val calories = runState?.calories ?: 0.0
+    val goalDistanceKm = goalDistanceKmInput.toDoubleOrNull()?.takeIf { it > 0.0 }
+    var routeAdjustment by remember { mutableStateOf<RouteAdjustment?>(null) }
+    var routeAdjustmentLoading by remember { mutableStateOf(false) }
+    val routeEstimateSec = estimateRouteDurationSec(
+        goalDistanceKm = goalDistanceKm,
+        distanceMeters = distanceMeters,
+        durationSec = durationSec,
+        activityType = activity,
+        trafficImpactPercent = routeAdjustment?.trafficImpactPercent ?: 0,
+        constructionDelayMin = routeAdjustment?.constructionDelayMin ?: 0
+    )?.takeIf { mapRouteEstimationEnabled }
 
     // timer
     val scope = rememberCoroutineScope()
@@ -404,6 +429,37 @@ fun MapScreen(
             val coordinates = lastKnownCoordinates ?: continue
             requestWeather(coordinates.latitude, coordinates.longitude)
         }
+    }
+
+    LaunchedEffect(lastKnownCoordinates, runState?.startEpochMs, goalDistanceKm, trailPoints.size, mapRouteEstimationEnabled) {
+        if (!mapRouteEstimationEnabled) {
+            routeAdjustment = null
+            routeAdjustmentLoading = false
+            return@LaunchedEffect
+        }
+        val startCoordinates = trailPoints.firstOrNull()?.let {
+            WeatherCoordinates(latitude = it.latitude(), longitude = it.longitude())
+        } ?: lastKnownCoordinates
+        val hasDestination = goalDistanceKm != null || trailPoints.size > 1
+        if (startCoordinates == null && !hasDestination) {
+            routeAdjustment = null
+            routeAdjustmentLoading = false
+            return@LaunchedEffect
+        }
+        if (!hasDestination || startCoordinates == null) {
+            return@LaunchedEffect
+        }
+        val now = System.currentTimeMillis()
+        val hasFreshAdjustment = routeAdjustment?.let { now - it.sampledAtMs < ROUTE_ADJUSTMENT_REFRESH_MS } == true
+        if (hasFreshAdjustment || routeAdjustmentLoading) return@LaunchedEffect
+        routeAdjustmentLoading = true
+        val requestedEpoch = runState?.startEpochMs ?: now
+        routeAdjustment = fetchRouteAdjustment(
+            lat = startCoordinates.latitude,
+            lng = startCoordinates.longitude,
+            requestedEpochMs = requestedEpoch
+        )
+        routeAdjustmentLoading = false
     }
 
     // location callback implementation
@@ -796,6 +852,15 @@ fun MapScreen(
                         StatBlock(title = "Duration", value = formatHMS(durationSec))
                         StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
                         StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
+                        StatBlock(
+                            title = "Est. Route Time",
+                            value = when {
+                                !mapRouteEstimationEnabled -> "Off"
+                                routeEstimateSec != null -> formatHMS(routeEstimateSec)
+                                routeAdjustmentLoading -> "Calculating..."
+                                else -> "--:--:--"
+                            }
+                        )
                         StatBlock(title = "Calories", value = calories.roundToInt().toString())
                     }
                 }
@@ -996,6 +1061,17 @@ fun MapScreen(
                     Spacer(Modifier.height(12.dp))
 
                     if (!isRecording) {
+                        OutlinedTextField(
+                            value = goalDistanceKmInput,
+                            onValueChange = { goalDistanceKmInput = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            singleLine = true,
+                            label = { Text("Goal distance (km)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        Spacer(Modifier.height(12.dp))
                         // Show activity selector only before recording
                         ActivitySelector(
                             current = selectedActivity,
@@ -1292,6 +1368,31 @@ private fun formatSplitPace(paceSecPerKm: Long): String {
     return "%d:%02d".format(min, sec)
 }
 
+private fun estimateRouteDurationSec(
+    goalDistanceKm: Double?,
+    distanceMeters: Double,
+    durationSec: Long,
+    activityType: ActivityType,
+    trafficImpactPercent: Int,
+    constructionDelayMin: Int
+): Long? {
+    if (goalDistanceKm == null) return null
+    val remainingMeters = (goalDistanceKm * 1000.0) - distanceMeters
+    if (remainingMeters <= 0.0) return 0L
+    val baseSecPerMeter = if (durationSec > 0L && distanceMeters > 0.0) {
+        durationSec / distanceMeters
+    } else {
+        when (activityType) {
+            ActivityType.RUN_WALK -> 360.0 / 1000.0 // 6:00 min/km baseline
+            ActivityType.CYCLING -> 150.0 / 1000.0 // 2:30 min/km baseline
+        }
+    }
+    val baseRemainingSec = remainingMeters * baseSecPerMeter
+    val trafficMultiplier = 1.0 + (trafficImpactPercent / 100.0)
+    val constructionDelaySec = constructionDelayMin * 60.0
+    return ((baseRemainingSec * trafficMultiplier) + constructionDelaySec).roundToLong().coerceAtLeast(0L)
+}
+
 private data class SplitUpdate(
     val splits: List<Long>,
     val splitStartDistance: Double,
@@ -1533,6 +1634,139 @@ private suspend fun fetchWeatherSnapshot(lat: Double, lng: Double): WeatherSnaps
                 fetchedAtMs = System.currentTimeMillis()
             )
         }
+    }
+}
+
+private suspend fun fetchRouteAdjustment(
+    lat: Double,
+    lng: Double,
+    requestedEpochMs: Long
+): RouteAdjustment = withContext(Dispatchers.IO) {
+    val referenceEpochMs = normalizeReferenceEpoch(requestedEpochMs, System.currentTimeMillis())
+    val trafficImpact = fetchTrafficImpactPercent(lat, lng, referenceEpochMs)
+    val constructionDelay = fetchConstructionDelayMin(lat, lng)
+    RouteAdjustment(
+        trafficImpactPercent = trafficImpact,
+        constructionDelayMin = constructionDelay,
+        sampledAtMs = System.currentTimeMillis()
+    )
+}
+
+private fun normalizeReferenceEpoch(requestedEpochMs: Long, nowMs: Long): Long {
+    val thresholdMs = FAR_FUTURE_THRESHOLD_DAYS * 24L * 60L * 60L * 1000L
+    if (requestedEpochMs - nowMs <= thresholdMs) return requestedEpochMs
+
+    val requestedCal = Calendar.getInstance().apply { timeInMillis = requestedEpochMs }
+    val nowCal = Calendar.getInstance().apply { timeInMillis = nowMs }
+    val targetWeekday = requestedCal.get(Calendar.DAY_OF_WEEK)
+    val targetHour = requestedCal.get(Calendar.HOUR_OF_DAY)
+    val targetMinute = requestedCal.get(Calendar.MINUTE)
+
+    repeat(8) {
+        nowCal.add(Calendar.DAY_OF_YEAR, 1)
+        if (nowCal.get(Calendar.DAY_OF_WEEK) == targetWeekday) {
+            nowCal.set(Calendar.HOUR_OF_DAY, targetHour)
+            nowCal.set(Calendar.MINUTE, targetMinute)
+            nowCal.set(Calendar.SECOND, 0)
+            nowCal.set(Calendar.MILLISECOND, 0)
+            return nowCal.timeInMillis
+        }
+    }
+    return nowMs
+}
+
+private suspend fun fetchTrafficImpactPercent(
+    lat: Double,
+    lng: Double,
+    referenceEpochMs: Long
+): Int {
+    val weatherPenalty = fetchWeatherTrafficPenaltyPercent(lat, lng, referenceEpochMs)
+    val calendar = Calendar.getInstance().apply { timeInMillis = referenceEpochMs }
+    val isWeekday = calendar.get(Calendar.DAY_OF_WEEK) !in listOf(Calendar.SATURDAY, Calendar.SUNDAY)
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+    val rushHourPenalty = when {
+        isWeekday && hour in 7..9 -> 24
+        isWeekday && hour in 16..19 -> 28
+        isWeekday && hour in 10..15 -> 10
+        !isWeekday && hour in 10..18 -> 8
+        else -> 4
+    }
+    return (rushHourPenalty + weatherPenalty).coerceIn(0, 60)
+}
+
+private suspend fun fetchWeatherTrafficPenaltyPercent(
+    lat: Double,
+    lng: Double,
+    referenceEpochMs: Long
+): Int {
+    return try {
+        val url = HttpUrl.Builder()
+            .scheme("https")
+            .host("api.open-meteo.com")
+            .addPathSegments("v1/forecast")
+            .addQueryParameter("latitude", lat.toString())
+            .addQueryParameter("longitude", lng.toString())
+            .addQueryParameter("hourly", "precipitation_probability,weather_code,wind_speed_10m")
+            .addQueryParameter("forecast_days", "16")
+            .addQueryParameter("timezone", "auto")
+            .build()
+        val request = Request.Builder().url(url).build()
+        weatherClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return 0
+            val body = response.body?.string() ?: return 0
+            val root = weatherJson.parseToJsonElement(body).jsonObject
+            val hourly = root["hourly"]?.jsonObject ?: return 0
+            val times = hourly["time"]?.jsonArray ?: return 0
+            val precip = hourly["precipitation_probability"]?.jsonArray ?: return 0
+            val codes = hourly["weather_code"]?.jsonArray ?: return 0
+            val wind = hourly["wind_speed_10m"]?.jsonArray ?: return 0
+            val refHourText = buildOpenMeteoHourKey(referenceEpochMs)
+            val index = times.indexOfFirst { it.jsonPrimitive.content == refHourText }
+                .takeIf { it >= 0 } ?: return 0
+            val rainChance = precip.getOrNull(index)?.jsonPrimitive?.intOrNull ?: 0
+            val weatherCode = codes.getOrNull(index)?.jsonPrimitive?.intOrNull ?: 0
+            val windKmh = wind.getOrNull(index)?.jsonPrimitive?.doubleOrNull ?: 0.0
+            val severeCodePenalty = if (weatherCode in setOf(95, 96, 99, 65, 67, 75, 82)) 12 else 0
+            val rainPenalty = (rainChance / 8).coerceIn(0, 10)
+            val windPenalty = (windKmh / 10.0).toInt().coerceIn(0, 8)
+            (severeCodePenalty + rainPenalty + windPenalty).coerceIn(0, 25)
+        }
+    } catch (_: Exception) {
+        0
+    }
+}
+
+private fun buildOpenMeteoHourKey(epochMs: Long): String {
+    val cal = Calendar.getInstance().apply { timeInMillis = epochMs }
+    val year = cal.get(Calendar.YEAR)
+    val month = cal.get(Calendar.MONTH) + 1
+    val day = cal.get(Calendar.DAY_OF_MONTH)
+    val hour = cal.get(Calendar.HOUR_OF_DAY)
+    return "%04d-%02d-%02dT%02d:00".format(year, month, day, hour)
+}
+
+private suspend fun fetchConstructionDelayMin(lat: Double, lng: Double): Int {
+    return try {
+        val query = """
+            [out:json][timeout:20];
+            (
+              way["highway"="construction"](around:2500,$lat,$lng);
+              way["construction"](around:2500,$lat,$lng);
+            );
+            out ids;
+        """.trimIndent()
+        val request = Request.Builder()
+            .url("https://overpass-api.de/api/interpreter")
+            .post(query.toRequestBody())
+            .build()
+        weatherClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return 0
+            val body = response.body?.string() ?: return 0
+            val elementCount = Regex("\"type\"\\s*:\\s*\"way\"").findAll(body).count()
+            (elementCount * 2).coerceIn(0, 20)
+        }
+    } catch (_: Exception) {
+        0
     }
 }
 
