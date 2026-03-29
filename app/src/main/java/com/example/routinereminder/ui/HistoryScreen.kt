@@ -304,6 +304,20 @@ fun HistoryItem(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+                val weatherTimeline = session.weatherTimeline
+                if (weatherTimeline.isNotEmpty()) {
+                    Text(
+                        text = "Weather changes: ${formatWeatherTimeline(weatherTimeline)}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                val terrains = session.terrainDurations
+                if (terrains.isNotEmpty()) {
+                    Text(
+                        text = "Terrain time: ${formatTerrainDurations(terrains)}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
 
             Row(
@@ -347,4 +361,19 @@ private fun formatSplitPace(paceSec: Long): String {
     val min = paceSec / 60
     val sec = paceSec % 60
     return "%d:%02d".format(min, sec)
+}
+
+private fun formatWeatherTimeline(entries: List<com.example.routinereminder.data.model.WeatherTimelineEntry>): String {
+    return entries.joinToString(" • ") { entry ->
+        val time = SessionStore.formatTime(entry.epochMs).takeLast(5)
+        val temp = entry.temperatureC.format(1)
+        val light = entry.lightCondition.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        "$time ${temp}°C $light"
+    }
+}
+
+private fun formatTerrainDurations(entries: List<com.example.routinereminder.data.model.TerrainDuration>): String {
+    return entries.joinToString(", ") { terrain ->
+        "${terrain.terrain} ${formatDuration(terrain.durationSec)}"
+    }
 }
