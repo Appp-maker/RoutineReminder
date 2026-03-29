@@ -6,6 +6,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.net.URLEncoder
+import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -18,10 +22,10 @@ object EventPredictionService {
         val routeStart = item.routeStart?.trim().orEmpty().ifBlank { null }
         val routeEnd = item.routeEnd?.trim().orEmpty().ifBlank { null }
         val weatherTarget = routeEnd ?: location
+        val plannedEventDateTime = resolvePlannedDateTime(item)
 
         val (weatherLat, weatherLon) = when {
             weatherTarget != null -> geocode(weatherTarget)
-            routeStart != null -> geocode(routeStart)
             else -> null
         } ?: return@withContext item.copy(
             location = location,
@@ -31,7 +35,7 @@ object EventPredictionService {
             weatherSummary = null
         )
 
-        val weatherSummary = fetchWeatherSummary(weatherLat, weatherLon)
+        val weatherSummary = fetchWeatherSummary(weatherLat, weatherLon, plannedEventDateTime)
         val predictedTravelMinutes = if (routeStart != null && routeEnd != null) {
             predictTravelMinutes(routeStart, routeEnd)
         } else {
@@ -134,19 +138,75 @@ object EventPredictionService {
         }
     }
 
-    private fun fetchWeatherSummary(latitude: Double, longitude: Double): String? {
-        val url = "https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,weather_code"
+    private fun fetchWeatherSummary(
+        latitude: Double,
+        longitude: Double,
+        plannedEventDateTime: LocalDateTime?
+    ): String? {
+        val url = "https://api.open-meteo.com/v1/forecast?" +
+            "latitude=$latitude&longitude=$longitude&hourly=temperature_2m,weather_code&timezone=auto&forecast_days=16"
         val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return null
             val body = response.body?.string() ?: return null
-            val current = JSONObject(body).optJSONObject("current") ?: return null
-            val temp = current.optDouble("temperature_2m", Double.NaN)
-            val weatherCode = current.optInt("weather_code", -1)
-            if (temp.isNaN()) return null
+            val root = JSONObject(body)
+            val hourly = root.optJSONObject("hourly") ?: return null
+            val times = hourly.optJSONArray("time") ?: return null
+            val temperatures = hourly.optJSONArray("temperature_2m") ?: return null
+            val weatherCodes = hourly.optJSONArray("weather_code") ?: return null
+
+            val targetDateTime = plannedEventDateTime ?: LocalDateTime.now()
+            var closestIndex = -1
+            var closestDeltaMinutes = Long.MAX_VALUE
+            for (index in 0 until times.length()) {
+                val timestamp = times.optString(index)
+                val weatherDateTime = runCatching { LocalDateTime.parse(timestamp) }.getOrNull() ?: continue
+                val deltaMinutes = kotlin.math.abs(
+                    Duration.between(weatherDateTime, targetDateTime).toMinutes()
+                )
+                if (deltaMinutes < closestDeltaMinutes) {
+                    closestDeltaMinutes = deltaMinutes
+                    closestIndex = index
+                }
+            }
+
+            if (closestIndex == -1) return null
+            val temp = temperatures.optDouble(closestIndex, Double.NaN)
+            val weatherCode = weatherCodes.optInt(closestIndex, -1)
+            if (temp.isNaN() || weatherCode == -1) return null
             val condition = weatherCodeToText(weatherCode)
-            return String.format(Locale.getDefault(), "%.1f°C • %s", temp, condition)
+            val timeLabel = targetDateTime.toLocalTime()
+                .truncatedTo(ChronoUnit.HOURS)
+                .toString()
+                .padEnd(5, '0')
+            return String.format(Locale.getDefault(), "%s • %.1f°C • %s", timeLabel, temp, condition)
         }
+    }
+
+    private fun resolvePlannedDateTime(item: ScheduleItem): LocalDateTime? {
+        val plannedDate = when {
+            item.isOneTime && item.dateEpochDay != null -> LocalDate.ofEpochDay(item.dateEpochDay)
+            !item.isOneTime -> resolveNextOccurrenceDate(item)
+            else -> null
+        } ?: return null
+        return plannedDate.atTime(item.hour.coerceIn(0, 23), item.minute.coerceIn(0, 59))
+    }
+
+    private fun resolveNextOccurrenceDate(item: ScheduleItem): LocalDate? {
+        val startDate = item.startEpochDay?.let(LocalDate::ofEpochDay) ?: LocalDate.now()
+        val repeatDays = item.repeatOnDays?.takeIf { it.isNotEmpty() } ?: return startDate
+        val today = LocalDate.now()
+        val searchStart = if (today.isAfter(startDate)) today else startDate
+        for (offset in 0L..365L) {
+            val candidate = searchStart.plusDays(offset)
+            if (candidate.dayOfWeek !in repeatDays) continue
+            if (candidate.isBefore(startDate)) continue
+            val weeksBetween = ChronoUnit.WEEKS.between(startDate, candidate)
+            if (item.repeatEveryWeeks <= 1 || weeksBetween % item.repeatEveryWeeks == 0L) {
+                return candidate
+            }
+        }
+        return null
     }
 
     private fun predictTravelMinutes(start: String, end: String): Int? {
