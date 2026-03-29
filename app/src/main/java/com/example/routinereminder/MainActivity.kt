@@ -1329,6 +1329,11 @@ private fun CompactScheduleItemCard(
                     color = timeColor,
                     maxLines = 1
                 )
+                val routeSummary = remember(item.routeStart, item.location, item.routeEnd, item.predictedTravelMinutes) {
+                    val destination = item.location ?: item.routeEnd
+                    if (!item.routeStart.isNullOrBlank() && !destination.isNullOrBlank()) {
+                        buildString {
+                            append("${item.routeStart} → $destination")
                 val routeSummary = remember(item.routeStart, item.routeEnd, item.predictedTravelMinutes) {
                     if (!item.routeStart.isNullOrBlank() && !item.routeEnd.isNullOrBlank()) {
                         buildString {
@@ -1339,6 +1344,7 @@ private fun CompactScheduleItemCard(
                         null
                     }
                 }
+                val locationSummary = (item.location ?: item.routeEnd)?.takeIf { it.isNotBlank() }
                 val locationSummary = item.location?.takeIf { it.isNotBlank() }
                 val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }
                 if (locationSummary != null || routeSummary != null || weatherSummary != null) {

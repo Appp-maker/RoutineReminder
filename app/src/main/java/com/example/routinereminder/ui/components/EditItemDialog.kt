@@ -12,6 +12,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
@@ -31,6 +32,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.routinereminder.R
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.EventPredictionService
 import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.ScheduleItem
 import com.example.routinereminder.data.SettingsRepository
@@ -41,6 +43,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +63,8 @@ fun EditItemDialog(
 
     var title by remember(initialItem) { mutableStateOf(initialItem?.name ?: "") }
     var notes by remember(initialItem) { mutableStateOf(initialItem?.notes ?: "") }
+    var location by remember(initialItem) { mutableStateOf(initialItem?.location ?: initialItem?.routeEnd ?: "") }
+    var routeStart by remember(initialItem) { mutableStateOf(initialItem?.routeStart ?: "") }
     var location by remember(initialItem) { mutableStateOf(initialItem?.location ?: "") }
     var routeStart by remember(initialItem) { mutableStateOf(initialItem?.routeStart ?: "") }
     var routeEnd by remember(initialItem) { mutableStateOf(initialItem?.routeEnd ?: "") }
@@ -206,6 +211,7 @@ fun EditItemDialog(
                 notes = notes.trim().takeIf { it.isNotEmpty() },
                 location = location.trim().takeIf { it.isNotEmpty() },
                 routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
+                routeEnd = location.trim().takeIf { it.isNotEmpty() },
                 routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
@@ -245,6 +251,7 @@ fun EditItemDialog(
                 notes = notes.trim().takeIf { it.isNotEmpty() },
                 location = location.trim().takeIf { it.isNotEmpty() },
                 routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
+                routeEnd = location.trim().takeIf { it.isNotEmpty() },
                 routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
@@ -342,6 +349,32 @@ fun EditItemDialog(
                         minLines = 2
                     )
                     Spacer(Modifier.height(8.dp))
+                    AddressAutocompleteField(
+                        value = location,
+                        onValueChange = { location = it },
+                        label = "Destination / Location (optional)",
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    AddressAutocompleteField(
+                        value = routeStart,
+                        onValueChange = { routeStart = it },
+                        label = "Route start (optional)",
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                        }
                     TextField(
                         value = location,
                         onValueChange = { location = it },
@@ -725,6 +758,65 @@ fun EditItemDialog(
                     )
                     Spacer(Modifier.height(64.dp))
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddressAutocompleteField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    leadingIcon: @Composable (() -> Unit)? = null
+) {
+    var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var expanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(value) {
+        val query = value.trim()
+        if (query.length < 3) {
+            suggestions = emptyList()
+            expanded = false
+            return@LaunchedEffect
+        }
+        delay(250)
+        suggestions = EventPredictionService.addressSuggestions(query).take(5)
+        expanded = suggestions.isNotEmpty()
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it && suggestions.isNotEmpty() },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {
+                onValueChange(it)
+                expanded = true
+            },
+            label = { Text(label) },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            leadingIcon = leadingIcon
+        )
+        ExposedDropdownMenu(
+            expanded = expanded && suggestions.isNotEmpty(),
+            onDismissRequest = { expanded = false }
+        ) {
+            suggestions.forEach { suggestion ->
+                DropdownMenuItem(
+                    text = { Text(suggestion) },
+                    onClick = {
+                        onValueChange(suggestion)
+                        expanded = false
+                    }
+                )
             }
         }
     }

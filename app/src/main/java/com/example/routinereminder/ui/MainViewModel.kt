@@ -883,7 +883,7 @@ class MainViewModel @Inject constructor(
 
             // Insert once
             val shouldSyncToCalendar = shouldSyncAppToCalendar() &&
-                (item.addToCalendarOnSave || item.calendarEventId != null)
+                (enrichedItem.addToCalendarOnSave || enrichedItem.calendarEventId != null)
             val context = getApplication<Application>()
             val calendars = if (shouldSyncToCalendar && CalendarSyncManager.hasCalendarPermissions(context)) {
                 CalendarSyncManager.queryCalendars(context)

@@ -15,6 +15,10 @@ object EventPredictionService {
     suspend fun enrich(item: ScheduleItem): ScheduleItem = withContext(Dispatchers.IO) {
         val location = item.location?.trim().orEmpty().ifBlank { null }
         val routeStart = item.routeStart?.trim().orEmpty().ifBlank { null }
+        val routeDestination = location ?: item.routeEnd?.trim().orEmpty().ifBlank { null }
+
+        val (weatherLat, weatherLon) = when {
+            routeDestination != null -> geocode(routeDestination)
         val routeEnd = item.routeEnd?.trim().orEmpty().ifBlank { null }
 
         val (weatherLat, weatherLon) = when {
@@ -24,12 +28,15 @@ object EventPredictionService {
         } ?: return@withContext item.copy(
             location = location,
             routeStart = routeStart,
+            routeEnd = routeDestination,
             routeEnd = routeEnd,
             predictedTravelMinutes = null,
             weatherSummary = null
         )
 
         val weatherSummary = fetchWeatherSummary(weatherLat, weatherLon)
+        val predictedTravelMinutes = if (routeStart != null && routeDestination != null) {
+            predictTravelMinutes(routeStart, routeDestination)
         val predictedTravelMinutes = if (routeStart != null && routeEnd != null) {
             predictTravelMinutes(routeStart, routeEnd)
         } else {
@@ -37,12 +44,38 @@ object EventPredictionService {
         }
 
         item.copy(
+            location = routeDestination,
+            routeStart = routeStart,
+            routeEnd = routeDestination,
             location = location,
             routeStart = routeStart,
             routeEnd = routeEnd,
             predictedTravelMinutes = predictedTravelMinutes,
             weatherSummary = weatherSummary
         )
+    }
+
+    suspend fun addressSuggestions(query: String): List<String> = withContext(Dispatchers.IO) {
+        val trimmed = query.trim()
+        if (trimmed.length < 3) return@withContext emptyList()
+        val encoded = URLEncoder.encode(trimmed, "UTF-8")
+        val url = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=5&language=en&format=json"
+        val request = Request.Builder().url(url).build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return@withContext emptyList()
+            val body = response.body?.string() ?: return@withContext emptyList()
+            val results = JSONObject(body).optJSONArray("results") ?: return@withContext emptyList()
+            buildList {
+                for (index in 0 until results.length()) {
+                    val entry = results.optJSONObject(index) ?: continue
+                    val name = entry.optString("name")
+                    val admin = entry.optString("admin1")
+                    val country = entry.optString("country")
+                    val display = listOf(name, admin, country).filter { it.isNotBlank() }.joinToString(", ")
+                    if (display.isNotBlank()) add(display)
+                }
+            }.distinct()
+        }
     }
 
     private fun geocode(query: String): Pair<Double, Double>? {
