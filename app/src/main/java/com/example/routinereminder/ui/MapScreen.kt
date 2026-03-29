@@ -88,10 +88,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.LineString
 import java.io.File
 import java.io.FileOutputStream
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -254,6 +251,8 @@ fun MapScreen(
     var manualDistanceKm by rememberSaveable { mutableStateOf("") }
     var manualDurationMin by rememberSaveable { mutableStateOf("") }
     var goalDistanceKmInput by rememberSaveable { mutableStateOf("") }
+    var trafficImpactPercentInput by rememberSaveable { mutableStateOf("0") }
+    var constructionDelayMinInput by rememberSaveable { mutableStateOf("0") }
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
     val trailPoints by viewModel.trailPoints.collectAsState()
@@ -266,12 +265,16 @@ fun MapScreen(
     val durationSec = runState?.durationSec ?: 0L
     val calories = runState?.calories ?: 0.0
     val goalDistanceKm = goalDistanceKmInput.toDoubleOrNull()?.takeIf { it > 0.0 }
-    val etaRemainingSec = estimateEtaRemainingSec(
+    val trafficImpactPercent = trafficImpactPercentInput.toIntOrNull()?.coerceAtLeast(0) ?: 0
+    val constructionDelayMin = constructionDelayMinInput.toIntOrNull()?.coerceAtLeast(0) ?: 0
+    val routeEstimateSec = estimateRouteDurationSec(
         goalDistanceKm = goalDistanceKm,
         distanceMeters = distanceMeters,
-        durationSec = durationSec
+        durationSec = durationSec,
+        activityType = activity,
+        trafficImpactPercent = trafficImpactPercent,
+        constructionDelayMin = constructionDelayMin
     )
-    val etaArrivalClock = etaRemainingSec?.let { formatEtaArrivalClock(it) }
 
     // timer
     val scope = rememberCoroutineScope()
@@ -807,8 +810,10 @@ fun MapScreen(
                         StatBlock(title = "Duration", value = formatHMS(durationSec))
                         StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
                         StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
-                        StatBlock(title = "ETA Left", value = etaRemainingSec?.let { formatHMS(it) } ?: "--:--:--")
-                        StatBlock(title = "ETA At", value = etaArrivalClock ?: "--:--")
+                        StatBlock(
+                            title = "Est. Route Time",
+                            value = routeEstimateSec?.let { formatHMS(it) } ?: "--:--:--"
+                        )
                         StatBlock(title = "Calories", value = calories.roundToInt().toString())
                     }
                 }
@@ -1019,6 +1024,30 @@ fun MapScreen(
                             label = { Text("Goal distance (km)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                         )
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = trafficImpactPercentInput,
+                                onValueChange = { trafficImpactPercentInput = it },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                label = { Text("Traffic +%") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                            OutlinedTextField(
+                                value = constructionDelayMinInput,
+                                onValueChange = { constructionDelayMinInput = it },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                label = { Text("Construction min") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                        }
                         Spacer(Modifier.height(12.dp))
                         // Show activity selector only before recording
                         ActivitySelector(
@@ -1316,22 +1345,29 @@ private fun formatSplitPace(paceSecPerKm: Long): String {
     return "%d:%02d".format(min, sec)
 }
 
-private fun estimateEtaRemainingSec(
+private fun estimateRouteDurationSec(
     goalDistanceKm: Double?,
     distanceMeters: Double,
-    durationSec: Long
+    durationSec: Long,
+    activityType: ActivityType,
+    trafficImpactPercent: Int,
+    constructionDelayMin: Int
 ): Long? {
-    if (goalDistanceKm == null || durationSec <= 0L || distanceMeters <= 0.0) return null
+    if (goalDistanceKm == null) return null
     val remainingMeters = (goalDistanceKm * 1000.0) - distanceMeters
     if (remainingMeters <= 0.0) return 0L
-    val secPerMeter = durationSec / distanceMeters
-    if (secPerMeter <= 0.0) return null
-    return (remainingMeters * secPerMeter).roundToLong().coerceAtLeast(0L)
-}
-
-private fun formatEtaArrivalClock(remainingSec: Long): String {
-    val targetTime = Date(System.currentTimeMillis() + (remainingSec * 1000L))
-    return SimpleDateFormat("HH:mm", Locale.getDefault()).format(targetTime)
+    val baseSecPerMeter = if (durationSec > 0L && distanceMeters > 0.0) {
+        durationSec / distanceMeters
+    } else {
+        when (activityType) {
+            ActivityType.RUN_WALK -> 360.0 / 1000.0 // 6:00 min/km baseline
+            ActivityType.CYCLING -> 150.0 / 1000.0 // 2:30 min/km baseline
+        }
+    }
+    val baseRemainingSec = remainingMeters * baseSecPerMeter
+    val trafficMultiplier = 1.0 + (trafficImpactPercent / 100.0)
+    val constructionDelaySec = constructionDelayMin * 60.0
+    return ((baseRemainingSec * trafficMultiplier) + constructionDelaySec).roundToLong().coerceAtLeast(0L)
 }
 
 private data class SplitUpdate(
