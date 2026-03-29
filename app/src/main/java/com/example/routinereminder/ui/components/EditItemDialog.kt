@@ -60,6 +60,9 @@ fun EditItemDialog(
 
     var title by remember(initialItem) { mutableStateOf(initialItem?.name ?: "") }
     var notes by remember(initialItem) { mutableStateOf(initialItem?.notes ?: "") }
+    var location by remember(initialItem) { mutableStateOf(initialItem?.location ?: "") }
+    var routeStart by remember(initialItem) { mutableStateOf(initialItem?.routeStart ?: "") }
+    var routeEnd by remember(initialItem) { mutableStateOf(initialItem?.routeEnd ?: "") }
 
     var selectedDate by remember(initialItem) {
         val initialEventDate = initialItem?.takeIf { it.isOneTime && it.dateEpochDay != null }?.let { LocalDate.ofEpochDay(it.dateEpochDay!!) }
@@ -201,6 +204,9 @@ fun EditItemDialog(
                 id = initialItem?.id ?: 0L,
                 name = title.trim(),
                 notes = notes.trim().takeIf { it.isNotEmpty() },
+                location = location.trim().takeIf { it.isNotEmpty() },
+                routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
+                routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
                 durationMinutes = finalTotalDurationMinutes,
@@ -237,6 +243,9 @@ fun EditItemDialog(
                 id = initialItem?.id ?: 0L,
                 name = title.trim(),
                 notes = notes.trim().takeIf { it.isNotEmpty() },
+                location = location.trim().takeIf { it.isNotEmpty() },
+                routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
+                routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
                 durationMinutes = finalTotalDurationMinutes,
@@ -331,6 +340,30 @@ fun EditItemDialog(
                         label = "Notes (optional)",
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    TextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        label = { Text("Location (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    TextField(
+                        value = routeStart,
+                        onValueChange = { routeStart = it },
+                        label = { Text("Route start (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    TextField(
+                        value = routeEnd,
+                        onValueChange = { routeEnd = it },
+                        label = { Text("Route destination (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
                     Spacer(Modifier.height(8.dp))
 
