@@ -152,6 +152,7 @@ fun SettingsScreen(
     val currentCalendarSyncAppToCalendarEnabled by viewModel.calendarSyncAppToCalendarEnabled.collectAsState()
     val currentCalendarSyncCalendarToAppEnabled by viewModel.calendarSyncCalendarToAppEnabled.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
+    val mapRouteEstimationEnabled by viewModel.mapRouteEstimationEnabled.collectAsState()
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
     val currentRoutineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
@@ -978,8 +979,13 @@ fun SettingsScreen(
                     }
                     SettingsCategory.MAP -> MapSettingsSection(
                         trackingMode = TrackingMode.fromValue(mapTrackingMode),
+                        routeEstimationEnabled = mapRouteEstimationEnabled,
                         onTrackingModeChange = { mode ->
                             viewModel.saveMapTrackingMode(mode.value)
+                            justSavedSuccessfully = false
+                        },
+                        onRouteEstimationEnabledChange = { enabled ->
+                            viewModel.saveMapRouteEstimationEnabled(enabled)
                             justSavedSuccessfully = false
                         }
                     )
@@ -2710,7 +2716,9 @@ private fun EventSetsSettingsSection(
 @Composable
 private fun MapSettingsSection(
     trackingMode: TrackingMode,
-    onTrackingModeChange: (TrackingMode) -> Unit
+    routeEstimationEnabled: Boolean,
+    onTrackingModeChange: (TrackingMode) -> Unit,
+    onRouteEstimationEnabledChange: (Boolean) -> Unit
 ) {
     var trackingMenuExpanded by remember { mutableStateOf(false) }
 
@@ -2761,6 +2769,17 @@ private fun MapSettingsSection(
             }
         }
     }
+    SettingSwitchItem(
+        text = "Route time estimation",
+        checked = routeEstimationEnabled,
+        onCheckedChange = onRouteEstimationEnabledChange
+    )
+    Text(
+        text = "Use API-based traffic/construction estimation for route time.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    )
     Spacer(modifier = Modifier.height(16.dp))
 }
 

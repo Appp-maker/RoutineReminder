@@ -58,6 +58,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EXERCISE_DB_CACHE_COMPLETE = booleanPreferencesKey("exercise_db_cache_complete")
     val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
     val MAP_TRACKING_MODE = stringPreferencesKey("map_tracking_mode")
+    val MAP_ROUTE_ESTIMATION_ENABLED = booleanPreferencesKey("map_route_estimation_enabled")
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
     val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
     val EVENT_SET_COLORS = stringSetPreferencesKey("event_set_colors")
@@ -193,6 +194,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         return dataStore.data.map { preferences ->
             preferences[MAP_TRACKING_MODE] ?: TrackingService.MODE_BALANCED
         }
+    }
+
+    suspend fun saveMapRouteEstimationEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[MAP_ROUTE_ESTIMATION_ENABLED] = enabled
+        }
+    }
+
+    fun getMapRouteEstimationEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[MAP_ROUTE_ESTIMATION_ENABLED] ?: true
+        }.distinctUntilChanged()
     }
 
     suspend fun saveFoodConsumedTrackingEnabled(enabled: Boolean) {

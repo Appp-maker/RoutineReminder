@@ -138,6 +138,8 @@ class MainViewModel @Inject constructor(
 
     private val _mapTrackingMode = MutableStateFlow(TrackingService.MODE_BALANCED)
     val mapTrackingMode: StateFlow<String> = _mapTrackingMode.asStateFlow()
+    private val _mapRouteEstimationEnabled = MutableStateFlow(true)
+    val mapRouteEstimationEnabled: StateFlow<Boolean> = _mapRouteEstimationEnabled.asStateFlow()
 
     private val _foodConsumedTrackingEnabled = MutableStateFlow(false)
     val foodConsumedTrackingEnabled: StateFlow<Boolean> = _foodConsumedTrackingEnabled.asStateFlow()
@@ -357,6 +359,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getMapTrackingMode().collectLatest { mode ->
                 _mapTrackingMode.value = mode
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getMapRouteEstimationEnabled().collectLatest { enabled ->
+                _mapRouteEstimationEnabled.value = enabled
             }
         }
         viewModelScope.launch {
@@ -606,6 +613,12 @@ class MainViewModel @Inject constructor(
     fun saveMapTrackingMode(mode: String) {
         viewModelScope.launch {
             settingsRepository.saveMapTrackingMode(mode)
+        }
+    }
+
+    fun saveMapRouteEstimationEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveMapRouteEstimationEnabled(enabled)
         }
     }
 
