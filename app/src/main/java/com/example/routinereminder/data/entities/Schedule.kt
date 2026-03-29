@@ -45,6 +45,8 @@ data class Schedule(
     val routeEnd: String? = null,
     val predictedTravelMinutes: Int? = null,
     val weatherSummary: String? = null,
+    @ColumnInfo(defaultValue = "0")
+    val lastPredictionRefreshEpochMs: Long = 0L,
 
     // NEW FIELD — Marks event as completed.
     // If true: UI shows it as finished AND notifications must not fire.

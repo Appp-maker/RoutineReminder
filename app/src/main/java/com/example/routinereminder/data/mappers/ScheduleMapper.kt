@@ -31,6 +31,7 @@ fun ScheduleItem.toEntity(): Schedule = Schedule(
     routeEnd = routeEnd,
     predictedTravelMinutes = predictedTravelMinutes,
     weatherSummary = weatherSummary,
+    lastPredictionRefreshEpochMs = lastPredictionRefreshEpochMs,
     isDone = isDone,
     isMuted = isMuted
 )
@@ -64,6 +65,7 @@ fun Schedule.toItem(): ScheduleItem =
         routeEnd = routeEnd,
         predictedTravelMinutes = predictedTravelMinutes,
         weatherSummary = weatherSummary,
+        lastPredictionRefreshEpochMs = lastPredictionRefreshEpochMs,
         isDone = isDone,
         isMuted = isMuted
     )
