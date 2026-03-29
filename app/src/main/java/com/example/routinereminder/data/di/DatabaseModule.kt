@@ -7,6 +7,7 @@ import com.example.routinereminder.data.MIGRATION_11_12
 import com.example.routinereminder.data.MIGRATION_12_13
 import com.example.routinereminder.data.MIGRATION_13_14
 import com.example.routinereminder.data.MIGRATION_14_15
+import com.example.routinereminder.data.MIGRATION_15_16
 import com.example.routinereminder.data.dao.*
 import dagger.Module
 import dagger.Provides
@@ -27,7 +28,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "routine_reminder_db"
         )
-            .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
+            .addMigrations(MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
             .fallbackToDestructiveMigration()
             .build()
 

@@ -46,10 +46,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.DayOfWeek
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.isActive
 import kotlin.math.roundToInt
 import java.util.UUID
 import org.maplibre.geojson.Point
@@ -258,6 +261,7 @@ class MainViewModel @Inject constructor(
 
     private var syncJob: Job? = null
     private var isSyncing = false
+    private var predictionRefreshJob: Job? = null
 
     private val _userSettings = MutableStateFlow<UserSettings?>(null)
     val userSettings: StateFlow<UserSettings?> = _userSettings.asStateFlow()
@@ -490,6 +494,12 @@ class MainViewModel @Inject constructor(
         applyDefaultActiveSetsForDate(_selectedDate.value)
         refreshScheduleItems()
         refreshRoutineInsights()
+        startPredictionRefreshLoop()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        predictionRefreshJob?.cancel()
     }
 
     private fun trackTrailForSession(sessionId: String?) {
@@ -867,7 +877,7 @@ class MainViewModel @Inject constructor(
 
     fun upsertScheduleItem(item: ScheduleItem) {
         viewModelScope.launch(Dispatchers.IO) {
-            val enrichedItem = EventPredictionService.enrich(item)
+            val enrichedItem = enrichItemIfEligible(item)
             // Delete exact duplicates with same name/time and matching recurrence details.
             val existing = scheduleDao.getAllOnce().filter {
                 it.name == enrichedItem.name &&
@@ -954,6 +964,75 @@ class MainViewModel @Inject constructor(
             withContext(Dispatchers.Main) {
                 refreshScheduleItems()
             }
+        }
+    }
+
+    private fun startPredictionRefreshLoop() {
+        predictionRefreshJob?.cancel()
+        predictionRefreshJob = viewModelScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                refreshEventPredictionsIfDue()
+                delay(PREDICTION_REFRESH_CHECK_MS)
+            }
+        }
+    }
+
+    private suspend fun refreshEventPredictionsIfDue() {
+        val nowMs = System.currentTimeMillis()
+        val today = LocalDate.now()
+        val schedules = scheduleDao.getAllOnce()
+
+        schedules.forEach { entity ->
+            val item = entity.toItem()
+            val nextDate = nextOccurrenceWithin21Days(item, today) ?: return@forEach
+            val intervalMs = refreshIntervalForDate(today, nextDate) ?: return@forEach
+
+            if (nowMs - item.lastPredictionRefreshEpochMs < intervalMs) return@forEach
+
+            val refreshed = EventPredictionService.enrich(item).copy(
+                lastPredictionRefreshEpochMs = nowMs
+            )
+            scheduleDao.update(refreshed.toEntity())
+        }
+    }
+
+    private suspend fun enrichItemIfEligible(item: ScheduleItem): ScheduleItem {
+        val today = LocalDate.now()
+        val nextDate = nextOccurrenceWithin21Days(item, today)
+        return if (nextDate == null || refreshIntervalForDate(today, nextDate) == null) {
+            item
+        } else {
+            EventPredictionService.enrich(item).copy(
+                lastPredictionRefreshEpochMs = System.currentTimeMillis()
+            )
+        }
+    }
+
+    private fun nextOccurrenceWithin21Days(item: ScheduleItem, fromDate: LocalDate): LocalDate? {
+        val oneTimeDate = item.dateEpochDay?.let(LocalDate::ofEpochDay)
+        if (item.isOneTime) {
+            if (oneTimeDate == null || oneTimeDate.isBefore(fromDate)) return null
+            return if (ChronoUnit.DAYS.between(fromDate, oneTimeDate) <= MAX_PREDICTION_REFRESH_DAYS_AHEAD) {
+                oneTimeDate
+            } else {
+                null
+            }
+        }
+
+        for (offset in 0..MAX_PREDICTION_REFRESH_DAYS_AHEAD) {
+            val date = fromDate.plusDays(offset.toLong())
+            if (item.occursOnDate(date)) return date
+        }
+        return null
+    }
+
+    private fun refreshIntervalForDate(fromDate: LocalDate, eventDate: LocalDate): Long? {
+        val daysAhead = ChronoUnit.DAYS.between(fromDate, eventDate)
+        return when {
+            daysAhead < 0 -> null
+            daysAhead > MAX_PREDICTION_REFRESH_DAYS_AHEAD -> null
+            daysAhead <= 1 -> TWENTY_MINUTES_MS
+            else -> SIX_HOURS_MS
         }
     }
 
@@ -1538,6 +1617,11 @@ class MainViewModel @Inject constructor(
             left.colorArgb == right.colorArgb
     }
 }
+
+private const val MAX_PREDICTION_REFRESH_DAYS_AHEAD = 21L
+private const val TWENTY_MINUTES_MS = 20L * 60L * 1000L
+private const val SIX_HOURS_MS = 6L * 60L * 60L * 1000L
+private const val PREDICTION_REFRESH_CHECK_MS = 60L * 1000L
 
 data class CalendarEventCounts(
     val local: Int = 0,

@@ -32,6 +32,7 @@ data class ScheduleItem(
     val routeEnd: String? = null,
     val predictedTravelMinutes: Int? = null,
     val weatherSummary: String? = null,
+    val lastPredictionRefreshEpochMs: Long = 0L,
 
     // ⭐ REQUIRED for Done/Undo UI
     val isDone: Boolean = false,
