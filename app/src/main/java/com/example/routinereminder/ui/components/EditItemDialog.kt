@@ -63,8 +63,6 @@ fun EditItemDialog(
 
     var title by remember(initialItem) { mutableStateOf(initialItem?.name ?: "") }
     var notes by remember(initialItem) { mutableStateOf(initialItem?.notes ?: "") }
-    var location by remember(initialItem) { mutableStateOf(initialItem?.location ?: initialItem?.routeEnd ?: "") }
-    var routeStart by remember(initialItem) { mutableStateOf(initialItem?.routeStart ?: "") }
     var location by remember(initialItem) { mutableStateOf(initialItem?.location ?: "") }
     var routeStart by remember(initialItem) { mutableStateOf(initialItem?.routeStart ?: "") }
     var routeEnd by remember(initialItem) { mutableStateOf(initialItem?.routeEnd ?: "") }
@@ -211,7 +209,6 @@ fun EditItemDialog(
                 notes = notes.trim().takeIf { it.isNotEmpty() },
                 location = location.trim().takeIf { it.isNotEmpty() },
                 routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
-                routeEnd = location.trim().takeIf { it.isNotEmpty() },
                 routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
@@ -251,7 +248,6 @@ fun EditItemDialog(
                 notes = notes.trim().takeIf { it.isNotEmpty() },
                 location = location.trim().takeIf { it.isNotEmpty() },
                 routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
-                routeEnd = location.trim().takeIf { it.isNotEmpty() },
                 routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
