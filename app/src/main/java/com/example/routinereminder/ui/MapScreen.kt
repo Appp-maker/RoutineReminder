@@ -88,7 +88,10 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.LineString
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -250,6 +253,7 @@ fun MapScreen(
     var showManualEntry by rememberSaveable { mutableStateOf(false) }
     var manualDistanceKm by rememberSaveable { mutableStateOf("") }
     var manualDurationMin by rememberSaveable { mutableStateOf("") }
+    var goalDistanceKmInput by rememberSaveable { mutableStateOf("") }
     // live stats
     val runState by viewModel.activeRunState.collectAsState()
     val trailPoints by viewModel.trailPoints.collectAsState()
@@ -261,6 +265,13 @@ fun MapScreen(
     val distanceMeters = runState?.distanceMeters ?: 0.0
     val durationSec = runState?.durationSec ?: 0L
     val calories = runState?.calories ?: 0.0
+    val goalDistanceKm = goalDistanceKmInput.toDoubleOrNull()?.takeIf { it > 0.0 }
+    val etaRemainingSec = estimateEtaRemainingSec(
+        goalDistanceKm = goalDistanceKm,
+        distanceMeters = distanceMeters,
+        durationSec = durationSec
+    )
+    val etaArrivalClock = etaRemainingSec?.let { formatEtaArrivalClock(it) }
 
     // timer
     val scope = rememberCoroutineScope()
@@ -796,6 +807,8 @@ fun MapScreen(
                         StatBlock(title = "Duration", value = formatHMS(durationSec))
                         StatBlock(title = "Distance (km)", value = "%.2f".format(distanceMeters / 1000.0))
                         StatBlock(title = "Avg. Pace", value = formatPace(distanceMeters, durationSec))
+                        StatBlock(title = "ETA Left", value = etaRemainingSec?.let { formatHMS(it) } ?: "--:--:--")
+                        StatBlock(title = "ETA At", value = etaArrivalClock ?: "--:--")
                         StatBlock(title = "Calories", value = calories.roundToInt().toString())
                     }
                 }
@@ -996,6 +1009,17 @@ fun MapScreen(
                     Spacer(Modifier.height(12.dp))
 
                     if (!isRecording) {
+                        OutlinedTextField(
+                            value = goalDistanceKmInput,
+                            onValueChange = { goalDistanceKmInput = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            singleLine = true,
+                            label = { Text("Goal distance (km)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        Spacer(Modifier.height(12.dp))
                         // Show activity selector only before recording
                         ActivitySelector(
                             current = selectedActivity,
@@ -1290,6 +1314,24 @@ private fun formatSplitPace(paceSecPerKm: Long): String {
     val min = paceSecPerKm / 60
     val sec = paceSecPerKm % 60
     return "%d:%02d".format(min, sec)
+}
+
+private fun estimateEtaRemainingSec(
+    goalDistanceKm: Double?,
+    distanceMeters: Double,
+    durationSec: Long
+): Long? {
+    if (goalDistanceKm == null || durationSec <= 0L || distanceMeters <= 0.0) return null
+    val remainingMeters = (goalDistanceKm * 1000.0) - distanceMeters
+    if (remainingMeters <= 0.0) return 0L
+    val secPerMeter = durationSec / distanceMeters
+    if (secPerMeter <= 0.0) return null
+    return (remainingMeters * secPerMeter).roundToLong().coerceAtLeast(0L)
+}
+
+private fun formatEtaArrivalClock(remainingSec: Long): String {
+    val targetTime = Date(System.currentTimeMillis() + (remainingSec * 1000L))
+    return SimpleDateFormat("HH:mm", Locale.getDefault()).format(targetTime)
 }
 
 private data class SplitUpdate(
