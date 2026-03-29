@@ -57,7 +57,7 @@ object EventPredictionService {
 
     private fun geocode(query: String): Pair<Double, Double>? {
         val encoded = URLEncoder.encode(query, "UTF-8")
-        geocodeWithNominatim(encoded) ?: geocodeWithOpenMeteo(encoded)
+        return geocodeWithNominatim(encoded) ?: geocodeWithOpenMeteo(encoded)
     }
 
     private fun queryNominatimSuggestions(query: String): List<String> {
