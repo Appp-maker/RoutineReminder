@@ -25,11 +25,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
+import android.graphics.PointF
 import android.location.Location
 import android.net.Uri
 import com.example.routinereminder.MainActivity
 import com.example.routinereminder.data.SnapshotStorage
 import com.example.routinereminder.data.model.ActiveRunState
+import com.example.routinereminder.data.model.TerrainDuration
+import com.example.routinereminder.data.model.WeatherTimelineEntry
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -148,8 +151,14 @@ private data class WeatherSnapshot(
     val windSpeedKmh: Double,
     val humidityPercent: Int,
     val weatherCode: Int,
+    val lightCondition: LightCondition,
     val fetchedAtMs: Long
 )
+
+private enum class LightCondition {
+    DAY,
+    NIGHT
+}
 
 @Serializable
 private data class OpenMeteoResponse(
@@ -161,7 +170,8 @@ private data class OpenMeteoCurrent(
     @SerialName("temperature_2m") val temperatureC: Double? = null,
     @SerialName("wind_speed_10m") val windSpeedKmh: Double? = null,
     @SerialName("relative_humidity_2m") val humidityPercent: Int? = null,
-    @SerialName("weather_code") val weatherCode: Int? = null
+    @SerialName("weather_code") val weatherCode: Int? = null,
+    @SerialName("is_day") val isDay: Int? = null
 )
 
 private val weatherJson = Json { ignoreUnknownKeys = true }
@@ -170,6 +180,11 @@ private val weatherClient = OkHttpClient()
 private data class WeatherCoordinates(
     val latitude: Double,
     val longitude: Double
+)
+
+private data class TerrainSample(
+    val epochMs: Long,
+    val terrain: String
 )
 
 private data class CalorieProfile(
@@ -313,7 +328,9 @@ fun MapScreen(
     var weatherLoading by remember { mutableStateOf(false) }
     var lastWeatherPoint by remember { mutableStateOf<Point?>(null) }
     var lastWeatherFetchAt by remember { mutableStateOf(0L) }
+    var weatherTimeline by remember { mutableStateOf<List<WeatherTimelineEntry>>(emptyList()) }
     var lastKnownCoordinates by remember { mutableStateOf<WeatherCoordinates?>(null) }
+    var terrainSamples by remember { mutableStateOf<List<TerrainSample>>(emptyList()) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     fun requestLocationPermissions() {
@@ -373,6 +390,9 @@ fun MapScreen(
             val snapshot = fetchWeatherSnapshot(lat, lng)
             if (snapshot != null) {
                 weatherSnapshot = snapshot
+                if (isRecording) {
+                    weatherTimeline = appendWeatherTimeline(weatherTimeline, snapshot)
+                }
             }
             weatherLoading = false
         }
@@ -451,6 +471,12 @@ fun MapScreen(
         val m = map ?: return
         val s = m.style ?: return
         requestWeather(lpLat, lpLng)
+        if (isRecording) {
+            terrainSamples = appendTerrainSample(
+                existing = terrainSamples,
+                terrain = detectTerrainLabel(m, latLng)
+            )
+        }
 
 
         // update marker
@@ -1017,6 +1043,8 @@ fun MapScreen(
                                 if (!isRecording) {
                                     // --- Start logic ---
                                     lastMovementAt = System.currentTimeMillis()
+                                    weatherTimeline = emptyList()
+                                    terrainSamples = emptyList()
                                     viewModel.startRun(selectedActivity.label, trackingMode.value)
 
                                     // Start Foreground GPS Tracking Service
@@ -1044,6 +1072,10 @@ fun MapScreen(
                                     val now = System.currentTimeMillis()
                                     val startTime = runState?.startEpochMs ?: now
                                     val pace = avgPaceSecPerKm(distanceMeters, durationSec)
+                                    val finalTerrainDurations = summarizeTerrainDurations(
+                                        samples = terrainSamples,
+                                        fallbackDurationSec = durationSec
+                                    )
 
                                     val session = SessionStats(
                                         id = runState?.sessionId ?: now.toString(),
@@ -1055,7 +1087,9 @@ fun MapScreen(
                                         calories = calories,
                                         avgPaceSecPerKm = pace,
                                         splitPaceSecPerKm = splitDurations,
-                                        polyline = trailPoints
+                                        polyline = trailPoints,
+                                        weatherTimeline = weatherTimeline,
+                                        terrainDurations = finalTerrainDurations
                                     )
 
                                     SessionStore.saveSession(context, session)
@@ -1398,6 +1432,72 @@ private fun haversineMeters(a: Point, b: Point): Double {
     return R * c
 }
 
+private fun appendWeatherTimeline(
+    existing: List<WeatherTimelineEntry>,
+    snapshot: WeatherSnapshot
+): List<WeatherTimelineEntry> {
+    val next = WeatherTimelineEntry(
+        epochMs = snapshot.fetchedAtMs,
+        weatherCode = snapshot.weatherCode,
+        temperatureC = snapshot.temperatureC,
+        humidityPercent = snapshot.humidityPercent,
+        windSpeedKmh = snapshot.windSpeedKmh,
+        lightCondition = snapshot.lightCondition.name.lowercase()
+    )
+    val last = existing.lastOrNull() ?: return existing + next
+    val hasMeaningfulChange = last.weatherCode != next.weatherCode ||
+            last.lightCondition != next.lightCondition ||
+            kotlin.math.abs(last.temperatureC - next.temperatureC) >= 0.5 ||
+            kotlin.math.abs(last.windSpeedKmh - next.windSpeedKmh) >= 2.0 ||
+            kotlin.math.abs(last.humidityPercent - next.humidityPercent) >= 5
+    return if (hasMeaningfulChange) existing + next else existing
+}
+
+private fun detectTerrainLabel(map: MapLibreMap, latLng: LatLng): String {
+    val screen = map.projection.toScreenLocation(latLng)
+    val point = PointF(screen.x, screen.y)
+    val layersToCheck = arrayOf("landcover", "landuse", "water", "waterway", "hillshade")
+    val features = map.queryRenderedFeatures(point, *layersToCheck)
+    for (feature in features) {
+        val classValue = feature.getStringProperty("class")
+        if (!classValue.isNullOrBlank()) {
+            return classValue
+        }
+        val typeValue = feature.getStringProperty("type")
+        if (!typeValue.isNullOrBlank()) {
+            return typeValue
+        }
+    }
+    return "unknown"
+}
+
+private fun appendTerrainSample(existing: List<TerrainSample>, terrain: String): List<TerrainSample> {
+    val now = System.currentTimeMillis()
+    val last = existing.lastOrNull()
+    return if (last == null || last.terrain != terrain) {
+        existing + TerrainSample(epochMs = now, terrain = terrain)
+    } else {
+        existing
+    }
+}
+
+private fun summarizeTerrainDurations(
+    samples: List<TerrainSample>,
+    fallbackDurationSec: Long
+): List<TerrainDuration> {
+    if (samples.isEmpty()) return emptyList()
+    val durationsMs = linkedMapOf<String, Long>()
+    samples.forEachIndexed { index, sample ->
+        val nextTimestamp = samples.getOrNull(index + 1)?.epochMs
+            ?: (sample.epochMs + (fallbackDurationSec * 1000))
+        val delta = (nextTimestamp - sample.epochMs).coerceAtLeast(0L)
+        durationsMs[sample.terrain] = (durationsMs[sample.terrain] ?: 0L) + delta
+    }
+    return durationsMs.map { (terrain, durationMs) ->
+        TerrainDuration(terrain = terrain, durationSec = (durationMs / 1000L).coerceAtLeast(1L))
+    }.sortedByDescending { it.durationSec }
+}
+
 private suspend fun fetchWeatherSnapshot(lat: Double, lng: Double): WeatherSnapshot? {
     val url = HttpUrl.Builder()
         .scheme("https")
@@ -1405,7 +1505,7 @@ private suspend fun fetchWeatherSnapshot(lat: Double, lng: Double): WeatherSnaps
         .addPathSegments("v1/forecast")
         .addQueryParameter("latitude", lat.toString())
         .addQueryParameter("longitude", lng.toString())
-        .addQueryParameter("current", "temperature_2m,wind_speed_10m,relative_humidity_2m,weather_code")
+        .addQueryParameter("current", "temperature_2m,wind_speed_10m,relative_humidity_2m,weather_code,is_day")
         .addQueryParameter("wind_speed_unit", "kmh")
         .addQueryParameter("temperature_unit", "celsius")
         .build()
@@ -1423,11 +1523,13 @@ private suspend fun fetchWeatherSnapshot(lat: Double, lng: Double): WeatherSnaps
             val wind = current.windSpeedKmh ?: return@withContext null
             val humidity = current.humidityPercent ?: return@withContext null
             val weatherCode = current.weatherCode ?: return@withContext null
+            val light = if (current.isDay == 1) LightCondition.DAY else LightCondition.NIGHT
             WeatherSnapshot(
                 temperatureC = temp,
                 windSpeedKmh = wind,
                 humidityPercent = humidity,
                 weatherCode = weatherCode,
+                lightCondition = light,
                 fetchedAtMs = System.currentTimeMillis()
             )
         }
