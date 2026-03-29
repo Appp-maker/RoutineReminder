@@ -65,6 +65,9 @@ fun EditItemDialog(
     var notes by remember(initialItem) { mutableStateOf(initialItem?.notes ?: "") }
     var location by remember(initialItem) { mutableStateOf(initialItem?.location ?: initialItem?.routeEnd ?: "") }
     var routeStart by remember(initialItem) { mutableStateOf(initialItem?.routeStart ?: "") }
+    var location by remember(initialItem) { mutableStateOf(initialItem?.location ?: "") }
+    var routeStart by remember(initialItem) { mutableStateOf(initialItem?.routeStart ?: "") }
+    var routeEnd by remember(initialItem) { mutableStateOf(initialItem?.routeEnd ?: "") }
 
     var selectedDate by remember(initialItem) {
         val initialEventDate = initialItem?.takeIf { it.isOneTime && it.dateEpochDay != null }?.let { LocalDate.ofEpochDay(it.dateEpochDay!!) }
@@ -209,6 +212,7 @@ fun EditItemDialog(
                 location = location.trim().takeIf { it.isNotEmpty() },
                 routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
                 routeEnd = location.trim().takeIf { it.isNotEmpty() },
+                routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
                 durationMinutes = finalTotalDurationMinutes,
@@ -248,6 +252,7 @@ fun EditItemDialog(
                 location = location.trim().takeIf { it.isNotEmpty() },
                 routeStart = routeStart.trim().takeIf { it.isNotEmpty() },
                 routeEnd = location.trim().takeIf { it.isNotEmpty() },
+                routeEnd = routeEnd.trim().takeIf { it.isNotEmpty() },
                 hour = selectedTime.hour,
                 minute = selectedTime.minute,
                 durationMinutes = finalTotalDurationMinutes,
@@ -370,6 +375,28 @@ fun EditItemDialog(
                                 tint = MaterialTheme.colorScheme.secondary
                             )
                         }
+                    TextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        label = { Text("Location (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    TextField(
+                        value = routeStart,
+                        onValueChange = { routeStart = it },
+                        label = { Text("Route start (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    TextField(
+                        value = routeEnd,
+                        onValueChange = { routeEnd = it },
+                        label = { Text("Route destination (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
                     Spacer(Modifier.height(8.dp))
 

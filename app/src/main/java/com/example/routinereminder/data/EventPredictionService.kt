@@ -17,8 +17,11 @@ object EventPredictionService {
         val routeStart = item.routeStart?.trim().orEmpty().ifBlank { null }
         val routeDestination = location ?: item.routeEnd?.trim().orEmpty().ifBlank { null }
 
-        val weatherCoordinates = when {
+        val (weatherLat, weatherLon) = when {
             routeDestination != null -> geocode(routeDestination)
+        val routeEnd = item.routeEnd?.trim().orEmpty().ifBlank { null }
+
+        val (weatherLat, weatherLon) = when {
             routeStart != null -> geocode(routeStart)
             location != null -> geocode(location)
             else -> null
@@ -26,15 +29,16 @@ object EventPredictionService {
             location = location,
             routeStart = routeStart,
             routeEnd = routeDestination,
+            routeEnd = routeEnd,
             predictedTravelMinutes = null,
             weatherSummary = null
         )
-        val weatherLat = weatherCoordinates.first
-        val weatherLon = weatherCoordinates.second
 
         val weatherSummary = fetchWeatherSummary(weatherLat, weatherLon)
         val predictedTravelMinutes = if (routeStart != null && routeDestination != null) {
             predictTravelMinutes(routeStart, routeDestination)
+        val predictedTravelMinutes = if (routeStart != null && routeEnd != null) {
+            predictTravelMinutes(routeStart, routeEnd)
         } else {
             null
         }
@@ -43,6 +47,9 @@ object EventPredictionService {
             location = routeDestination,
             routeStart = routeStart,
             routeEnd = routeDestination,
+            location = location,
+            routeStart = routeStart,
+            routeEnd = routeEnd,
             predictedTravelMinutes = predictedTravelMinutes,
             weatherSummary = weatherSummary
         )
