@@ -143,12 +143,10 @@ class MainViewModel @Inject constructor(
     val mapTrackingMode: StateFlow<String> = _mapTrackingMode.asStateFlow()
     private val _mapRouteEstimationEnabled = MutableStateFlow(true)
     val mapRouteEstimationEnabled: StateFlow<Boolean> = _mapRouteEstimationEnabled.asStateFlow()
-    private val _mapRouteTransportMode = MutableStateFlow("DRIVING")
-    val mapRouteTransportMode: StateFlow<String> = _mapRouteTransportMode.asStateFlow()
-    private val _routeDepartureReminderEnabled = MutableStateFlow(false)
-    val routeDepartureReminderEnabled: StateFlow<Boolean> = _routeDepartureReminderEnabled.asStateFlow()
-    private val _routeDepartureReminderExtraMinutes = MutableStateFlow(0)
-    val routeDepartureReminderExtraMinutes: StateFlow<Int> = _routeDepartureReminderExtraMinutes.asStateFlow()
+    private val _routeTimeAddBeforeEvent = MutableStateFlow(false)
+    val routeTimeAddBeforeEvent: StateFlow<Boolean> = _routeTimeAddBeforeEvent.asStateFlow()
+    private val _routeTimeAddAfterEvent = MutableStateFlow(false)
+    val routeTimeAddAfterEvent: StateFlow<Boolean> = _routeTimeAddAfterEvent.asStateFlow()
 
     private val _foodConsumedTrackingEnabled = MutableStateFlow(false)
     val foodConsumedTrackingEnabled: StateFlow<Boolean> = _foodConsumedTrackingEnabled.asStateFlow()
@@ -377,18 +375,13 @@ class MainViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            settingsRepository.getMapRouteTransportMode().collectLatest { mode ->
-                _mapRouteTransportMode.value = mode
+            settingsRepository.getRouteTimeAddBeforeEvent().collectLatest { enabled ->
+                _routeTimeAddBeforeEvent.value = enabled
             }
         }
         viewModelScope.launch {
-            settingsRepository.getRouteDepartureReminderEnabled().collectLatest { enabled ->
-                _routeDepartureReminderEnabled.value = enabled
-            }
-        }
-        viewModelScope.launch {
-            settingsRepository.getRouteDepartureReminderExtraMinutes().collectLatest { minutes ->
-                _routeDepartureReminderExtraMinutes.value = minutes
+            settingsRepository.getRouteTimeAddAfterEvent().collectLatest { enabled ->
+                _routeTimeAddAfterEvent.value = enabled
             }
         }
         viewModelScope.launch {
@@ -653,21 +646,15 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun saveMapRouteTransportMode(mode: String) {
+    fun saveRouteTimeAddBeforeEvent(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepository.saveMapRouteTransportMode(mode)
+            settingsRepository.saveRouteTimeAddBeforeEvent(enabled)
         }
     }
 
-    fun saveRouteDepartureReminderEnabled(enabled: Boolean) {
+    fun saveRouteTimeAddAfterEvent(enabled: Boolean) {
         viewModelScope.launch {
-            settingsRepository.saveRouteDepartureReminderEnabled(enabled)
-        }
-    }
-
-    fun saveRouteDepartureReminderExtraMinutes(minutes: Int) {
-        viewModelScope.launch {
-            settingsRepository.saveRouteDepartureReminderExtraMinutes(minutes)
+            settingsRepository.saveRouteTimeAddAfterEvent(enabled)
         }
     }
 

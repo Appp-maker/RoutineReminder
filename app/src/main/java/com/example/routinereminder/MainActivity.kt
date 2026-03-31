@@ -412,7 +412,8 @@ fun MainAppUI(
         val eventSetsEnabled by viewModel.eventSetsEnabled.collectAsState()
         val routineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
         val routineInsights by viewModel.routineInsights.collectAsState()
-        val mapRouteTransportMode by viewModel.mapRouteTransportMode.collectAsState()
+        val routeTimeAddBeforeEvent by viewModel.routeTimeAddBeforeEvent.collectAsState()
+        val routeTimeAddAfterEvent by viewModel.routeTimeAddAfterEvent.collectAsState()
 
         if (enabledTabsState == null) {
             FirstLaunchTabSelectionDialog(
@@ -591,7 +592,9 @@ fun MainAppUI(
                                 },
                                 viewModel = viewModel,
                                 routineInsightsEnabled = routineInsightsEnabled,
-                                routineInsights = routineInsights
+                                routineInsights = routineInsights,
+                                routeTimeAddBeforeEvent = routeTimeAddBeforeEvent,
+                                routeTimeAddAfterEvent = routeTimeAddAfterEvent
                             )
 
                         }
@@ -981,6 +984,8 @@ private fun ScheduleItemListContent(
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
+    routeTimeAddBeforeEvent: Boolean,
+    routeTimeAddAfterEvent: Boolean,
     isCompactView: Boolean,
     showQuickDoneToggle: Boolean,
     onLongPress: (ScheduleItem) -> Unit,
@@ -1000,8 +1005,12 @@ private fun ScheduleItemListContent(
         } else {
             val nowTime = LocalTime.now()
             distinctItems.indexOfFirst { item ->
-                val start = LocalTime.of(item.hour, item.minute)
-                val end = start.plusMinutes(item.durationMinutes.toLong())
+                val timeWindow = item.effectiveTimeWindow(
+                    addBefore = routeTimeAddBeforeEvent,
+                    addAfter = routeTimeAddAfterEvent
+                )
+                val start = timeWindow.start
+                val end = timeWindow.end
                 nowTime.isBefore(end)
             }
         }
@@ -1101,6 +1110,8 @@ private fun ScheduleItemListContent(
                             pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                             pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                             pastEventBackgroundTransparency = pastEventBackgroundTransparency,
+                            routeTimeAddBeforeEvent = routeTimeAddBeforeEvent,
+                            routeTimeAddAfterEvent = routeTimeAddAfterEvent,
                             showQuickDoneToggle = showQuickDoneToggle,
                             onLongPress = onLongPress,
                             onMarkDone = { onMarkDone(item) },
@@ -1161,6 +1172,8 @@ private fun ScheduleItemListContent(
                             pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                             pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                             pastEventBackgroundTransparency = pastEventBackgroundTransparency,
+                            routeTimeAddBeforeEvent = routeTimeAddBeforeEvent,
+                            routeTimeAddAfterEvent = routeTimeAddAfterEvent,
                             showQuickDoneToggle = showQuickDoneToggle,
                             onLongPress = onLongPress,
                             onMarkDone = { onMarkDone(item) },
@@ -1212,15 +1225,21 @@ private fun CompactScheduleItemCard(
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
+    routeTimeAddBeforeEvent: Boolean,
+    routeTimeAddAfterEvent: Boolean,
     showQuickDoneToggle: Boolean,
     onLongPress: (ScheduleItem) -> Unit,
     onMarkDone: () -> Unit,
     onUndoDone: () -> Unit
 ) {
-    val startTime = remember(item.hour, item.minute) { LocalTime.of(item.hour, item.minute) }
-    val endTime = remember(item.hour, item.minute, item.durationMinutes) {
-        startTime.plusMinutes(item.durationMinutes.toLong())
+    val timeWindow = remember(item, routeTimeAddBeforeEvent, routeTimeAddAfterEvent) {
+        item.effectiveTimeWindow(
+            addBefore = routeTimeAddBeforeEvent,
+            addAfter = routeTimeAddAfterEvent
+        )
     }
+    val startTime = timeWindow.start
+    val endTime = timeWindow.end
     val timeRange = remember(startTime, endTime) {
         "${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}–${
             endTime.format(DateTimeFormatter.ofPattern("HH:mm"))
@@ -1228,8 +1247,8 @@ private fun CompactScheduleItemCard(
     }
     val decoration = if (isDoneToday) TextDecoration.LineThrough else TextDecoration.None
     val realNowDateTime = LocalDateTime.now()
-    val itemAbsoluteStartDateTime = currentDate.atTime(item.hour, item.minute)
-    val itemAbsoluteEndDateTime = itemAbsoluteStartDateTime.plusMinutes(item.durationMinutes.toLong())
+    val itemAbsoluteStartDateTime = currentDate.atTime(startTime)
+    val itemAbsoluteEndDateTime = currentDate.atTime(endTime)
     val isEffectivelyPastNow = itemAbsoluteEndDateTime.isBefore(realNowDateTime)
     val isPastEvent = isEffectivelyPastNow && !isDoneToday
     val resolvedColorArgb = item.setId?.let { setId ->
@@ -1424,6 +1443,24 @@ private sealed class DisplayScheduleItem {
     data class Event(val item: ScheduleItem) : DisplayScheduleItem()
     data object NowIndicator : DisplayScheduleItem()
     data object EmptyState : DisplayScheduleItem()
+}
+
+private data class EventTimeWindow(
+    val start: LocalTime,
+    val end: LocalTime
+)
+
+private fun ScheduleItem.effectiveTimeWindow(
+    addBefore: Boolean,
+    addAfter: Boolean
+): EventTimeWindow {
+    val routeMinutes = predictedTravelMinutes?.coerceAtLeast(0) ?: 0
+    val start = LocalTime.of(hour, minute)
+        .minusMinutes(if (addBefore) routeMinutes.toLong() else 0L)
+    val end = LocalTime.of(hour, minute)
+        .plusMinutes(durationMinutes.toLong())
+        .plusMinutes(if (addAfter) routeMinutes.toLong() else 0L)
+    return EventTimeWindow(start = start, end = end)
 }
 
 @Composable
@@ -1675,7 +1712,9 @@ fun MainScreenContent(
     onUndoDone: (ScheduleItem) -> Unit,
     viewModel: MainViewModel,
     routineInsightsEnabled: Boolean,
-    routineInsights: com.example.routinereminder.ui.RoutineInsights?
+    routineInsights: com.example.routinereminder.ui.RoutineInsights?,
+    routeTimeAddBeforeEvent: Boolean,
+    routeTimeAddAfterEvent: Boolean
 )
 
  {
@@ -1763,6 +1802,8 @@ fun MainScreenContent(
                 pastEventBackgroundTreatment = pastEventBackgroundTreatment,
                 pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
                 pastEventBackgroundTransparency = pastEventBackgroundTransparency,
+                routeTimeAddBeforeEvent = routeTimeAddBeforeEvent,
+                routeTimeAddAfterEvent = routeTimeAddAfterEvent,
                 isCompactView = isCompactView,
                 showQuickDoneToggle = routineInsightsEnabled && routineInsights != null,
                 onLongPress = { item ->
@@ -1880,6 +1921,8 @@ fun ScheduleItemView(
     pastEventBackgroundTreatment: PastEventColorTreatment,
     pastEventBackgroundCustomColor: Int,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
+    routeTimeAddBeforeEvent: Boolean,
+    routeTimeAddAfterEvent: Boolean,
     showQuickDoneToggle: Boolean,
     onLongPress: (ScheduleItem) -> Unit,
     onMarkDone: (ScheduleItem) -> Unit,
@@ -1888,10 +1931,18 @@ fun ScheduleItemView(
 ) {
     var isExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
     var notesText by remember(item.id, item.notes) { mutableStateOf(item.notes.orEmpty()) }
-    val timeString = String.format(Locale.getDefault(), "%02d:%02d", item.hour, item.minute)
+    val timeWindow = remember(item, routeTimeAddBeforeEvent, routeTimeAddAfterEvent) {
+        item.effectiveTimeWindow(
+            addBefore = routeTimeAddBeforeEvent,
+            addAfter = routeTimeAddAfterEvent
+        )
+    }
+    val timeString = remember(timeWindow.start) {
+        timeWindow.start.format(DateTimeFormatter.ofPattern("HH:mm"))
+    }
     val realNowDateTime = LocalDateTime.now()
-    val itemAbsoluteStartDateTime = currentDate.atTime(item.hour, item.minute)
-    val itemAbsoluteEndDateTime = itemAbsoluteStartDateTime.plusMinutes(item.durationMinutes.toLong())
+    val itemAbsoluteStartDateTime = currentDate.atTime(timeWindow.start)
+    val itemAbsoluteEndDateTime = currentDate.atTime(timeWindow.end)
     val endTimeFormatted = remember(itemAbsoluteEndDateTime) {
         itemAbsoluteEndDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))
     }
