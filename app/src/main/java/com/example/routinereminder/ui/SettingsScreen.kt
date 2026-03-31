@@ -153,6 +153,8 @@ fun SettingsScreen(
     val currentCalendarSyncCalendarToAppEnabled by viewModel.calendarSyncCalendarToAppEnabled.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     val mapRouteEstimationEnabled by viewModel.mapRouteEstimationEnabled.collectAsState()
+    val routeTimeAddBeforeEvent by viewModel.routeTimeAddBeforeEvent.collectAsState()
+    val routeTimeAddAfterEvent by viewModel.routeTimeAddAfterEvent.collectAsState()
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
     val currentRoutineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
@@ -980,12 +982,22 @@ fun SettingsScreen(
                     SettingsCategory.MAP -> MapSettingsSection(
                         trackingMode = TrackingMode.fromValue(mapTrackingMode),
                         routeEstimationEnabled = mapRouteEstimationEnabled,
+                        addRouteTimeBeforeEvent = routeTimeAddBeforeEvent,
+                        addRouteTimeAfterEvent = routeTimeAddAfterEvent,
                         onTrackingModeChange = { mode ->
                             viewModel.saveMapTrackingMode(mode.value)
                             justSavedSuccessfully = false
                         },
                         onRouteEstimationEnabledChange = { enabled ->
                             viewModel.saveMapRouteEstimationEnabled(enabled)
+                            justSavedSuccessfully = false
+                        },
+                        onAddRouteTimeBeforeEventChange = { enabled ->
+                            viewModel.saveRouteTimeAddBeforeEvent(enabled)
+                            justSavedSuccessfully = false
+                        },
+                        onAddRouteTimeAfterEventChange = { enabled ->
+                            viewModel.saveRouteTimeAddAfterEvent(enabled)
                             justSavedSuccessfully = false
                         }
                     )
@@ -2717,8 +2729,12 @@ private fun EventSetsSettingsSection(
 private fun MapSettingsSection(
     trackingMode: TrackingMode,
     routeEstimationEnabled: Boolean,
+    addRouteTimeBeforeEvent: Boolean,
+    addRouteTimeAfterEvent: Boolean,
     onTrackingModeChange: (TrackingMode) -> Unit,
-    onRouteEstimationEnabledChange: (Boolean) -> Unit
+    onRouteEstimationEnabledChange: (Boolean) -> Unit,
+    onAddRouteTimeBeforeEventChange: (Boolean) -> Unit,
+    onAddRouteTimeAfterEventChange: (Boolean) -> Unit
 ) {
     var trackingMenuExpanded by remember { mutableStateOf(false) }
 
@@ -2776,6 +2792,28 @@ private fun MapSettingsSection(
     )
     Text(
         text = "Use API-based traffic/construction estimation for route time.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    )
+    SettingSwitchItem(
+        text = "Add route time before start",
+        checked = addRouteTimeBeforeEvent,
+        onCheckedChange = onAddRouteTimeBeforeEventChange
+    )
+    Text(
+        text = "If an ETA exists, show it before the event start.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    )
+    SettingSwitchItem(
+        text = "Add driving back after end",
+        checked = addRouteTimeAfterEvent,
+        onCheckedChange = onAddRouteTimeAfterEventChange
+    )
+    Text(
+        text = "If an ETA exists, append the same drive time after the event.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)

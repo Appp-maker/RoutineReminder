@@ -59,6 +59,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
     val MAP_TRACKING_MODE = stringPreferencesKey("map_tracking_mode")
     val MAP_ROUTE_ESTIMATION_ENABLED = booleanPreferencesKey("map_route_estimation_enabled")
+    val ROUTE_TIME_ADD_BEFORE_EVENT = booleanPreferencesKey("route_time_add_before_event")
+    val ROUTE_TIME_ADD_AFTER_EVENT = booleanPreferencesKey("route_time_add_after_event")
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
     val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
     val EVENT_SET_COLORS = stringSetPreferencesKey("event_set_colors")
@@ -205,6 +207,30 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getMapRouteEstimationEnabled(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[MAP_ROUTE_ESTIMATION_ENABLED] ?: true
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveRouteTimeAddBeforeEvent(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ROUTE_TIME_ADD_BEFORE_EVENT] = enabled
+        }
+    }
+
+    fun getRouteTimeAddBeforeEvent(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[ROUTE_TIME_ADD_BEFORE_EVENT] ?: false
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveRouteTimeAddAfterEvent(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ROUTE_TIME_ADD_AFTER_EVENT] = enabled
+        }
+    }
+
+    fun getRouteTimeAddAfterEvent(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[ROUTE_TIME_ADD_AFTER_EVENT] ?: false
         }.distinctUntilChanged()
     }
 

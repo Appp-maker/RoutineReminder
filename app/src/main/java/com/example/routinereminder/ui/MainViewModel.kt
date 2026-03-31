@@ -143,6 +143,10 @@ class MainViewModel @Inject constructor(
     val mapTrackingMode: StateFlow<String> = _mapTrackingMode.asStateFlow()
     private val _mapRouteEstimationEnabled = MutableStateFlow(true)
     val mapRouteEstimationEnabled: StateFlow<Boolean> = _mapRouteEstimationEnabled.asStateFlow()
+    private val _routeTimeAddBeforeEvent = MutableStateFlow(false)
+    val routeTimeAddBeforeEvent: StateFlow<Boolean> = _routeTimeAddBeforeEvent.asStateFlow()
+    private val _routeTimeAddAfterEvent = MutableStateFlow(false)
+    val routeTimeAddAfterEvent: StateFlow<Boolean> = _routeTimeAddAfterEvent.asStateFlow()
 
     private val _foodConsumedTrackingEnabled = MutableStateFlow(false)
     val foodConsumedTrackingEnabled: StateFlow<Boolean> = _foodConsumedTrackingEnabled.asStateFlow()
@@ -368,6 +372,16 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getMapRouteEstimationEnabled().collectLatest { enabled ->
                 _mapRouteEstimationEnabled.value = enabled
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getRouteTimeAddBeforeEvent().collectLatest { enabled ->
+                _routeTimeAddBeforeEvent.value = enabled
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getRouteTimeAddAfterEvent().collectLatest { enabled ->
+                _routeTimeAddAfterEvent.value = enabled
             }
         }
         viewModelScope.launch {
@@ -629,6 +643,18 @@ class MainViewModel @Inject constructor(
     fun saveMapRouteEstimationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.saveMapRouteEstimationEnabled(enabled)
+        }
+    }
+
+    fun saveRouteTimeAddBeforeEvent(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveRouteTimeAddBeforeEvent(enabled)
+        }
+    }
+
+    fun saveRouteTimeAddAfterEvent(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveRouteTimeAddAfterEvent(enabled)
         }
     }
 
