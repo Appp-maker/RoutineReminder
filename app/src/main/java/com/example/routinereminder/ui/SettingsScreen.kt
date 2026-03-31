@@ -2737,6 +2737,10 @@ private fun MapSettingsSection(
     onAddRouteTimeAfterEventChange: (Boolean) -> Unit
 ) {
     var trackingMenuExpanded by remember { mutableStateOf(false) }
+    var transportMenuExpanded by remember { mutableStateOf(false) }
+    var extraMinutesInput by remember(routeDepartureReminderExtraMinutes) {
+        mutableStateOf(routeDepartureReminderExtraMinutes.toString())
+    }
 
     Text(stringResource(R.string.settings_category_map), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Row(

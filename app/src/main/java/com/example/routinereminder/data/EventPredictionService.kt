@@ -14,10 +14,26 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 object EventPredictionService {
+    enum class TravelMode(val storedValue: String) {
+        DRIVING("DRIVING"),
+        CYCLING("CYCLING"),
+        WALKING("WALKING"),
+        PUBLIC_TRANSPORT("PUBLIC_TRANSPORT");
+
+        companion object {
+            fun fromStoredValue(value: String?): TravelMode {
+                return entries.firstOrNull { it.storedValue == value } ?: DRIVING
+            }
+        }
+    }
+
     private val client = OkHttpClient()
     private const val NOMINATIM_USER_AGENT = "RoutineReminder/1.0 (contact: support@routine-reminder.app)"
 
-    suspend fun enrich(item: ScheduleItem): ScheduleItem = withContext(Dispatchers.IO) {
+    suspend fun enrich(
+        item: ScheduleItem,
+        travelMode: TravelMode = TravelMode.DRIVING
+    ): ScheduleItem = withContext(Dispatchers.IO) {
         val location = item.location?.trim().orEmpty().ifBlank { null }
         val routeStart = item.routeStart?.trim().orEmpty().ifBlank { null }
         val routeEnd = item.routeEnd?.trim().orEmpty().ifBlank { null }
@@ -37,7 +53,7 @@ object EventPredictionService {
 
         val weatherSummary = fetchWeatherSummary(weatherLat, weatherLon, plannedEventDateTime)
         val predictedTravelMinutes = if (routeStart != null && routeEnd != null) {
-            predictTravelMinutes(routeStart, routeEnd)
+            predictTravelMinutes(routeStart, routeEnd, travelMode)
         } else {
             null
         }
@@ -209,10 +225,22 @@ object EventPredictionService {
         return null
     }
 
-    private fun predictTravelMinutes(start: String, end: String): Int? {
+    private fun predictTravelMinutes(start: String, end: String, travelMode: TravelMode): Int? {
         val startCoords = geocode(start) ?: return null
         val endCoords = geocode(end) ?: return null
-        val url = "https://router.project-osrm.org/route/v1/driving/${startCoords.second},${startCoords.first};${endCoords.second},${endCoords.first}?overview=false"
+        if (travelMode == TravelMode.PUBLIC_TRANSPORT) {
+            val directKm = haversineKm(startCoords.first, startCoords.second, endCoords.first, endCoords.second)
+            if (directKm <= 0.0) return null
+            val minutes = ((directKm / 22.0) * 60.0) + 8.0
+            return minutes.roundToInt().coerceAtLeast(1)
+        }
+        val profile = when (travelMode) {
+            TravelMode.DRIVING -> "driving"
+            TravelMode.CYCLING -> "cycling"
+            TravelMode.WALKING -> "walking"
+            TravelMode.PUBLIC_TRANSPORT -> "driving"
+        }
+        val url = "https://router.project-osrm.org/route/v1/$profile/${startCoords.second},${startCoords.first};${endCoords.second},${endCoords.first}?overview=false"
         val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return null
@@ -223,6 +251,19 @@ object EventPredictionService {
             if (durationSeconds.isNaN()) return null
             return (durationSeconds / 60.0).roundToInt().coerceAtLeast(1)
         }
+    }
+
+    private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val earthRadiusKm = 6371.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val originLat = Math.toRadians(lat1)
+        val targetLat = Math.toRadians(lat2)
+        val a = kotlin.math.sin(dLat / 2) * kotlin.math.sin(dLat / 2) +
+            kotlin.math.sin(dLon / 2) * kotlin.math.sin(dLon / 2) *
+            kotlin.math.cos(originLat) * kotlin.math.cos(targetLat)
+        val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
+        return earthRadiusKm * c
     }
 
     private fun weatherCodeToText(code: Int): String = when (code) {

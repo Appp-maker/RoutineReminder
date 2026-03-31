@@ -982,7 +982,11 @@ class MainViewModel @Inject constructor(
             }
 
             if (enrichedItem.notifyEnabled && !enrichedItem.isMuted) {
-                notificationScheduler.scheduleSingleOccurrence(enrichedItem, epochDay)
+                notificationScheduler.scheduleSingleOccurrence(
+                    enrichedItem,
+                    epochDay,
+                    departureLeadMinutes = departureLeadMinutes(enrichedItem)
+                )
             }
 
 
@@ -1015,7 +1019,10 @@ class MainViewModel @Inject constructor(
 
             if (nowMs - item.lastPredictionRefreshEpochMs < intervalMs) return@forEach
 
-            val refreshed = EventPredictionService.enrich(item).copy(
+            val refreshed = EventPredictionService.enrich(
+                item = item,
+                travelMode = EventPredictionService.TravelMode.fromStoredValue(_mapRouteTransportMode.value)
+            ).copy(
                 lastPredictionRefreshEpochMs = nowMs
             )
             scheduleDao.update(refreshed.toEntity())
@@ -1028,7 +1035,10 @@ class MainViewModel @Inject constructor(
         return if (nextDate == null || refreshIntervalForDate(today, nextDate) == null) {
             item
         } else {
-            EventPredictionService.enrich(item).copy(
+            EventPredictionService.enrich(
+                item = item,
+                travelMode = EventPredictionService.TravelMode.fromStoredValue(_mapRouteTransportMode.value)
+            ).copy(
                 lastPredictionRefreshEpochMs = System.currentTimeMillis()
             )
         }
@@ -1116,7 +1126,11 @@ class MainViewModel @Inject constructor(
             scheduleDoneDao.unmarkDone(item.id, day)
 
             if (item.notifyEnabled && !item.isMuted) {
-                notificationScheduler.scheduleSingleOccurrence(item, day)
+                notificationScheduler.scheduleSingleOccurrence(
+                    item,
+                    day,
+                    departureLeadMinutes = departureLeadMinutes(item)
+                )
             }
 
             refreshDoneStatesForDate(day)
@@ -1159,7 +1173,11 @@ class MainViewModel @Inject constructor(
                     true
                 }
                 if (isActive && !isDone) {
-                    notificationScheduler.scheduleSingleOccurrence(updated, day)
+                    notificationScheduler.scheduleSingleOccurrence(
+                        updated,
+                        day,
+                        departureLeadMinutes = departureLeadMinutes(updated)
+                    )
                 }
             }
             refreshScheduleItems()
@@ -1472,11 +1490,21 @@ class MainViewModel @Inject constructor(
             val isActive = item.setId == null || item.setId in activeSetIds
             val isDone = item.id in doneIds
             if (isActive && !isDone) {
-                notificationScheduler.scheduleSingleOccurrence(item, epochDay)
+                notificationScheduler.scheduleSingleOccurrence(
+                    item,
+                    epochDay,
+                    departureLeadMinutes = departureLeadMinutes(item)
+                )
             } else {
                 notificationScheduler.cancelSingleOccurrence(item, epochDay)
             }
         }
+    }
+
+    private fun departureLeadMinutes(item: ScheduleItem): Int {
+        if (!_routeDepartureReminderEnabled.value) return 0
+        val eta = item.predictedTravelMinutes ?: return 0
+        return (eta + _routeDepartureReminderExtraMinutes.value).coerceAtLeast(0)
     }
 
 
