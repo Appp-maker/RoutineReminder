@@ -44,6 +44,7 @@ data class Schedule(
     val routeStart: String? = null,
     val routeEnd: String? = null,
     val predictedTravelMinutes: Int? = null,
+    val predictedRouteDistanceKm: Double? = null,
     val weatherSummary: String? = null,
     @ColumnInfo(defaultValue = "0")
     val lastPredictionRefreshEpochMs: Long = 0L,

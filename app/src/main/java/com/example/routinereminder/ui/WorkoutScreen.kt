@@ -97,6 +97,7 @@ import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import com.example.routinereminder.R
 import com.example.routinereminder.data.ScheduleItem
+import com.example.routinereminder.data.EventPredictionService
 import com.example.routinereminder.data.exercisedb.ExerciseDbExercise
 import com.example.routinereminder.data.workout.WorkoutPlan
 import com.example.routinereminder.data.workout.WorkoutPlanExercise
@@ -123,6 +124,7 @@ fun WorkoutScreen(
     val eventSetNames by mainViewModel.eventSetNames.collectAsState()
     val eventSetColors by mainViewModel.eventSetColors.collectAsState()
     val recentCustomEventColors by mainViewModel.recentCustomEventColors.collectAsState()
+    val mapRouteTransportMode by mainViewModel.mapRouteTransportMode.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val selectPlanMessage = stringResource(R.string.workout_snackbar_select_plan)
@@ -619,6 +621,7 @@ fun WorkoutScreen(
             initialItem = draftItem,
             defaultEventSettings = defaultEventSettings,
             useGoogleBackupMode = useGoogleBackupMode,
+            routeTravelMode = EventPredictionService.TravelMode.fromStoredValue(mapRouteTransportMode),
             eventSetNames = eventSetNames,
             eventSetColors = eventSetColors,
             recentCustomEventColors = recentCustomEventColors,

@@ -111,6 +111,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.EventPredictionService
 import com.example.routinereminder.data.ScheduleItem
 
 import com.example.routinereminder.ui.CalorieTrackerScreen
@@ -778,6 +779,7 @@ fun MainAppUI(
                             initialItem = itemToEdit,
                             defaultEventSettings = defaultEventSettings,
                             useGoogleBackupMode = useGoogleBackupMode,
+                            routeTravelMode = EventPredictionService.TravelMode.fromStoredValue(mapRouteTransportMode),
                             eventSetNames = eventSetNames,
                             eventSetColors = eventSetColors,
                             recentCustomEventColors = recentCustomEventColors,
@@ -2284,12 +2286,15 @@ private fun EventRouteAndWeatherSummary(
     val routeSummary = if (routeStart != null && destination != null) "$routeStart → $destination" else null
     val hasRoute = routeStart != null && destination != null
     val etaSummary = item.predictedTravelMinutes?.let { "$it min" } ?: if (hasRoute) "Unavailable" else null
+    val routeDistanceSummary = item.predictedRouteDistanceKm?.let { String.format(Locale.getDefault(), "%.1f km", it) }
+        ?: if (hasRoute) "Unavailable" else null
     val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() } ?: if (destination != null) "Unavailable" else null
 
     val lines = buildList {
         destination?.let { add("Location: $it") }
         routeSummary?.let { add("Route: $it") }
         etaSummary?.let { add("ETA: $it") }
+        routeDistanceSummary?.let { add("Distance: $it") }
         weatherSummary?.let { add("Weather: $it") }
     }
     if (lines.isEmpty()) return

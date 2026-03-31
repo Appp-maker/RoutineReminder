@@ -48,6 +48,7 @@ object EventPredictionService {
             routeStart = routeStart,
             routeEnd = routeEnd,
             predictedTravelMinutes = null,
+            predictedRouteDistanceKm = null,
             weatherSummary = null
         )
 
@@ -62,9 +63,18 @@ object EventPredictionService {
             location = location,
             routeStart = routeStart,
             routeEnd = routeEnd,
-            predictedTravelMinutes = predictedTravelMinutes,
+            predictedTravelMinutes = routeEstimate?.durationMinutes,
+            predictedRouteDistanceKm = routeEstimate?.distanceKm,
             weatherSummary = weatherSummary
         )
+    }
+
+    suspend fun estimateRoute(
+        start: String,
+        end: String,
+        travelMode: TravelMode
+    ): RouteEstimate? = withContext(Dispatchers.IO) {
+        predictRouteEstimate(start, end, travelMode)
     }
 
     suspend fun addressSuggestions(query: String): List<String> = withContext(Dispatchers.IO) {
@@ -247,9 +257,14 @@ object EventPredictionService {
             val body = response.body?.string() ?: return null
             val routes = JSONObject(body).optJSONArray("routes") ?: return null
             if (routes.length() == 0) return null
-            val durationSeconds = routes.getJSONObject(0).optDouble("duration", Double.NaN)
-            if (durationSeconds.isNaN()) return null
-            return (durationSeconds / 60.0).roundToInt().coerceAtLeast(1)
+            val firstRoute = routes.getJSONObject(0)
+            val durationSeconds = firstRoute.optDouble("duration", Double.NaN)
+            val distanceMeters = firstRoute.optDouble("distance", Double.NaN)
+            if (durationSeconds.isNaN() || distanceMeters.isNaN()) return null
+            return RouteEstimate(
+                durationMinutes = (durationSeconds / 60.0).roundToInt().coerceAtLeast(1),
+                distanceKm = (distanceMeters / 1000.0).coerceAtLeast(0.0)
+            )
         }
     }
 

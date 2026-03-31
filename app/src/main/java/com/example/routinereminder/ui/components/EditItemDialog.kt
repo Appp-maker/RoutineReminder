@@ -44,6 +44,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +52,7 @@ fun EditItemDialog(
     initialItem: ScheduleItem?,
     defaultEventSettings: DefaultEventSettings,
     useGoogleBackupMode: Boolean, // Added parameter
+    routeTravelMode: EventPredictionService.TravelMode,
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
     recentCustomEventColors: List<Int>,
@@ -144,8 +146,18 @@ fun EditItemDialog(
     var setMenuExpanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd.MM.yyyy") }
+    var longRouteWarningItem by remember { mutableStateOf<ScheduleItem?>(null) }
+    var longRouteWarningText by remember { mutableStateOf<String?>(null) }
+
+    fun finalizeSave(itemToSave: ScheduleItem) {
+        if (isCustomSeriesColor(itemToSave.colorArgb)) {
+            onRecentCustomColorSaved(itemToSave.colorArgb)
+        }
+        onSave(itemToSave)
+    }
 
     val datePickerDialog = remember(selectedDate, context) {
         DatePickerDialog(
@@ -272,12 +284,63 @@ fun EditItemDialog(
             if (!itemToSave.isOneTime && itemToSave.repeatOnDays.isNullOrEmpty()){
                 Toast.makeText(context, "A recurring event must have at least one day selected.", Toast.LENGTH_LONG).show()
             } else {
-               if (isCustomSeriesColor(itemToSave.colorArgb)) {
-                   onRecentCustomColorSaved(itemToSave.colorArgb)
-               }
-               onSave(itemToSave)
+                val startAddress = itemToSave.routeStart?.takeIf { it.isNotBlank() }
+                val endAddress = itemToSave.routeEnd?.takeIf { it.isNotBlank() }
+                val checkLongRouteWarning = routeTravelMode == EventPredictionService.TravelMode.WALKING ||
+                    routeTravelMode == EventPredictionService.TravelMode.CYCLING
+                if (checkLongRouteWarning && startAddress != null && endAddress != null) {
+                    coroutineScope.launch {
+                        val estimate = EventPredictionService.estimateRoute(
+                            start = startAddress,
+                            end = endAddress,
+                            travelMode = routeTravelMode
+                        )
+                        if (estimate != null && estimate.durationMinutes > 60) {
+                            longRouteWarningItem = itemToSave
+                            longRouteWarningText = String.format(
+                                Locale.getDefault(),
+                                "This %s route is about %.1f km and %d minutes (without delay). Save anyway?",
+                                if (routeTravelMode == EventPredictionService.TravelMode.WALKING) "walking" else "cycling",
+                                estimate.distanceKm,
+                                estimate.durationMinutes
+                            )
+                        } else {
+                            finalizeSave(itemToSave)
+                        }
+                    }
+                } else {
+                    finalizeSave(itemToSave)
+                }
             }
         }
+    }
+
+    if (longRouteWarningItem != null && longRouteWarningText != null) {
+        AlertDialog(
+            onDismissRequest = {
+                longRouteWarningItem = null
+                longRouteWarningText = null
+            },
+            title = { Text("Long route warning") },
+            text = { Text(longRouteWarningText ?: "") },
+            confirmButton = {
+                TextButton(onClick = {
+                    longRouteWarningItem?.let { finalizeSave(it) }
+                    longRouteWarningItem = null
+                    longRouteWarningText = null
+                }) {
+                    Text("Save anyway")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    longRouteWarningItem = null
+                    longRouteWarningText = null
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Dialog(
