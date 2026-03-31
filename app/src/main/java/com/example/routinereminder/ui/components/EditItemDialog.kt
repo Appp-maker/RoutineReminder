@@ -777,7 +777,22 @@ private fun AddressAutocompleteField(
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(),
-            leadingIcon = leadingIcon
+            leadingIcon = leadingIcon,
+            trailingIcon = {
+                if (value.isNotBlank()) {
+                    IconButton(onClick = {
+                        onValueChange("")
+                        suggestions = emptyList()
+                        expanded = false
+                    }) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Clear",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         )
         ExposedDropdownMenu(
             expanded = expanded && suggestions.isNotEmpty(),
