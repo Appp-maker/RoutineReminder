@@ -31,6 +31,7 @@ data class ScheduleItem(
     val routeStart: String? = null,
     val routeEnd: String? = null,
     val predictedTravelMinutes: Int? = null,
+    val predictedRouteDistanceKm: Double? = null,
     val weatherSummary: String? = null,
     val lastPredictionRefreshEpochMs: Long = 0L,
 

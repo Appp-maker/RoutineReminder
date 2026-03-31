@@ -143,6 +143,12 @@ class MainViewModel @Inject constructor(
     val mapTrackingMode: StateFlow<String> = _mapTrackingMode.asStateFlow()
     private val _mapRouteEstimationEnabled = MutableStateFlow(true)
     val mapRouteEstimationEnabled: StateFlow<Boolean> = _mapRouteEstimationEnabled.asStateFlow()
+    private val _mapRouteTransportMode = MutableStateFlow("DRIVING")
+    val mapRouteTransportMode: StateFlow<String> = _mapRouteTransportMode.asStateFlow()
+    private val _routeDepartureReminderEnabled = MutableStateFlow(false)
+    val routeDepartureReminderEnabled: StateFlow<Boolean> = _routeDepartureReminderEnabled.asStateFlow()
+    private val _routeDepartureReminderExtraMinutes = MutableStateFlow(0)
+    val routeDepartureReminderExtraMinutes: StateFlow<Int> = _routeDepartureReminderExtraMinutes.asStateFlow()
 
     private val _foodConsumedTrackingEnabled = MutableStateFlow(false)
     val foodConsumedTrackingEnabled: StateFlow<Boolean> = _foodConsumedTrackingEnabled.asStateFlow()
@@ -368,6 +374,21 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getMapRouteEstimationEnabled().collectLatest { enabled ->
                 _mapRouteEstimationEnabled.value = enabled
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getMapRouteTransportMode().collectLatest { mode ->
+                _mapRouteTransportMode.value = mode
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getRouteDepartureReminderEnabled().collectLatest { enabled ->
+                _routeDepartureReminderEnabled.value = enabled
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getRouteDepartureReminderExtraMinutes().collectLatest { minutes ->
+                _routeDepartureReminderExtraMinutes.value = minutes
             }
         }
         viewModelScope.launch {
@@ -629,6 +650,24 @@ class MainViewModel @Inject constructor(
     fun saveMapRouteEstimationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.saveMapRouteEstimationEnabled(enabled)
+        }
+    }
+
+    fun saveMapRouteTransportMode(mode: String) {
+        viewModelScope.launch {
+            settingsRepository.saveMapRouteTransportMode(mode)
+        }
+    }
+
+    fun saveRouteDepartureReminderEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.saveRouteDepartureReminderEnabled(enabled)
+        }
+    }
+
+    fun saveRouteDepartureReminderExtraMinutes(minutes: Int) {
+        viewModelScope.launch {
+            settingsRepository.saveRouteDepartureReminderExtraMinutes(minutes)
         }
     }
 
@@ -956,7 +995,11 @@ class MainViewModel @Inject constructor(
             }
 
             if (enrichedItem.notifyEnabled && !enrichedItem.isMuted) {
-                notificationScheduler.scheduleSingleOccurrence(enrichedItem, epochDay)
+                notificationScheduler.scheduleSingleOccurrence(
+                    enrichedItem,
+                    epochDay,
+                    departureLeadMinutes = departureLeadMinutes(enrichedItem)
+                )
             }
 
 
@@ -989,7 +1032,10 @@ class MainViewModel @Inject constructor(
 
             if (nowMs - item.lastPredictionRefreshEpochMs < intervalMs) return@forEach
 
-            val refreshed = EventPredictionService.enrich(item).copy(
+            val refreshed = EventPredictionService.enrich(
+                item = item,
+                travelMode = EventPredictionService.TravelMode.fromStoredValue(_mapRouteTransportMode.value)
+            ).copy(
                 lastPredictionRefreshEpochMs = nowMs
             )
             scheduleDao.update(refreshed.toEntity())
@@ -1002,7 +1048,10 @@ class MainViewModel @Inject constructor(
         return if (nextDate == null || refreshIntervalForDate(today, nextDate) == null) {
             item
         } else {
-            EventPredictionService.enrich(item).copy(
+            EventPredictionService.enrich(
+                item = item,
+                travelMode = EventPredictionService.TravelMode.fromStoredValue(_mapRouteTransportMode.value)
+            ).copy(
                 lastPredictionRefreshEpochMs = System.currentTimeMillis()
             )
         }
@@ -1090,7 +1139,11 @@ class MainViewModel @Inject constructor(
             scheduleDoneDao.unmarkDone(item.id, day)
 
             if (item.notifyEnabled && !item.isMuted) {
-                notificationScheduler.scheduleSingleOccurrence(item, day)
+                notificationScheduler.scheduleSingleOccurrence(
+                    item,
+                    day,
+                    departureLeadMinutes = departureLeadMinutes(item)
+                )
             }
 
             refreshDoneStatesForDate(day)
@@ -1133,7 +1186,11 @@ class MainViewModel @Inject constructor(
                     true
                 }
                 if (isActive && !isDone) {
-                    notificationScheduler.scheduleSingleOccurrence(updated, day)
+                    notificationScheduler.scheduleSingleOccurrence(
+                        updated,
+                        day,
+                        departureLeadMinutes = departureLeadMinutes(updated)
+                    )
                 }
             }
             refreshScheduleItems()
@@ -1446,11 +1503,21 @@ class MainViewModel @Inject constructor(
             val isActive = item.setId == null || item.setId in activeSetIds
             val isDone = item.id in doneIds
             if (isActive && !isDone) {
-                notificationScheduler.scheduleSingleOccurrence(item, epochDay)
+                notificationScheduler.scheduleSingleOccurrence(
+                    item,
+                    epochDay,
+                    departureLeadMinutes = departureLeadMinutes(item)
+                )
             } else {
                 notificationScheduler.cancelSingleOccurrence(item, epochDay)
             }
         }
+    }
+
+    private fun departureLeadMinutes(item: ScheduleItem): Int {
+        if (!_routeDepartureReminderEnabled.value) return 0
+        val eta = item.predictedTravelMinutes ?: return 0
+        return (eta + _routeDepartureReminderExtraMinutes.value).coerceAtLeast(0)
     }
 
 

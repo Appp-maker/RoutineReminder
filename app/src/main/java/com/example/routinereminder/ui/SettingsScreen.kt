@@ -153,6 +153,9 @@ fun SettingsScreen(
     val currentCalendarSyncCalendarToAppEnabled by viewModel.calendarSyncCalendarToAppEnabled.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     val mapRouteEstimationEnabled by viewModel.mapRouteEstimationEnabled.collectAsState()
+    val mapRouteTransportMode by viewModel.mapRouteTransportMode.collectAsState()
+    val routeDepartureReminderEnabled by viewModel.routeDepartureReminderEnabled.collectAsState()
+    val routeDepartureReminderExtraMinutes by viewModel.routeDepartureReminderExtraMinutes.collectAsState()
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
     val currentRoutineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
@@ -980,12 +983,27 @@ fun SettingsScreen(
                     SettingsCategory.MAP -> MapSettingsSection(
                         trackingMode = TrackingMode.fromValue(mapTrackingMode),
                         routeEstimationEnabled = mapRouteEstimationEnabled,
+                        routeTransportMode = EventPredictionService.TravelMode.fromStoredValue(mapRouteTransportMode),
+                        routeDepartureReminderEnabled = routeDepartureReminderEnabled,
+                        routeDepartureReminderExtraMinutes = routeDepartureReminderExtraMinutes,
                         onTrackingModeChange = { mode ->
                             viewModel.saveMapTrackingMode(mode.value)
                             justSavedSuccessfully = false
                         },
                         onRouteEstimationEnabledChange = { enabled ->
                             viewModel.saveMapRouteEstimationEnabled(enabled)
+                            justSavedSuccessfully = false
+                        },
+                        onRouteTransportModeChange = { mode ->
+                            viewModel.saveMapRouteTransportMode(mode.storedValue)
+                            justSavedSuccessfully = false
+                        },
+                        onRouteDepartureReminderEnabledChange = { enabled ->
+                            viewModel.saveRouteDepartureReminderEnabled(enabled)
+                            justSavedSuccessfully = false
+                        },
+                        onRouteDepartureReminderExtraMinutesChange = { minutes ->
+                            viewModel.saveRouteDepartureReminderExtraMinutes(minutes)
                             justSavedSuccessfully = false
                         }
                     )
@@ -2717,10 +2735,20 @@ private fun EventSetsSettingsSection(
 private fun MapSettingsSection(
     trackingMode: TrackingMode,
     routeEstimationEnabled: Boolean,
+    routeTransportMode: EventPredictionService.TravelMode,
+    routeDepartureReminderEnabled: Boolean,
+    routeDepartureReminderExtraMinutes: Int,
     onTrackingModeChange: (TrackingMode) -> Unit,
-    onRouteEstimationEnabledChange: (Boolean) -> Unit
+    onRouteEstimationEnabledChange: (Boolean) -> Unit,
+    onRouteTransportModeChange: (EventPredictionService.TravelMode) -> Unit,
+    onRouteDepartureReminderEnabledChange: (Boolean) -> Unit,
+    onRouteDepartureReminderExtraMinutesChange: (Int) -> Unit
 ) {
     var trackingMenuExpanded by remember { mutableStateOf(false) }
+    var transportMenuExpanded by remember { mutableStateOf(false) }
+    var extraMinutesInput by remember(routeDepartureReminderExtraMinutes) {
+        mutableStateOf(routeDepartureReminderExtraMinutes.toString())
+    }
 
     Text(stringResource(R.string.settings_category_map), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Row(
@@ -2779,6 +2807,78 @@ private fun MapSettingsSection(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    )
+    ExposedDropdownMenuBox(
+        expanded = transportMenuExpanded,
+        onExpandedChange = { transportMenuExpanded = !transportMenuExpanded }
+    ) {
+        FilledTonalButton(
+            onClick = { transportMenuExpanded = !transportMenuExpanded },
+            modifier = Modifier.menuAnchor()
+        ) {
+            Text(
+                when (routeTransportMode) {
+                    EventPredictionService.TravelMode.DRIVING -> "Car ETA"
+                    EventPredictionService.TravelMode.CYCLING -> "Bike ETA"
+                    EventPredictionService.TravelMode.WALKING -> "Walk ETA"
+                    EventPredictionService.TravelMode.PUBLIC_TRANSPORT -> "Public transport ETA"
+                }
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Icon(
+                imageVector = if (transportMenuExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                contentDescription = null
+            )
+        }
+        ExposedDropdownMenu(
+            expanded = transportMenuExpanded,
+            onDismissRequest = { transportMenuExpanded = false }
+        ) {
+            EventPredictionService.TravelMode.entries.forEach { mode ->
+                val label = when (mode) {
+                    EventPredictionService.TravelMode.DRIVING -> "Car"
+                    EventPredictionService.TravelMode.CYCLING -> "Bike"
+                    EventPredictionService.TravelMode.WALKING -> "Walk"
+                    EventPredictionService.TravelMode.PUBLIC_TRANSPORT -> "Public transport"
+                }
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        onRouteTransportModeChange(mode)
+                        transportMenuExpanded = false
+                    }
+                )
+            }
+        }
+    }
+    Text(
+        text = "Choose which transport type should be used for ETA calculations.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 8.dp)
+    )
+    SettingSwitchItem(
+        text = "Departure reminder from ETA",
+        checked = routeDepartureReminderEnabled,
+        onCheckedChange = onRouteDepartureReminderEnabledChange
+    )
+    OutlinedTextField(
+        value = extraMinutesInput,
+        onValueChange = {
+            val filtered = it.filter(Char::isDigit)
+            extraMinutesInput = filtered
+            onRouteDepartureReminderExtraMinutesChange(filtered.toIntOrNull() ?: 0)
+        },
+        label = { Text("Extra minutes before driving") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        enabled = routeDepartureReminderEnabled,
+        modifier = Modifier.fillMaxWidth()
+    )
+    Text(
+        text = "Adds one extra reminder at (ETA + this buffer) before start.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 8.dp)
     )
     Spacer(modifier = Modifier.height(16.dp))
 }
