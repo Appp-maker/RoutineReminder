@@ -14,7 +14,11 @@ class NotificationScheduler(private val context: Context) {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val maxPreReminders = 10
 
-    fun scheduleSingleOccurrence(item: ScheduleItem, epochDay: Long) {
+    fun scheduleSingleOccurrence(
+        item: ScheduleItem,
+        epochDay: Long,
+        departureLeadMinutes: Int = 0
+    ) {
         cancelSingleOccurrence(item, epochDay)
         val triggerDateTime = LocalDate.ofEpochDay(epochDay)
             .atTime(item.hour, item.minute)
@@ -31,11 +35,14 @@ class NotificationScheduler(private val context: Context) {
         val reminderCount = item.reminderCount.coerceIn(0, maxPreReminders)
         val reminderIntervalMinutes = item.reminderIntervalMinutes.coerceAtLeast(1)
         val totalReminders = reminderCount.coerceAtLeast(0)
+        val travelLead = departureLeadMinutes.coerceAtLeast(0)
+        val scheduledMinutesBefore = mutableSetOf<Int>()
 
         for (index in 0..totalReminders) {
             val minutesBefore = index * reminderIntervalMinutes
             val reminderMillis = triggerMillis - (minutesBefore * 60_000L)
             if (reminderMillis <= System.currentTimeMillis()) continue
+            scheduledMinutesBefore.add(minutesBefore)
 
             val notificationId = stableId(makeRequestCode(item.id, epochDay, index))
 
@@ -65,11 +72,45 @@ class NotificationScheduler(private val context: Context) {
                 pendingIntent
             )
         }
+
+        if (travelLead > 0 && travelLead !in scheduledMinutesBefore) {
+            val reminderMillis = triggerMillis - (travelLead * 60_000L)
+            if (reminderMillis > System.currentTimeMillis()) {
+                val extraIndex = maxPreReminders + 1
+                val notificationId = stableId(makeRequestCode(item.id, epochDay, extraIndex))
+
+                val intent = Intent(context, ReminderReceiver::class.java).apply {
+                    putExtra("title", item.name)
+                    putExtra("notes", item.notes ?: "")
+                    putExtra("duration", item.durationMinutes)
+                    putExtra("repeat", item.repeatEveryWeeks)
+                    putExtra("scheduleId", item.id)
+                    putExtra("epochDay", epochDay)
+                    putExtra("title", item.name)
+                    putExtra("showDetails", item.showDetailsInNotification)
+                    putExtra(ReminderReceiver.EXTRA_MINUTES_BEFORE, travelLead)
+                    putExtra(ReminderReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+                }
+
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    makeRequestCode(item.id, epochDay, extraIndex),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    reminderMillis,
+                    pendingIntent
+                )
+            }
+        }
     }
 
     fun cancelSingleOccurrence(item: ScheduleItem, epochDay: Long) {
         val intent = Intent(context, ReminderReceiver::class.java)
-        for (index in 0..maxPreReminders) {
+        for (index in 0..(maxPreReminders + 1)) {
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
                 makeRequestCode(item.id, epochDay, index),

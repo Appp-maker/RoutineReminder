@@ -59,6 +59,9 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
     val MAP_TRACKING_MODE = stringPreferencesKey("map_tracking_mode")
     val MAP_ROUTE_ESTIMATION_ENABLED = booleanPreferencesKey("map_route_estimation_enabled")
+    val MAP_ROUTE_TRANSPORT_MODE = stringPreferencesKey("map_route_transport_mode")
+    val ROUTE_DEPARTURE_REMINDER_ENABLED = booleanPreferencesKey("route_departure_reminder_enabled")
+    val ROUTE_DEPARTURE_REMINDER_EXTRA_MINUTES = intPreferencesKey("route_departure_reminder_extra_minutes")
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
     val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
     val EVENT_SET_COLORS = stringSetPreferencesKey("event_set_colors")
@@ -205,6 +208,42 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getMapRouteEstimationEnabled(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[MAP_ROUTE_ESTIMATION_ENABLED] ?: true
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveMapRouteTransportMode(mode: String) {
+        dataStore.edit { preferences ->
+            preferences[MAP_ROUTE_TRANSPORT_MODE] = mode
+        }
+    }
+
+    fun getMapRouteTransportMode(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[MAP_ROUTE_TRANSPORT_MODE] ?: "DRIVING"
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveRouteDepartureReminderEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ROUTE_DEPARTURE_REMINDER_ENABLED] = enabled
+        }
+    }
+
+    fun getRouteDepartureReminderEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[ROUTE_DEPARTURE_REMINDER_ENABLED] ?: false
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveRouteDepartureReminderExtraMinutes(minutes: Int) {
+        dataStore.edit { preferences ->
+            preferences[ROUTE_DEPARTURE_REMINDER_EXTRA_MINUTES] = minutes.coerceAtLeast(0)
+        }
+    }
+
+    fun getRouteDepartureReminderExtraMinutes(): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            preferences[ROUTE_DEPARTURE_REMINDER_EXTRA_MINUTES] ?: 0
         }.distinctUntilChanged()
     }
 
