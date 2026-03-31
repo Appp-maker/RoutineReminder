@@ -141,6 +141,9 @@ class MainViewModel @Inject constructor(
 
     private val _mapTrackingMode = MutableStateFlow(TrackingService.MODE_BALANCED)
     val mapTrackingMode: StateFlow<String> = _mapTrackingMode.asStateFlow()
+    private val _mapRouteTransportMode =
+        MutableStateFlow(EventPredictionService.TravelMode.DRIVING.storedValue)
+    val mapRouteTransportMode: StateFlow<String> = _mapRouteTransportMode.asStateFlow()
     private val _mapRouteEstimationEnabled = MutableStateFlow(true)
     val mapRouteEstimationEnabled: StateFlow<Boolean> = _mapRouteEstimationEnabled.asStateFlow()
     private val _routeTimeAddBeforeEvent = MutableStateFlow(false)
@@ -1502,9 +1505,9 @@ class MainViewModel @Inject constructor(
     }
 
     private fun departureLeadMinutes(item: ScheduleItem): Int {
-        if (!_routeDepartureReminderEnabled.value) return 0
+        if (!_routeTimeAddBeforeEvent.value) return 0
         val eta = item.predictedTravelMinutes ?: return 0
-        return (eta + _routeDepartureReminderExtraMinutes.value).coerceAtLeast(0)
+        return eta.coerceAtLeast(0)
     }
 
 
