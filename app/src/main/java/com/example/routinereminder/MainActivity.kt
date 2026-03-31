@@ -414,6 +414,7 @@ fun MainAppUI(
         val routineInsights by viewModel.routineInsights.collectAsState()
         val routeTimeAddBeforeEvent by viewModel.routeTimeAddBeforeEvent.collectAsState()
         val routeTimeAddAfterEvent by viewModel.routeTimeAddAfterEvent.collectAsState()
+        val mapRouteTransportMode by viewModel.mapRouteTransportMode.collectAsState()
 
         if (enabledTabsState == null) {
             FirstLaunchTabSelectionDialog(

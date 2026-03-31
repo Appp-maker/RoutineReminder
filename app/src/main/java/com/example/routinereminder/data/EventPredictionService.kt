@@ -14,6 +14,11 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 object EventPredictionService {
+    data class RouteEstimate(
+        val durationMinutes: Int,
+        val distanceKm: Double
+    )
+
     enum class TravelMode(val storedValue: String) {
         DRIVING("DRIVING"),
         CYCLING("CYCLING"),
@@ -53,8 +58,8 @@ object EventPredictionService {
         )
 
         val weatherSummary = fetchWeatherSummary(weatherLat, weatherLon, plannedEventDateTime)
-        val predictedTravelMinutes = if (routeStart != null && routeEnd != null) {
-            predictTravelMinutes(routeStart, routeEnd, travelMode)
+        val routeEstimate = if (routeStart != null && routeEnd != null) {
+            predictRouteEstimate(routeStart, routeEnd, travelMode)
         } else {
             null
         }
@@ -236,13 +241,20 @@ object EventPredictionService {
     }
 
     private fun predictTravelMinutes(start: String, end: String, travelMode: TravelMode): Int? {
+        return predictRouteEstimate(start, end, travelMode)?.durationMinutes
+    }
+
+    private fun predictRouteEstimate(start: String, end: String, travelMode: TravelMode): RouteEstimate? {
         val startCoords = geocode(start) ?: return null
         val endCoords = geocode(end) ?: return null
         if (travelMode == TravelMode.PUBLIC_TRANSPORT) {
             val directKm = haversineKm(startCoords.first, startCoords.second, endCoords.first, endCoords.second)
             if (directKm <= 0.0) return null
             val minutes = ((directKm / 22.0) * 60.0) + 8.0
-            return minutes.roundToInt().coerceAtLeast(1)
+            return RouteEstimate(
+                durationMinutes = minutes.roundToInt().coerceAtLeast(1),
+                distanceKm = directKm
+            )
         }
         val profile = when (travelMode) {
             TravelMode.DRIVING -> "driving"
