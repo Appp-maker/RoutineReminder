@@ -1329,56 +1329,10 @@ private fun CompactScheduleItemCard(
                     color = timeColor,
                     maxLines = 1
                 )
-                val routeSummary = remember(item.routeStart, item.location, item.routeEnd) {
-                    val destination = item.location ?: item.routeEnd
-                    if (!item.routeStart.isNullOrBlank() && !destination.isNullOrBlank()) {
-                        "${item.routeStart} → $destination"
-                    } else {
-                        null
-                    }
-                }
-                val etaSummary = item.predictedTravelMinutes?.let { "$it min" }
-                val locationSummary = (item.location ?: item.routeEnd)?.takeIf { it.isNotBlank() }
-                val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }
-                if (locationSummary != null || routeSummary != null || etaSummary != null || weatherSummary != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-                locationSummary?.let {
-                    Text(
-                        text = "Location: $it",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                routeSummary?.let {
-                    Text(
-                        text = "Route: $it",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                etaSummary?.let {
-                    Text(
-                        text = "ETA: $it",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                weatherSummary?.let {
-                    Text(
-                        text = "Weather: $it",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                EventRouteAndWeatherSummary(
+                    item = item,
+                    detailColor = MaterialTheme.colorScheme.secondary
+                )
             }
             if (showQuickDoneToggle) {
                 QuickDoneToggle(
@@ -2176,6 +2130,10 @@ fun ScheduleItemView(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
+                EventRouteAndWeatherSummary(
+                    item = item,
+                    detailColor = MaterialTheme.colorScheme.secondary.copy(alpha = doneAlpha)
+                )
             }
         }
         if (notesText.isNotBlank()) {
@@ -2262,6 +2220,38 @@ fun ScheduleItemView(
         }
     }
 
+}
+
+@Composable
+private fun EventRouteAndWeatherSummary(
+    item: ScheduleItem,
+    detailColor: Color
+) {
+    val destination = item.location?.takeIf { it.isNotBlank() } ?: item.routeEnd?.takeIf { it.isNotBlank() }
+    val routeStart = item.routeStart?.takeIf { it.isNotBlank() }
+    val routeSummary = if (routeStart != null && destination != null) "$routeStart → $destination" else null
+    val hasRoute = routeStart != null && destination != null
+    val etaSummary = item.predictedTravelMinutes?.let { "$it min" } ?: if (hasRoute) "Unavailable" else null
+    val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() } ?: if (destination != null) "Unavailable" else null
+
+    val lines = buildList {
+        destination?.let { add("Location: $it") }
+        routeSummary?.let { add("Route: $it") }
+        etaSummary?.let { add("ETA: $it") }
+        weatherSummary?.let { add("Weather: $it") }
+    }
+    if (lines.isEmpty()) return
+
+    Spacer(modifier = Modifier.height(4.dp))
+    lines.forEach { detail ->
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.labelSmall,
+            color = detailColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 @Composable
