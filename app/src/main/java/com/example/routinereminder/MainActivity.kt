@@ -152,16 +152,46 @@ import com.example.routinereminder.ui.bundle.CreateBundleScreen
 
 
 private val knownCountryNamesNormalized: Set<String> by lazy {
+    val locales = Locale.getAvailableLocales().toList() + Locale.ENGLISH + Locale.GERMAN
     Locale.getISOCountries()
-        .mapNotNull { code ->
-            runCatching { Locale("", code).displayCountry }
-                .getOrNull()
-                ?.trim()
-                ?.lowercase(Locale.getDefault())
-                ?.takeIf { it.isNotBlank() }
+        .flatMap { code ->
+            locales.mapNotNull { locale ->
+                runCatching { Locale("", code).getDisplayCountry(locale) }
+                    .getOrNull()
+                    ?.trim()
+                    ?.lowercase(locale)
+                    ?.takeIf { it.isNotBlank() }
+            }
         }
         .toSet()
 }
+
+private val knownGermanStateNamesNormalized: Set<String> = setOf(
+    "baden-württemberg",
+    "bavaria",
+    "bayern",
+    "berlin",
+    "brandenburg",
+    "bremen",
+    "hamburg",
+    "hesse",
+    "hessen",
+    "lower saxony",
+    "niedersachsen",
+    "mecklenburg-vorpommern",
+    "north rhine-westphalia",
+    "nordrhein-westfalen",
+    "rhineland-palatinate",
+    "rheinland-pfalz",
+    "saarland",
+    "saxony",
+    "sachsen",
+    "saxony-anhalt",
+    "sachsen-anhalt",
+    "schleswig-holstein",
+    "thuringia",
+    "thüringen"
+)
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -2370,10 +2400,23 @@ private fun String.toCompactAddress(): String {
     val cityCandidates = segments
         .filterIndexed { index, _ -> index != streetSourceIndex }
         .dropWhile { it.isLikelyHouseNumber() }
-    val citySegment = cityCandidates
-        .asSequence()
-        .map { candidate -> candidate.extractCityToken() }
-        .firstOrNull { candidate ->
+    val extractedCandidates = cityCandidates.map { candidate -> candidate.extractCityToken() }
+    val municipalityCandidate = cityCandidates
+        .firstNotNullOfOrNull { candidate ->
+            candidate.extractMunicipalityToken()
+                ?.takeIf {
+                    it.isLikelyCityName() &&
+                        !it.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
+                }
+        }
+    val citySegment = municipalityCandidate
+        ?: extractedCandidates
+            .asSequence()
+            .lastOrNull { candidate ->
+                candidate.isLikelyCityName() &&
+                    !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
+            }
+        ?: extractedCandidates.firstOrNull { candidate ->
             candidate.isLikelyCityName() &&
                 !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
         }
@@ -2440,6 +2483,7 @@ private fun String.isLikelyCityName(): Boolean {
     val normalized = trim()
     if (normalized.isBlank()) return false
     if (normalized.matches(Regex("\\d{4,}"))) return false
+    if (normalized.length in 1..3 && normalized.all { it.isUpperCase() }) return false
     val lowered = normalized.lowercase()
     val blockedAdministrativeWords = listOf(
         "county",
@@ -2455,6 +2499,7 @@ private fun String.isLikelyCityName(): Boolean {
     )
     if (blockedAdministrativeWords.any { lowered.contains(it) }) return false
     if (lowered in knownCountryNamesNormalized) return false
+    if (lowered in knownGermanStateNamesNormalized) return false
     return normalized.any { it.isLetter() }
 }
 
@@ -2466,6 +2511,16 @@ private fun String.extractCityToken(): String {
     val postalSuffix = Regex("^(.+?)\\s+\\d{4,5}$").find(value)?.groupValues?.getOrNull(1)
     if (!postalSuffix.isNullOrBlank()) return postalSuffix.trim()
     return value
+}
+
+private fun String.extractMunicipalityToken(): String? {
+    val value = trim()
+    if (value.isBlank()) return null
+    val municipalityPattern = Regex(
+        "^(?:municipality|gemeinde|stadt|city\\s+of|town\\s+of)\\s+(.+)$",
+        RegexOption.IGNORE_CASE
+    )
+    return municipalityPattern.find(value)?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() }
 }
 
 private fun String.withoutHouseNumber(): String = trim()
