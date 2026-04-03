@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.TextStyle
 import com.example.routinereminder.data.entities.ScheduleDone
 import com.example.routinereminder.data.EventBackgroundTransparency
+import com.example.routinereminder.data.EventCardDetailSettings
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.PastEventColorTreatment
@@ -441,6 +442,7 @@ fun MainAppUI(
         val eventBackgroundTransparency by viewModel.eventBackgroundTransparency.collectAsState()
         val eventTitleColorChoice by viewModel.eventTitleColorChoice.collectAsState()
         val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
+        val eventCardDetailSettings by viewModel.eventCardDetailSettings.collectAsState()
         val pastEventTextColorChoice by viewModel.pastEventTextColorChoice.collectAsState()
         val pastEventTextCustomColor by viewModel.pastEventTextCustomColor.collectAsState()
         val pastEventDetailTextColorChoice by viewModel.pastEventDetailTextColorChoice.collectAsState()
@@ -593,6 +595,7 @@ fun MainAppUI(
                                 eventBackgroundTransparency = eventBackgroundTransparency,
                                 eventTitleColorChoice = eventTitleColorChoice,
                                 eventTitleCustomColor = eventTitleCustomColor,
+                                eventCardDetailSettings = eventCardDetailSettings,
                                 pastEventTextColorChoice = pastEventTextColorChoice,
                                 pastEventTextCustomColor = pastEventTextCustomColor,
                                 pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
@@ -1021,6 +1024,7 @@ private fun ScheduleItemListContent(
     eventBackgroundTransparency: EventBackgroundTransparency,
     eventTitleColorChoice: EventTitleColorChoice,
     eventTitleCustomColor: Int,
+    eventCardDetailSettings: EventCardDetailSettings,
     pastEventTextColorChoice: PastEventTextColorChoice,
     pastEventTextCustomColor: Int,
     pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
@@ -1147,6 +1151,7 @@ private fun ScheduleItemListContent(
                             eventBackgroundTransparency = eventBackgroundTransparency,
                             eventTitleColorChoice = eventTitleColorChoice,
                             eventTitleCustomColor = eventTitleCustomColor,
+                            eventCardDetailSettings = eventCardDetailSettings,
                             pastEventTextColorChoice = pastEventTextColorChoice,
                             pastEventTextCustomColor = pastEventTextCustomColor,
                             pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
@@ -1209,6 +1214,7 @@ private fun ScheduleItemListContent(
                             eventBackgroundTransparency = eventBackgroundTransparency,
                             eventTitleColorChoice = eventTitleColorChoice,
                             eventTitleCustomColor = eventTitleCustomColor,
+                            eventCardDetailSettings = eventCardDetailSettings,
                             pastEventTextColorChoice = pastEventTextColorChoice,
                             pastEventTextCustomColor = pastEventTextCustomColor,
                             pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
@@ -1262,6 +1268,7 @@ private fun CompactScheduleItemCard(
     eventBackgroundTransparency: EventBackgroundTransparency,
     eventTitleColorChoice: EventTitleColorChoice,
     eventTitleCustomColor: Int,
+    eventCardDetailSettings: EventCardDetailSettings,
     pastEventTextColorChoice: PastEventTextColorChoice,
     pastEventTextCustomColor: Int,
     pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
@@ -1397,7 +1404,8 @@ private fun CompactScheduleItemCard(
                 )
                 EventRouteAndWeatherSummary(
                     item = item,
-                    detailColor = MaterialTheme.colorScheme.secondary
+                    detailColor = MaterialTheme.colorScheme.secondary,
+                    settings = eventCardDetailSettings
                 )
             }
             if (showQuickDoneToggle) {
@@ -1734,6 +1742,7 @@ fun MainScreenContent(
     eventBackgroundTransparency: EventBackgroundTransparency,
     eventTitleColorChoice: EventTitleColorChoice,
     eventTitleCustomColor: Int,
+    eventCardDetailSettings: EventCardDetailSettings,
     pastEventTextColorChoice: PastEventTextColorChoice,
     pastEventTextCustomColor: Int,
     pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
@@ -1839,6 +1848,7 @@ fun MainScreenContent(
                 eventBackgroundTransparency = eventBackgroundTransparency,
                 eventTitleColorChoice = eventTitleColorChoice,
                 eventTitleCustomColor = eventTitleCustomColor,
+                eventCardDetailSettings = eventCardDetailSettings,
                 pastEventTextColorChoice = pastEventTextColorChoice,
                 pastEventTextCustomColor = pastEventTextCustomColor,
                 pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
@@ -1958,6 +1968,7 @@ fun ScheduleItemView(
     eventBackgroundTransparency: EventBackgroundTransparency,
     eventTitleColorChoice: EventTitleColorChoice,
     eventTitleCustomColor: Int,
+    eventCardDetailSettings: EventCardDetailSettings,
     pastEventTextColorChoice: PastEventTextColorChoice,
     pastEventTextCustomColor: Int,
     pastEventDetailTextColorChoice: PastEventDetailTextColorChoice,
@@ -2234,6 +2245,7 @@ fun ScheduleItemView(
         EventRouteAndWeatherSummary(
             item = item,
             detailColor = MaterialTheme.colorScheme.secondary.copy(alpha = doneAlpha),
+            settings = eventCardDetailSettings,
             modifier = Modifier.padding(start = routeSummaryStartIndent)
         )
         if (notesText.isNotBlank()) {
@@ -2326,6 +2338,7 @@ fun ScheduleItemView(
 private fun EventRouteAndWeatherSummary(
     item: ScheduleItem,
     detailColor: Color,
+    settings: EventCardDetailSettings,
     modifier: Modifier = Modifier
 ) {
     val destinationAddress = item.routeEnd?.takeIf { it.isNotBlank() }
@@ -2356,13 +2369,19 @@ private fun EventRouteAndWeatherSummary(
         ?.toCompactWeatherSummaryOrNull()
 
     val lines = buildList {
-        if (hasRoute) {
-            add("$start -> $destination")
-        } else {
-            destination?.let { add("Location: $it") }
+        if (settings.showLocation) {
+            if (hasRoute) {
+                add("$start -> $destination")
+            } else {
+                destination?.let { add("Location: $it") }
+            }
         }
-        etaDistanceSummary?.let { add("ETA • $it") }
-        weatherSummary?.let { add(it) }
+        if (settings.showRouteEtaAndDistance) {
+            etaDistanceSummary?.let { add("ETA • $it") }
+        }
+        if (settings.showWeather) {
+            weatherSummary?.let { add(it) }
+        }
     }
     if (lines.isEmpty()) return
 

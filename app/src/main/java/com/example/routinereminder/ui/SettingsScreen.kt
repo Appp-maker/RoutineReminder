@@ -167,6 +167,7 @@ fun SettingsScreen(
     val eventBackgroundTransparency by viewModel.eventBackgroundTransparency.collectAsState()
     val eventTitleColorChoice by viewModel.eventTitleColorChoice.collectAsState()
     val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
+    val eventCardDetailSettings by viewModel.eventCardDetailSettings.collectAsState()
     val pastEventTextColorChoice by viewModel.pastEventTextColorChoice.collectAsState()
     val pastEventTextCustomColor by viewModel.pastEventTextCustomColor.collectAsState()
     val pastEventDetailTextColorChoice by viewModel.pastEventDetailTextColorChoice.collectAsState()
@@ -220,6 +221,18 @@ fun SettingsScreen(
     var backgroundTransparencyState by remember(eventBackgroundTransparency) { mutableStateOf(eventBackgroundTransparency) }
     var eventTitleColorChoiceState by remember(eventTitleColorChoice) { mutableStateOf(eventTitleColorChoice) }
     var eventTitleCustomColorState by remember(eventTitleCustomColor) { mutableStateOf(eventTitleCustomColor) }
+    var eventCardAdvancedModeEnabledState by remember(eventCardDetailSettings.advancedModeEnabled) {
+        mutableStateOf(eventCardDetailSettings.advancedModeEnabled)
+    }
+    var showLocationInEventCardState by remember(eventCardDetailSettings.showLocation) {
+        mutableStateOf(eventCardDetailSettings.showLocation)
+    }
+    var showRouteEtaInEventCardState by remember(eventCardDetailSettings.showRouteEtaAndDistance) {
+        mutableStateOf(eventCardDetailSettings.showRouteEtaAndDistance)
+    }
+    var showWeatherInEventCardState by remember(eventCardDetailSettings.showWeather) {
+        mutableStateOf(eventCardDetailSettings.showWeather)
+    }
     var pastEventTextColorChoiceState by remember(pastEventTextColorChoice) { mutableStateOf(pastEventTextColorChoice) }
     var pastEventTextCustomColorState by remember(pastEventTextCustomColor) { mutableStateOf(pastEventTextCustomColor) }
     var pastEventDetailTextColorChoiceState by remember(pastEventDetailTextColorChoice) { mutableStateOf(pastEventDetailTextColorChoice) }
@@ -631,6 +644,14 @@ fun SettingsScreen(
                         viewModel.saveEventBackgroundTransparency(backgroundTransparencyState)
                         viewModel.saveEventTitleColorChoice(eventTitleColorChoiceState)
                         viewModel.saveEventTitleCustomColor(eventTitleCustomColorState)
+                        viewModel.saveEventCardDetailSettings(
+                            EventCardDetailSettings(
+                                advancedModeEnabled = eventCardAdvancedModeEnabledState,
+                                showLocation = showLocationInEventCardState,
+                                showRouteEtaAndDistance = showRouteEtaInEventCardState,
+                                showWeather = showWeatherInEventCardState
+                            )
+                        )
                         viewModel.savePastEventTextColorChoice(pastEventTextColorChoiceState)
                         viewModel.savePastEventTextCustomColor(pastEventTextCustomColorState)
                         viewModel.savePastEventDetailTextColorChoice(pastEventDetailTextColorChoiceState)
@@ -836,6 +857,31 @@ fun SettingsScreen(
                             eventTitleCustomColorState = color
                             justSavedSuccessfully = false
                         },
+                        eventCardAdvancedModeEnabled = eventCardAdvancedModeEnabledState,
+                        onEventCardAdvancedModeEnabledChange = { enabled ->
+                            eventCardAdvancedModeEnabledState = enabled
+                            justSavedSuccessfully = false
+                        },
+                        showLocationInEventCard = showLocationInEventCardState,
+                        onShowLocationInEventCardChange = { enabled ->
+                            showLocationInEventCardState = enabled
+                            justSavedSuccessfully = false
+                        },
+                        showRouteEtaInEventCard = showRouteEtaInEventCardState,
+                        onShowRouteEtaInEventCardChange = { enabled ->
+                            showRouteEtaInEventCardState = enabled
+                            if (!enabled) {
+                                viewModel.saveMapRouteEstimationEnabled(false)
+                                viewModel.saveRouteTimeAddBeforeEvent(false)
+                                viewModel.saveRouteTimeAddAfterEvent(false)
+                            }
+                            justSavedSuccessfully = false
+                        },
+                        showWeatherInEventCard = showWeatherInEventCardState,
+                        onShowWeatherInEventCardChange = { enabled ->
+                            showWeatherInEventCardState = enabled
+                            justSavedSuccessfully = false
+                        },
                         recentCustomEventColors = recentCustomEventColors,
                         pastEventTextColorChoice = pastEventTextColorChoiceState,
                         onPastEventTextColorChoiceChange = { choice ->
@@ -984,6 +1030,7 @@ fun SettingsScreen(
                         routeEstimationEnabled = mapRouteEstimationEnabled,
                         addRouteTimeBeforeEvent = routeTimeAddBeforeEvent,
                         addRouteTimeAfterEvent = routeTimeAddAfterEvent,
+                        routeSettingsEnabled = showRouteEtaInEventCardState,
                         onTrackingModeChange = { mode ->
                             viewModel.saveMapTrackingMode(mode.value)
                             justSavedSuccessfully = false
@@ -1941,6 +1988,14 @@ private fun DefaultEventsSettingsSection(
     onEventTitleColorChoiceChange: (EventTitleColorChoice) -> Unit,
     eventTitleCustomColor: Int,
     onEventTitleCustomColorChange: (Int) -> Unit,
+    eventCardAdvancedModeEnabled: Boolean,
+    onEventCardAdvancedModeEnabledChange: (Boolean) -> Unit,
+    showLocationInEventCard: Boolean,
+    onShowLocationInEventCardChange: (Boolean) -> Unit,
+    showRouteEtaInEventCard: Boolean,
+    onShowRouteEtaInEventCardChange: (Boolean) -> Unit,
+    showWeatherInEventCard: Boolean,
+    onShowWeatherInEventCardChange: (Boolean) -> Unit,
     recentCustomEventColors: List<Int>,
     pastEventTextColorChoice: PastEventTextColorChoice,
     onPastEventTextColorChoiceChange: (PastEventTextColorChoice) -> Unit,
@@ -2002,6 +2057,34 @@ private fun DefaultEventsSettingsSection(
             colorOptions = SeriesColorOptions,
             allowCustomColor = true,
             recentCustomColors = recentCustomEventColors
+        )
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+    Text(
+        text = "Event card details",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.secondary
+    )
+    SettingSwitchItem(
+        text = "Advanced mode",
+        checked = eventCardAdvancedModeEnabled,
+        onCheckedChange = onEventCardAdvancedModeEnabledChange
+    )
+    if (eventCardAdvancedModeEnabled) {
+        SettingSwitchItem(
+            text = "Show location",
+            checked = showLocationInEventCard,
+            onCheckedChange = onShowLocationInEventCardChange
+        )
+        SettingSwitchItem(
+            text = "Show ETA and distance",
+            checked = showRouteEtaInEventCard,
+            onCheckedChange = onShowRouteEtaInEventCardChange
+        )
+        SettingSwitchItem(
+            text = "Show weather summary",
+            checked = showWeatherInEventCard,
+            onCheckedChange = onShowWeatherInEventCardChange
         )
     }
     Spacer(modifier = Modifier.height(16.dp))
@@ -2731,6 +2814,7 @@ private fun MapSettingsSection(
     routeEstimationEnabled: Boolean,
     addRouteTimeBeforeEvent: Boolean,
     addRouteTimeAfterEvent: Boolean,
+    routeSettingsEnabled: Boolean,
     onTrackingModeChange: (TrackingMode) -> Unit,
     onRouteEstimationEnabledChange: (Boolean) -> Unit,
     onAddRouteTimeBeforeEventChange: (Boolean) -> Unit,
@@ -2788,7 +2872,8 @@ private fun MapSettingsSection(
     SettingSwitchItem(
         text = "Route time estimation",
         checked = routeEstimationEnabled,
-        onCheckedChange = onRouteEstimationEnabledChange
+        onCheckedChange = onRouteEstimationEnabledChange,
+        enabled = routeSettingsEnabled
     )
     Text(
         text = "Use API-based traffic/construction estimation for route time.",
@@ -2799,7 +2884,8 @@ private fun MapSettingsSection(
     SettingSwitchItem(
         text = "Add route time before start",
         checked = addRouteTimeBeforeEvent,
-        onCheckedChange = onAddRouteTimeBeforeEventChange
+        onCheckedChange = onAddRouteTimeBeforeEventChange,
+        enabled = routeSettingsEnabled
     )
     Text(
         text = "If an ETA exists, show it before the event start.",
@@ -2810,7 +2896,8 @@ private fun MapSettingsSection(
     SettingSwitchItem(
         text = "Add driving back after end",
         checked = addRouteTimeAfterEvent,
-        onCheckedChange = onAddRouteTimeAfterEventChange
+        onCheckedChange = onAddRouteTimeAfterEventChange,
+        enabled = routeSettingsEnabled
     )
     Text(
         text = "If an ETA exists, append the same drive time after the event.",

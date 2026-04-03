@@ -17,6 +17,7 @@ import com.example.routinereminder.data.AppThemeColors
 import com.example.routinereminder.data.DEFAULT_PRIMARY_COLOR_ARGB
 import com.example.routinereminder.data.defaultSeriesColorForIndex
 import com.example.routinereminder.data.EventBackgroundTransparency
+import com.example.routinereminder.data.EventCardDetailSettings
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.PastEventColorTreatment
@@ -210,6 +211,8 @@ class MainViewModel @Inject constructor(
 
     private val _eventTitleCustomColor = MutableStateFlow(DEFAULT_PRIMARY_COLOR_ARGB)
     val eventTitleCustomColor: StateFlow<Int> = _eventTitleCustomColor.asStateFlow()
+    private val _eventCardDetailSettings = MutableStateFlow(EventCardDetailSettings())
+    val eventCardDetailSettings: StateFlow<EventCardDetailSettings> = _eventCardDetailSettings.asStateFlow()
 
     private val _pastEventTextColorChoice = MutableStateFlow(PastEventTextColorChoice.GREYED_OUT)
     val pastEventTextColorChoice: StateFlow<PastEventTextColorChoice> =
@@ -457,6 +460,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEventTitleCustomColor().collectLatest { color ->
                 _eventTitleCustomColor.value = color
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventCardDetailSettings().collectLatest { settings ->
+                _eventCardDetailSettings.value = settings
             }
         }
         viewModelScope.launch {
@@ -811,6 +819,12 @@ class MainViewModel @Inject constructor(
     fun saveEventTitleCustomColor(colorArgb: Int) {
         viewModelScope.launch {
             settingsRepository.saveEventTitleCustomColor(colorArgb)
+        }
+    }
+
+    fun saveEventCardDetailSettings(settings: EventCardDetailSettings) {
+        viewModelScope.launch {
+            settingsRepository.saveEventCardDetailSettings(settings)
         }
     }
 

@@ -74,6 +74,10 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EVENT_BACKGROUND_TRANSPARENCY = stringPreferencesKey("event_background_transparency")
     val EVENT_TITLE_COLOR_CHOICE = stringPreferencesKey("event_title_color_choice")
     val EVENT_TITLE_CUSTOM_COLOR = intPreferencesKey("event_title_custom_color")
+    val EVENT_CARD_ADVANCED_MODE_ENABLED = booleanPreferencesKey("event_card_advanced_mode_enabled")
+    val EVENT_CARD_SHOW_LOCATION = booleanPreferencesKey("event_card_show_location")
+    val EVENT_CARD_SHOW_ROUTE_ETA_DISTANCE = booleanPreferencesKey("event_card_show_route_eta_distance")
+    val EVENT_CARD_SHOW_WEATHER = booleanPreferencesKey("event_card_show_weather")
     val PAST_EVENT_TEXT_TREATMENT = stringPreferencesKey("past_event_text_treatment")
     val PAST_EVENT_TEXT_CUSTOM_COLOR = intPreferencesKey("past_event_text_custom_color")
     val PAST_EVENT_DETAIL_TEXT_TREATMENT = stringPreferencesKey("past_event_detail_text_treatment")
@@ -460,6 +464,31 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getEventTitleCustomColor(): Flow<Int> {
         return dataStore.data.map { preferences ->
             preferences[EVENT_TITLE_CUSTOM_COLOR] ?: DEFAULT_PRIMARY_COLOR_ARGB
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveEventCardDetailSettings(settings: EventCardDetailSettings) {
+        dataStore.edit { preferences ->
+            preferences[EVENT_CARD_ADVANCED_MODE_ENABLED] = settings.advancedModeEnabled
+            preferences[EVENT_CARD_SHOW_LOCATION] = settings.showLocation
+            preferences[EVENT_CARD_SHOW_ROUTE_ETA_DISTANCE] = settings.showRouteEtaAndDistance
+            preferences[EVENT_CARD_SHOW_WEATHER] = settings.showWeather
+            if (!settings.showRouteEtaAndDistance) {
+                preferences[MAP_ROUTE_ESTIMATION_ENABLED] = false
+                preferences[ROUTE_TIME_ADD_BEFORE_EVENT] = false
+                preferences[ROUTE_TIME_ADD_AFTER_EVENT] = false
+            }
+        }
+    }
+
+    fun getEventCardDetailSettings(): Flow<EventCardDetailSettings> {
+        return dataStore.data.map { preferences ->
+            EventCardDetailSettings(
+                advancedModeEnabled = preferences[EVENT_CARD_ADVANCED_MODE_ENABLED] ?: false,
+                showLocation = preferences[EVENT_CARD_SHOW_LOCATION] ?: true,
+                showRouteEtaAndDistance = preferences[EVENT_CARD_SHOW_ROUTE_ETA_DISTANCE] ?: true,
+                showWeather = preferences[EVENT_CARD_SHOW_WEATHER] ?: true
+            )
         }.distinctUntilChanged()
     }
 
