@@ -2400,23 +2400,10 @@ private fun String.toCompactAddress(): String {
     val cityCandidates = segments
         .filterIndexed { index, _ -> index != streetSourceIndex }
         .dropWhile { it.isLikelyHouseNumber() }
-    val extractedCandidates = cityCandidates.map { candidate -> candidate.extractCityToken() }
-    val municipalityCandidate = cityCandidates
-        .firstNotNullOfOrNull { candidate ->
-            candidate.extractMunicipalityToken()
-                ?.takeIf {
-                    it.isLikelyCityName() &&
-                        !it.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
-                }
-        }
-    val citySegment = municipalityCandidate
-        ?: extractedCandidates
-            .asSequence()
-            .lastOrNull { candidate ->
-                candidate.isLikelyCityName() &&
-                    !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
-            }
-        ?: extractedCandidates.firstOrNull { candidate ->
+    val citySegment = cityCandidates
+        .asSequence()
+        .map { candidate -> candidate.extractCityToken() }
+        .lastOrNull { candidate ->
             candidate.isLikelyCityName() &&
                 !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
         }
