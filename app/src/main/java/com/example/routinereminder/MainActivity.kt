@@ -2373,7 +2373,7 @@ private fun String.toCompactAddress(): String {
     val citySegment = cityCandidates
         .asSequence()
         .map { candidate -> candidate.extractCityToken() }
-        .firstOrNull { candidate ->
+        .lastOrNull { candidate ->
             candidate.isLikelyCityName() &&
                 !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
         }
@@ -2440,6 +2440,7 @@ private fun String.isLikelyCityName(): Boolean {
     val normalized = trim()
     if (normalized.isBlank()) return false
     if (normalized.matches(Regex("\\d{4,}"))) return false
+    if (normalized.length in 1..3 && normalized.all { it.isUpperCase() }) return false
     val lowered = normalized.lowercase()
     val blockedAdministrativeWords = listOf(
         "county",
