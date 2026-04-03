@@ -11,6 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -33,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.consume
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -175,6 +178,7 @@ fun SettingsScreen(
     val eventTitleColorChoice by viewModel.eventTitleColorChoice.collectAsState()
     val eventTitleCustomColor by viewModel.eventTitleCustomColor.collectAsState()
     val eventCardDetailSettings by viewModel.eventCardDetailSettings.collectAsState()
+    val eventDialogFields by viewModel.eventDialogFields.collectAsState()
     val pastEventTextColorChoice by viewModel.pastEventTextColorChoice.collectAsState()
     val pastEventTextCustomColor by viewModel.pastEventTextCustomColor.collectAsState()
     val pastEventDetailTextColorChoice by viewModel.pastEventDetailTextColorChoice.collectAsState()
@@ -247,6 +251,11 @@ fun SettingsScreen(
     var pastEventBackgroundTreatmentState by remember(pastEventBackgroundTreatment) { mutableStateOf(pastEventBackgroundTreatment) }
     var pastEventBackgroundCustomColorState by remember(pastEventBackgroundCustomColor) { mutableStateOf(pastEventBackgroundCustomColor) }
     var pastEventBackgroundTransparencyState by remember(pastEventBackgroundTransparency) { mutableStateOf(pastEventBackgroundTransparency) }
+    val eventDialogFieldState = remember { mutableStateListOf<EventDialogFieldOption>() }
+    LaunchedEffect(eventDialogFields) {
+        eventDialogFieldState.clear()
+        eventDialogFieldState.addAll(eventDialogFields)
+    }
 
 
     var showUnsavedChangesDialog by remember { mutableStateOf(false) }
@@ -836,6 +845,12 @@ fun SettingsScreen(
                         onReminderCountChange = { reminderCountText = it.filter(Char::isDigit); justSavedSuccessfully = false },
                         reminderIntervalMinutesText = reminderIntervalMinutesText,
                         onReminderIntervalMinutesChange = { reminderIntervalMinutesText = it.filter(Char::isDigit); justSavedSuccessfully = false },
+                        eventDialogFields = eventDialogFieldState,
+                        onEventDialogFieldsChange = { fields ->
+                            eventDialogFieldState.clear()
+                            eventDialogFieldState.addAll(fields)
+                            viewModel.saveEventDialogFields(fields)
+                        },
                         selectedGoogleAccountName = selectedGoogleAccountName,
                         eventIndicatorDisplayCondition = indicatorDisplayConditionState,
                         onEventIndicatorDisplayConditionChange = { condition ->
@@ -1985,6 +2000,8 @@ private fun DefaultEventsSettingsSection(
     onReminderCountChange: (String) -> Unit,
     reminderIntervalMinutesText: String,
     onReminderIntervalMinutesChange: (String) -> Unit,
+    eventDialogFields: List<EventDialogFieldOption>,
+    onEventDialogFieldsChange: (List<EventDialogFieldOption>) -> Unit,
     selectedGoogleAccountName: String?,
     eventIndicatorDisplayCondition: EventColorDisplayCondition,
     onEventIndicatorDisplayConditionChange: (EventColorDisplayCondition) -> Unit,
@@ -3349,6 +3366,96 @@ private fun AppSettingsSection(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
     ) {
         Text(stringResource(R.string.settings_app_legal_action))
+    }
+}
+
+@Composable
+private fun EventDialogFieldConfigurator(
+    fields: List<EventDialogFieldOption>,
+    onFieldsChange: (List<EventDialogFieldOption>) -> Unit
+) {
+    Text(
+        text = stringResource(R.string.settings_event_data_fields_title),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    fields.forEachIndexed { index, option ->
+        var dragOffset by remember(option.field, fields) { mutableStateOf(0f) }
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(fields) {
+                    detectDragGesturesAfterLongPress(
+                        onDragEnd = { dragOffset = 0f },
+                        onDragCancel = { dragOffset = 0f },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            dragOffset += dragAmount.y
+                            when {
+                                dragOffset > 40f && index < fields.lastIndex -> {
+                                    val updated = fields.toMutableList()
+                                    updated[index] = fields[index + 1]
+                                    updated[index + 1] = option
+                                    onFieldsChange(updated)
+                                    dragOffset = 0f
+                                }
+                                dragOffset < -40f && index > 0 -> {
+                                    val updated = fields.toMutableList()
+                                    updated[index] = fields[index - 1]
+                                    updated[index - 1] = option
+                                    onFieldsChange(updated)
+                                    dragOffset = 0f
+                                }
+                            }
+                        }
+                    )
+                },
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = eventDialogFieldLabel(option.field),
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = option.enabled,
+                    onCheckedChange = { enabled ->
+                        val updated = fields.toMutableList()
+                        updated[index] = option.copy(enabled = enabled)
+                        onFieldsChange(updated)
+                    }
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun eventDialogFieldLabel(field: EventDialogField): String {
+    return when (field) {
+        EventDialogField.NOTES -> stringResource(R.string.settings_event_data_field_notes)
+        EventDialogField.START -> stringResource(R.string.settings_event_data_field_start)
+        EventDialogField.DESTINATION -> stringResource(R.string.settings_event_data_field_destination)
+        EventDialogField.TIME -> stringResource(R.string.settings_event_data_field_time)
+        EventDialogField.DURATION -> stringResource(R.string.settings_event_data_field_duration)
+        EventDialogField.EVENT_SET -> stringResource(R.string.settings_event_data_field_set)
+        EventDialogField.EVENT_COLOR -> stringResource(R.string.settings_event_data_field_color)
+        EventDialogField.REPEAT -> stringResource(R.string.settings_event_data_field_repeat)
+        EventDialogField.CALENDAR -> stringResource(R.string.settings_event_data_field_calendar)
+        EventDialogField.NOTIFICATION -> stringResource(R.string.settings_event_data_field_notification)
     }
 }
 
