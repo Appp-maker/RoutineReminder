@@ -640,20 +640,18 @@ fun CalorieTrackerScreen(
                             showAllFoods = false
                             activeMealSlot = null
                         },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                    ) {
-                        Text("Group by meal")
-                    }
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                        icon = {}
+                    ) { Text("Group by meal") }
                     SegmentedButton(
                         selected = showAllFoods,
                         onClick = {
                             showAllFoods = true
                             activeMealSlot = null
                         },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                    ) {
-                        Text("List all food")
-                    }
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        icon = {}
+                    ) { Text("List all food") }
                 }
 
 // --- content area (grid OR detail) fills all remaining height ---
