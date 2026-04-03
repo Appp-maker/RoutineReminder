@@ -3445,6 +3445,7 @@ private fun EventDialogFieldConfigurator(
 @Composable
 private fun eventDialogFieldLabel(field: EventDialogField): String {
     return when (field) {
+        EventDialogField.TITLE -> stringResource(R.string.settings_event_data_field_title)
         EventDialogField.NOTES -> stringResource(R.string.settings_event_data_field_notes)
         EventDialogField.START -> stringResource(R.string.settings_event_data_field_start)
         EventDialogField.DESTINATION -> stringResource(R.string.settings_event_data_field_destination)
@@ -3453,8 +3454,12 @@ private fun eventDialogFieldLabel(field: EventDialogField): String {
         EventDialogField.EVENT_SET -> stringResource(R.string.settings_event_data_field_set)
         EventDialogField.EVENT_COLOR -> stringResource(R.string.settings_event_data_field_color)
         EventDialogField.REPEAT -> stringResource(R.string.settings_event_data_field_repeat)
+        EventDialogField.DATE_DETAILS -> stringResource(R.string.settings_event_data_field_date_details)
         EventDialogField.CALENDAR -> stringResource(R.string.settings_event_data_field_calendar)
+        EventDialogField.CALENDAR_TARGET -> stringResource(R.string.settings_event_data_field_calendar_target)
         EventDialogField.NOTIFICATION -> stringResource(R.string.settings_event_data_field_notification)
+        EventDialogField.NOTIFICATION_DETAILS -> stringResource(R.string.settings_event_data_field_notification_details)
+        EventDialogField.REMINDER_OPTIONS -> stringResource(R.string.settings_event_data_field_reminder_options)
     }
 }
 
