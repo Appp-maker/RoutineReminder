@@ -2376,14 +2376,7 @@ private fun String.toCompactAddress(): String {
     val extractedCandidates = cityCandidates
         .asSequence()
         .map { candidate -> candidate.extractCityToken() }
-        .toList()
-    val citySegment = extractedCandidates
-        .asSequence()
         .lastOrNull { candidate ->
-            candidate.isLikelyCityName() &&
-                !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
-        }
-        ?: extractedCandidates.firstOrNull { candidate ->
             candidate.isLikelyCityName() &&
                 !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
         }
