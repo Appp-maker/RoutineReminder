@@ -150,6 +150,19 @@ import com.example.routinereminder.ui.bundle.CreateBundleScreen
 
 
 
+
+private val knownCountryNamesNormalized: Set<String> by lazy {
+    Locale.getISOCountries()
+        .mapNotNull { code ->
+            runCatching { Locale("", code).displayCountry }
+                .getOrNull()
+                ?.trim()
+                ?.lowercase(Locale.getDefault())
+                ?.takeIf { it.isNotBlank() }
+        }
+        .toSet()
+}
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
