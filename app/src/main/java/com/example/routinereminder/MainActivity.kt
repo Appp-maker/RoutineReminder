@@ -2357,15 +2357,7 @@ private fun String.toCompactAddress(): String {
     val cityCandidates = segments
         .filterIndexed { index, _ -> index != streetSourceIndex }
         .dropWhile { it.isLikelyHouseNumber() }
-    val postalCitySegment = segments
-        .asSequence()
-        .mapNotNull { candidate -> candidate.extractCityTokenIfPostal() }
-        .firstOrNull { candidate ->
-            candidate.isLikelyCityName() &&
-                !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
-        }
-
-    val citySegment = postalCitySegment ?: cityCandidates
+    val citySegment = cityCandidates
         .asSequence()
         .map { candidate -> candidate.extractCityToken() }
         .firstOrNull { candidate ->
@@ -2463,16 +2455,6 @@ private fun String.extractCityToken(): String {
     return value
 }
 
-private fun String.extractCityTokenIfPostal(): String? {
-    val value = trim()
-    if (value.isBlank()) return null
-    val postalPrefix = Regex("^\\d{4,5}\\s+(.+)$").find(value)?.groupValues?.getOrNull(1)?.trim()
-    if (!postalPrefix.isNullOrBlank()) return postalPrefix
-    val postalSuffix = Regex("^(.+?)\\s+\\d{4,5}$").find(value)?.groupValues?.getOrNull(1)?.trim()
-    if (!postalSuffix.isNullOrBlank()) return postalSuffix
-    return null
-}
-
 private fun String.withoutHouseNumber(): String = trim()
     .replace(Regex("\\b\\d+[A-Za-z-]*\\b"), " ")
     .replace(Regex("\\s+"), " ")
@@ -2480,19 +2462,6 @@ private fun String.withoutHouseNumber(): String = trim()
 
 private fun String.normalizeForAddressComparison(): String = lowercase(Locale.getDefault())
     .replace(Regex("[^\\p{L}\\p{N}]"), "")
-
-private val knownCountryNamesNormalized: Set<String> by lazy {
-    Locale.getISOCountries()
-        .flatMap { countryCode ->
-            listOf(
-                Locale("", countryCode).getDisplayCountry(Locale.getDefault()),
-                Locale("", countryCode).getDisplayCountry(Locale.ENGLISH)
-            )
-        }
-        .map { it.trim().lowercase(Locale.getDefault()) }
-        .filter { it.isNotBlank() }
-        .toSet()
-}
 
 @Composable
 private fun QuickDoneToggle(
