@@ -25,7 +25,7 @@
     <string name="settings_tabs_select_at_least_one">Select at least one tab.</string>
 
     <!-- Settings Categories -->
-    <string name="settings_category_default_events">Defaults</string>
+    <string name="settings_category_default_events">Event Settings</string>
     <string name="settings_category_sync">Sync</string>
     <string name="settings_category_map">Map</string>
     <string name="settings_category_app">App</string>

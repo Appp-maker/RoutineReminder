@@ -88,6 +88,12 @@ enum class DriveBackupAction {
     RESTORE
 }
 
+private enum class EventDefaultsSubmenu {
+    EVENT_CARD,
+    EVENT_DATA,
+    DEFAULT_VALUES
+}
+
 enum class SettingsCategory {
     PROFILE,
     SYNC,
@@ -2012,267 +2018,286 @@ private fun DefaultEventsSettingsSection(
     pastEventBackgroundTransparency: EventBackgroundTransparency,
     onPastEventBackgroundTransparencyChange: (EventBackgroundTransparency) -> Unit
 ) {
+    var selectedSubmenu by remember { mutableStateOf(EventDefaultsSubmenu.EVENT_CARD) }
+
     Text(stringResource(R.string.settings_default_events_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
-    Text(
-        text = stringResource(R.string.settings_event_appearance_title),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(
-        text = stringResource(R.string.settings_event_appearance_upcoming_title),
-        style = MaterialTheme.typography.titleSmall,
-        modifier = Modifier.padding(bottom = 4.dp)
-    )
-    EventColorConditionDropdown(
-        label = stringResource(R.string.settings_event_color_indicator_label),
-        selectedCondition = eventIndicatorDisplayCondition,
-        onConditionChange = onEventIndicatorDisplayConditionChange
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    EventColorConditionDropdown(
-        label = stringResource(R.string.settings_event_color_background_label),
-        selectedCondition = eventBackgroundDisplayCondition,
-        onConditionChange = onEventBackgroundDisplayConditionChange
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    EventBackgroundTransparencyDropdown(
-        label = stringResource(R.string.settings_event_background_transparency_label),
-        selectedTransparency = eventBackgroundTransparency,
-        onTransparencyChange = onEventBackgroundTransparencyChange
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    EventTitleColorDropdown(
-        label = stringResource(R.string.settings_event_title_color_label),
-        selectedChoice = eventTitleColorChoice,
-        onChoiceChange = onEventTitleColorChoiceChange
-    )
-    if (eventTitleColorChoice == EventTitleColorChoice.CUSTOM) {
-        Spacer(modifier = Modifier.height(8.dp))
-        SeriesColorPicker(
-            label = stringResource(R.string.settings_event_title_custom_color_label),
-            selectedColor = Color(eventTitleCustomColor),
-            onColorSelected = { onEventTitleCustomColorChange(it.toArgb()) },
-            modifier = Modifier.padding(bottom = 8.dp),
-            colorOptions = SeriesColorOptions,
-            allowCustomColor = true,
-            recentCustomColors = recentCustomEventColors
-        )
+    ScrollableTabRow(
+        selectedTabIndex = selectedSubmenu.ordinal,
+        edgePadding = 0.dp,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        EventDefaultsSubmenu.entries.forEach { submenu ->
+            val submenuLabel = when (submenu) {
+                EventDefaultsSubmenu.EVENT_CARD -> "Event card"
+                EventDefaultsSubmenu.EVENT_DATA -> "Event data"
+                EventDefaultsSubmenu.DEFAULT_VALUES -> "Default values"
+            }
+            Tab(
+                selected = selectedSubmenu == submenu,
+                onClick = { selectedSubmenu = submenu },
+                selectedContentColor = MaterialTheme.colorScheme.secondary,
+                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = { Text(text = submenuLabel, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            )
+        }
     }
     Spacer(modifier = Modifier.height(12.dp))
-    Text(
-        text = "Event card details",
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.secondary
-    )
-    SettingSwitchItem(
-        text = "Advanced mode",
-        checked = eventCardAdvancedModeEnabled,
-        onCheckedChange = onEventCardAdvancedModeEnabledChange
-    )
-    if (eventCardAdvancedModeEnabled) {
-        SettingSwitchItem(
-            text = "Show location",
-            checked = showLocationInEventCard,
-            onCheckedChange = onShowLocationInEventCardChange
-        )
-        SettingSwitchItem(
-            text = "Show ETA and distance",
-            checked = showRouteEtaInEventCard,
-            onCheckedChange = onShowRouteEtaInEventCardChange
-        )
-        SettingSwitchItem(
-            text = "Show weather summary",
-            checked = showWeatherInEventCard,
-            onCheckedChange = onShowWeatherInEventCardChange
-        )
-    }
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = stringResource(R.string.settings_event_appearance_past_title),
-        style = MaterialTheme.typography.titleSmall,
-        modifier = Modifier.padding(bottom = 4.dp)
-    )
-    PastEventTextColorDropdown(
-        label = stringResource(R.string.settings_past_event_text_color_label),
-        selectedChoice = pastEventTextColorChoice,
-        onChoiceChange = onPastEventTextColorChoiceChange
-    )
-    if (pastEventTextColorChoice == PastEventTextColorChoice.CUSTOM) {
-        Spacer(modifier = Modifier.height(8.dp))
-        SeriesColorPicker(
-            label = stringResource(R.string.settings_past_event_text_custom_color_label),
-            selectedColor = Color(pastEventTextCustomColor),
-            onColorSelected = { onPastEventTextCustomColorChange(it.toArgb()) },
-            modifier = Modifier.padding(bottom = 8.dp),
-            colorOptions = SeriesColorOptions,
-            allowCustomColor = true,
-            recentCustomColors = recentCustomEventColors
-        )
-    }
-    Spacer(modifier = Modifier.height(8.dp))
-    PastEventDetailTextColorDropdown(
-        label = stringResource(R.string.settings_past_event_detail_text_color_label),
-        selectedChoice = pastEventDetailTextColorChoice,
-        onChoiceChange = onPastEventDetailTextColorChoiceChange
-    )
-    if (pastEventDetailTextColorChoice == PastEventDetailTextColorChoice.CUSTOM) {
-        Spacer(modifier = Modifier.height(8.dp))
-        SeriesColorPicker(
-            label = stringResource(R.string.settings_past_event_detail_text_custom_color_label),
-            selectedColor = Color(pastEventDetailTextCustomColor),
-            onColorSelected = { onPastEventDetailTextCustomColorChange(it.toArgb()) },
-            modifier = Modifier.padding(bottom = 8.dp),
-            colorOptions = SeriesColorOptions,
-            allowCustomColor = true,
-            recentCustomColors = recentCustomEventColors
-        )
-    }
-    Spacer(modifier = Modifier.height(8.dp))
-    PastEventColorTreatmentDropdown(
-        label = stringResource(R.string.settings_past_event_background_color_label),
-        selectedTreatment = pastEventBackgroundTreatment,
-        onTreatmentChange = onPastEventBackgroundTreatmentChange
-    )
-    if (pastEventBackgroundTreatment == PastEventColorTreatment.CUSTOM) {
-        Spacer(modifier = Modifier.height(8.dp))
-        SeriesColorPicker(
-            label = stringResource(R.string.settings_past_event_background_custom_color_label),
-            selectedColor = Color(pastEventBackgroundCustomColor),
-            onColorSelected = { onPastEventBackgroundCustomColorChange(it.toArgb()) },
-            modifier = Modifier.padding(bottom = 8.dp),
-            colorOptions = SeriesColorOptions,
-            allowCustomColor = true,
-            recentCustomColors = recentCustomEventColors
-        )
-    }
-    Spacer(modifier = Modifier.height(8.dp))
-    EventBackgroundTransparencyDropdown(
-        label = stringResource(R.string.settings_past_event_background_transparency_label),
-        selectedTransparency = pastEventBackgroundTransparency,
-        onTransparencyChange = onPastEventBackgroundTransparencyChange
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(stringResource(R.string.settings_default_events_start_time), style = MaterialTheme.typography.titleMedium)
-    Column(Modifier.selectableGroup()) {
-        StartTimeOption.entries.forEach { option ->
-            Row(
-                Modifier.fillMaxWidth().selectable(selected = (option == startTimeOption), onClick = { onStartTimeOptionChange(option) }).padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(selected = (option == startTimeOption), onClick = null)
-                Text(
-                    text = when (option) {
-                        StartTimeOption.CURRENT_TIME -> stringResource(R.string.settings_start_time_option_current_time)
-                        StartTimeOption.SPECIFIC_TIME -> stringResource(R.string.settings_start_time_option_specific_time)
-                        StartTimeOption.NEXT_FULL_HOUR -> stringResource(R.string.settings_start_time_option_next_full_hour)
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = 8.dp).weight(1f) // Added weight
+    when (selectedSubmenu) {
+        EventDefaultsSubmenu.EVENT_CARD -> {
+            Text(
+                text = stringResource(R.string.settings_event_appearance_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.settings_event_appearance_upcoming_title),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            EventColorConditionDropdown(
+                label = stringResource(R.string.settings_event_color_indicator_label),
+                selectedCondition = eventIndicatorDisplayCondition,
+                onConditionChange = onEventIndicatorDisplayConditionChange
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            EventColorConditionDropdown(
+                label = stringResource(R.string.settings_event_color_background_label),
+                selectedCondition = eventBackgroundDisplayCondition,
+                onConditionChange = onEventBackgroundDisplayConditionChange
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            EventBackgroundTransparencyDropdown(
+                label = stringResource(R.string.settings_event_background_transparency_label),
+                selectedTransparency = eventBackgroundTransparency,
+                onTransparencyChange = onEventBackgroundTransparencyChange
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            EventTitleColorDropdown(
+                label = stringResource(R.string.settings_event_title_color_label),
+                selectedChoice = eventTitleColorChoice,
+                onChoiceChange = onEventTitleColorChoiceChange
+            )
+            if (eventTitleColorChoice == EventTitleColorChoice.CUSTOM) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SeriesColorPicker(
+                    label = stringResource(R.string.settings_event_title_custom_color_label),
+                    selectedColor = Color(eventTitleCustomColor),
+                    onColorSelected = { onEventTitleCustomColorChange(it.toArgb()) },
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    colorOptions = SeriesColorOptions,
+                    allowCustomColor = true,
+                    recentCustomColors = recentCustomEventColors
                 )
-                if (option == StartTimeOption.SPECIFIC_TIME && startTimeOption == StartTimeOption.SPECIFIC_TIME) {
-                    Spacer(Modifier.width(8.dp)) // Add some space
-                    Text(
-                        String.format(Locale.getDefault(), "%02d:%02d", defaultEventHourState, defaultEventMinuteState),
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    IconButton(onClick = onSpecificTimeClick, modifier = Modifier.padding(end = 8.dp)) {
-                        Icon(Icons.Filled.Edit, stringResource(R.string.settings_default_events_edit_specific_time))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.settings_event_appearance_past_title),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            PastEventTextColorDropdown(
+                label = stringResource(R.string.settings_past_event_text_color_label),
+                selectedChoice = pastEventTextColorChoice,
+                onChoiceChange = onPastEventTextColorChoiceChange
+            )
+            if (pastEventTextColorChoice == PastEventTextColorChoice.CUSTOM) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SeriesColorPicker(
+                    label = stringResource(R.string.settings_past_event_text_custom_color_label),
+                    selectedColor = Color(pastEventTextCustomColor),
+                    onColorSelected = { onPastEventTextCustomColorChange(it.toArgb()) },
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    colorOptions = SeriesColorOptions,
+                    allowCustomColor = true,
+                    recentCustomColors = recentCustomEventColors
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            PastEventDetailTextColorDropdown(
+                label = stringResource(R.string.settings_past_event_detail_text_color_label),
+                selectedChoice = pastEventDetailTextColorChoice,
+                onChoiceChange = onPastEventDetailTextColorChoiceChange
+            )
+            if (pastEventDetailTextColorChoice == PastEventDetailTextColorChoice.CUSTOM) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SeriesColorPicker(
+                    label = stringResource(R.string.settings_past_event_detail_text_custom_color_label),
+                    selectedColor = Color(pastEventDetailTextCustomColor),
+                    onColorSelected = { onPastEventDetailTextCustomColorChange(it.toArgb()) },
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    colorOptions = SeriesColorOptions,
+                    allowCustomColor = true,
+                    recentCustomColors = recentCustomEventColors
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            PastEventColorTreatmentDropdown(
+                label = stringResource(R.string.settings_past_event_background_color_label),
+                selectedTreatment = pastEventBackgroundTreatment,
+                onTreatmentChange = onPastEventBackgroundTreatmentChange
+            )
+            if (pastEventBackgroundTreatment == PastEventColorTreatment.CUSTOM) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SeriesColorPicker(
+                    label = stringResource(R.string.settings_past_event_background_custom_color_label),
+                    selectedColor = Color(pastEventBackgroundCustomColor),
+                    onColorSelected = { onPastEventBackgroundCustomColorChange(it.toArgb()) },
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    colorOptions = SeriesColorOptions,
+                    allowCustomColor = true,
+                    recentCustomColors = recentCustomEventColors
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            EventBackgroundTransparencyDropdown(
+                label = stringResource(R.string.settings_past_event_background_transparency_label),
+                selectedTransparency = pastEventBackgroundTransparency,
+                onTransparencyChange = onPastEventBackgroundTransparencyChange
+            )
+        }
+        EventDefaultsSubmenu.EVENT_DATA -> {
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+        EventDefaultsSubmenu.DEFAULT_VALUES -> {
+            Text(
+                stringResource(R.string.settings_default_events_start_time),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Column(Modifier.selectableGroup()) {
+                StartTimeOption.entries.forEach { option ->
+                    Row(
+                        Modifier.fillMaxWidth().selectable(selected = (option == startTimeOption), onClick = { onStartTimeOptionChange(option) }).padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = (option == startTimeOption), onClick = null)
+                        Text(
+                            text = when (option) {
+                                StartTimeOption.CURRENT_TIME -> stringResource(R.string.settings_start_time_option_current_time)
+                                StartTimeOption.SPECIFIC_TIME -> stringResource(R.string.settings_start_time_option_specific_time)
+                                StartTimeOption.NEXT_FULL_HOUR -> stringResource(R.string.settings_start_time_option_next_full_hour)
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 8.dp).weight(1f)
+                        )
+                        if (option == StartTimeOption.SPECIFIC_TIME && startTimeOption == StartTimeOption.SPECIFIC_TIME) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                String.format(Locale.getDefault(), "%02d:%02d", defaultEventHourState, defaultEventMinuteState),
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            IconButton(onClick = onSpecificTimeClick, modifier = Modifier.padding(end = 8.dp)) {
+                                Icon(Icons.Filled.Edit, stringResource(R.string.settings_default_events_edit_specific_time))
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-    Spacer(modifier = Modifier.height(8.dp))
-    //Text(stringResource(R.string.settings_default_events_duration), style = MaterialTheme.typography.titleMedium) // Removed this line
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp) // Removed Arrangement.SpaceBetween
-    ) {
-        Text(
-            stringResource(R.string.settings_default_events_duration), // Moved Text here
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f) // Added weight
-        )
-        OutlinedTextField(
-            value = defaultDurationHoursText,
-            onValueChange = onDefaultDurationHoursChange,
-            label = { Text(stringResource(R.string.settings_label_hours_short)) }, // Changed label
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.width(70.dp) // Changed modifier
-        )
-        Text(
-            ":", // Added colon
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
-        OutlinedTextField(
-            value = defaultDurationMinutesText,
-            onValueChange = onDefaultDurationMinutesChange,
-            label = { Text(stringResource(R.string.settings_label_minutes_short)) }, // Changed label
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.width(70.dp) // Changed modifier
-        )
-        // Spacer(modifier = Modifier.width(16.dp)) // Removed Spacer
-    }
-    Spacer(modifier = Modifier.height(8.dp))
-    SettingSwitchItem(
-        text = stringResource(R.string.settings_default_events_one_time_appointment),
-        checked = !isOneTimeChecked,
-        onCheckedChange = { isRepeating -> onIsOneTimeChange(!isRepeating) }
-    )
-    SettingSwitchItem(
-        text = stringResource(R.string.settings_default_events_create_calendar_entry),
-        checked = createCalendarEntryChecked,
-        onCheckedChange = onCreateCalendarEntryChange,
-        enabled = !useGoogleBackupModeChecked
-    )
-    if (createCalendarEntryChecked && !useGoogleBackupModeChecked) {
-        Column(Modifier.padding(start = 16.dp, top = 8.dp).selectableGroup()) {
-            Text(stringResource(R.string.settings_default_events_target_calendar_new_events), style = MaterialTheme.typography.titleSmall)
-            val calendarOptionsForNewEvents = mutableListOf<Pair<String, String>>()
-            calendarOptionsForNewEvents.add(SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL to stringResource(R.string.settings_default_events_target_calendar_local_device))
-            if (selectedGoogleAccountName != null) {
-                calendarOptionsForNewEvents.add(SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY to stringResource(R.string.settings_default_events_select_gcal_primary))
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            ) {
+                Text(
+                    stringResource(R.string.settings_default_events_duration),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = defaultDurationHoursText,
+                    onValueChange = onDefaultDurationHoursChange,
+                    label = { Text(stringResource(R.string.settings_label_hours_short)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.width(70.dp)
+                )
+                Text(
+                    ":",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                OutlinedTextField(
+                    value = defaultDurationMinutesText,
+                    onValueChange = onDefaultDurationMinutesChange,
+                    label = { Text(stringResource(R.string.settings_label_minutes_short)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.width(70.dp)
+                )
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            SettingSwitchItem(
+                text = stringResource(R.string.settings_default_events_one_time_appointment),
+                checked = !isOneTimeChecked,
+                onCheckedChange = { isRepeating -> onIsOneTimeChange(!isRepeating) }
+            )
+            SettingSwitchItem(
+                text = stringResource(R.string.settings_default_events_create_calendar_entry),
+                checked = createCalendarEntryChecked,
+                onCheckedChange = onCreateCalendarEntryChange,
+                enabled = !useGoogleBackupModeChecked
+            )
+            if (createCalendarEntryChecked && !useGoogleBackupModeChecked) {
+                Column(Modifier.padding(start = 16.dp, top = 8.dp).selectableGroup()) {
+                    Text(stringResource(R.string.settings_default_events_target_calendar_new_events), style = MaterialTheme.typography.titleSmall)
+                    val calendarOptionsForNewEvents = mutableListOf<Pair<String, String>>()
+                    calendarOptionsForNewEvents.add(SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL to stringResource(R.string.settings_default_events_target_calendar_local_device))
+                    if (selectedGoogleAccountName != null) {
+                        calendarOptionsForNewEvents.add(SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY to stringResource(R.string.settings_default_events_select_gcal_primary))
+                    }
 
-            calendarOptionsForNewEvents.forEach { (optionId, optionDisplayName) ->
-                val isSelected = selectedCalendarIdForNewEvents == optionId
-                Row(Modifier.fillMaxWidth().selectable(
-                    selected = isSelected,
-                    onClick = { onSelectedCalendarIdForNewEventsChange(optionId) }
-                ).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = isSelected, onClick = null)
-                    Text(text = optionDisplayName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
+                    calendarOptionsForNewEvents.forEach { (optionId, optionDisplayName) ->
+                        val isSelected = selectedCalendarIdForNewEvents == optionId
+                        Row(Modifier.fillMaxWidth().selectable(
+                            selected = isSelected,
+                            onClick = { onSelectedCalendarIdForNewEventsChange(optionId) }
+                        ).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = isSelected, onClick = null)
+                            Text(text = optionDisplayName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                stringResource(R.string.settings_default_events_notification_options_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            SettingSwitchItem(
+                text = stringResource(R.string.settings_default_events_system_notification),
+                checked = systemNotificationChecked,
+                onCheckedChange = onSystemNotificationChange
+            )
+            SettingSwitchItem(
+                text = stringResource(R.string.settings_default_events_show_details_notification),
+                checked = showDetailsInNotificationChecked,
+                enabled = systemNotificationChecked,
+                onCheckedChange = onShowDetailsInNotificationChange
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.titleSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = reminderCountText,
+                onValueChange = onReminderCountChange,
+                label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = systemNotificationChecked,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = reminderIntervalMinutesText,
+                onValueChange = onReminderIntervalMinutesChange,
+                label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = systemNotificationChecked,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(stringResource(R.string.settings_default_events_notification_options_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
-    SettingSwitchItem(text = stringResource(R.string.settings_default_events_system_notification), checked = systemNotificationChecked, onCheckedChange = onSystemNotificationChange)
-    SettingSwitchItem(text = stringResource(R.string.settings_default_events_show_details_notification), checked = showDetailsInNotificationChecked, enabled = systemNotificationChecked, onCheckedChange = onShowDetailsInNotificationChange)
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.titleSmall)
-    Spacer(modifier = Modifier.height(8.dp))
-    OutlinedTextField(
-        value = reminderCountText,
-        onValueChange = onReminderCountChange,
-        label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        enabled = systemNotificationChecked,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    OutlinedTextField(
-        value = reminderIntervalMinutesText,
-        onValueChange = onReminderIntervalMinutesChange,
-        label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        enabled = systemNotificationChecked,
-        modifier = Modifier.fillMaxWidth()
-    )
     Spacer(modifier = Modifier.height(16.dp))
 }
 
