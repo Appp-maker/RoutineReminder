@@ -22,6 +22,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -412,7 +415,7 @@ fun EditItemDialog(
                     AddressAutocompleteField(
                         value = location,
                         onValueChange = { location = it },
-                        label = "Destination / Location (optional)",
+                        label = "Destination (optional)",
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = {
                             Icon(
@@ -811,6 +814,8 @@ private fun AddressAutocompleteField(
 ) {
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var expanded by remember { mutableStateOf(false) }
+    var isTextFieldFocused by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(value) {
         val query = value.trim()
@@ -821,25 +826,27 @@ private fun AddressAutocompleteField(
         }
         delay(250)
         suggestions = EventPredictionService.addressSuggestions(query).take(5)
-        expanded = suggestions.isNotEmpty()
+        expanded = isTextFieldFocused && suggestions.isNotEmpty()
     }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = it && suggestions.isNotEmpty() },
+        onExpandedChange = { expanded = it && suggestions.isNotEmpty() && isTextFieldFocused },
         modifier = modifier
     ) {
         OutlinedTextField(
             value = value,
             onValueChange = {
                 onValueChange(it)
-                expanded = true
+                expanded = isTextFieldFocused && suggestions.isNotEmpty()
             },
             label = { Text(label) },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(),
+                .focusRequester(focusRequester)
+                .onFocusChanged { isTextFieldFocused = it.isFocused }
+                .menuAnchor(type = MenuAnchorType.PrimaryEditable, enabled = true),
             leadingIcon = leadingIcon,
             trailingIcon = {
                 if (value.isNotBlank()) {
@@ -867,6 +874,7 @@ private fun AddressAutocompleteField(
                     onClick = {
                         onValueChange(suggestion)
                         expanded = false
+                        focusRequester.requestFocus()
                     }
                 )
             }
