@@ -690,7 +690,11 @@ fun EditItemDialog(
 
                     if (addToCalendar && !useGoogleBackupMode) {
                         Spacer(Modifier.height(8.dp))
-                        Column(Modifier.selectableGroup()) {
+                        Column(
+                            Modifier
+                                .padding(start = 40.dp)
+                                .selectableGroup()
+                        ) {
                             Row(
                                 Modifier
                                     .fillMaxWidth()
