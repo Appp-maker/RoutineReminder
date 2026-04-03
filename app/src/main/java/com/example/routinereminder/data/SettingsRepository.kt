@@ -40,6 +40,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val DEFAULT_EVENT_SHOW_DETAILS_IN_NOTIFICATION = booleanPreferencesKey("default_event_show_details_in_notification")
     val DEFAULT_EVENT_REMINDER_COUNT = intPreferencesKey("default_event_reminder_count")
     val DEFAULT_EVENT_REMINDER_INTERVAL_MINUTES = intPreferencesKey("default_event_reminder_interval_minutes")
+    val EVENT_DIALOG_FIELDS = stringSetPreferencesKey("event_dialog_fields")
     val START_TIME_OPTION_NAME = stringPreferencesKey("start_time_option_name")
     val TARGET_CALENDAR_ID = stringPreferencesKey("target_calendar_id")
     val ON_CALENDAR_DELETE_ACTION = stringPreferencesKey("on_calendar_delete_action")
@@ -689,6 +690,38 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             preferences[START_TIME_OPTION_NAME] = settings.startTimeOptionName
             preferences[TARGET_CALENDAR_ID] = settings.targetCalendarId
         }
+    }
+
+    suspend fun saveEventDialogFields(fields: List<EventDialogFieldOption>) {
+        val serialized = fields.mapIndexed { index, option ->
+            "${index}|${option.field.key}|${option.enabled}"
+        }.toSet()
+        dataStore.edit { preferences ->
+            preferences[EVENT_DIALOG_FIELDS] = serialized
+        }
+    }
+
+    fun getEventDialogFields(): Flow<List<EventDialogFieldOption>> {
+        return dataStore.data.map { preferences ->
+            val stored = preferences[EVENT_DIALOG_FIELDS].orEmpty()
+            val parsedByIndex = stored.mapNotNull { entry ->
+                val parts = entry.split("|")
+                val index = parts.getOrNull(0)?.toIntOrNull() ?: return@mapNotNull null
+                val field = parts.getOrNull(1)?.let(EventDialogField::fromKey) ?: return@mapNotNull null
+                val enabled = parts.getOrNull(2)?.toBooleanStrictOrNull() ?: true
+                index to EventDialogFieldOption(field = field, enabled = enabled)
+            }.sortedBy { it.first }.map { it.second }
+
+            val defaults = EventDialogFieldOption.defaults()
+            if (parsedByIndex.isEmpty()) return@map defaults
+
+            val parsedMap = parsedByIndex.associateBy { it.field }
+            defaults.map { default ->
+                parsedMap[default.field] ?: default
+            }.sortedBy { option ->
+                parsedByIndex.indexOfFirst { it.field == option.field }.let { if (it == -1) Int.MAX_VALUE else it }
+            }
+        }.distinctUntilChanged()
     }
 
     fun getDefaultEventSettings(): Flow<DefaultEventSettings> {
