@@ -2298,7 +2298,14 @@ private fun EventRouteAndWeatherSummary(
     } else {
         null
     }
-    val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }?.withWeatherSymbol()
+    val etaDistanceSummary = when {
+        etaSummary != null && routeDistanceSummary != null -> "$etaSummary • $routeDistanceSummary"
+        etaSummary != null -> etaSummary
+        routeDistanceSummary != null -> routeDistanceSummary
+        else -> null
+    }
+
+    val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }?.toCompactWeatherSummary()
         ?: if (destination != null) "Unavailable" else null
 
     val lines = buildList {
@@ -2308,9 +2315,8 @@ private fun EventRouteAndWeatherSummary(
         } else {
             destination?.let { add("Location: $it") }
         }
-        etaSummary?.let { add("ETA: $it") }
-        routeDistanceSummary?.let { add("Distance: $it") }
-        weatherSummary?.let { add("Weather: $it") }
+        etaDistanceSummary?.let { add("ETA • Distance: $it") }
+        weatherSummary?.let { add(it) }
     }
     if (lines.isEmpty()) return
 
@@ -2329,38 +2335,46 @@ private fun EventRouteAndWeatherSummary(
 private fun String.toCompactAddress(): String {
     val segments = split(",").map { it.trim() }.filter { it.isNotEmpty() }
     if (segments.isEmpty()) return trim()
-    if (segments.size == 1) return segments.first()
+    if (segments.size == 1) return segments.first().toStreetAndHouseNumber()
 
-    val streetSegment = segments.first().let { segment ->
-        val houseNumberMatch = "\\b\\d+[A-Za-z]?\\b".toRegex().find(segment)?.value
-        if (houseNumberMatch != null) {
-            val tokens = segment.split(Regex("\\s+")).filter { it.isNotBlank() }
-            val houseIndex = tokens.indexOfFirst { it.contains(houseNumberMatch) }
-            if (houseIndex > 0) {
-                "${tokens[houseIndex - 1]} $houseNumberMatch"
-            } else {
-                segment
-            }
-        } else {
-            segment
-        }
-    }
-    val citySegment = segments.last()
+    val streetSegment = segments.first().toStreetAndHouseNumber()
+    val citySegment = if (segments.size >= 3) segments[segments.lastIndex - 1] else segments.last()
     return "$streetSegment, $citySegment"
 }
 
-private fun String.withWeatherSymbol(): String {
+private fun String.toStreetAndHouseNumber(): String {
+    val tokens = trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+    if (tokens.isEmpty()) return trim()
+    val houseIndex = tokens.indexOfFirst { it.matches(Regex("\\d+[A-Za-z]?")) }
+    if (houseIndex == -1) return tokens.joinToString(" ")
+    val houseNumber = tokens[houseIndex]
+    val streetTokens = tokens.toMutableList().apply { removeAt(houseIndex) }
+    if (streetTokens.isEmpty()) return houseNumber
+    return "${streetTokens.joinToString(" ")} $houseNumber"
+}
+
+private fun String.toCompactWeatherSummary(): String {
+    val timePattern = Regex("\\b\\d{1,2}:\\d{2}\\b")
+    val temperaturePattern = Regex("-?\\d+(?:[.,]\\d+)?\\s*°\\s*[CF]?")
+    val normalizedSegments = split("·")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !timePattern.matches(it) }
+
+    val temperature = normalizedSegments.firstOrNull { temperaturePattern.containsMatchIn(it) }
+    val weatherDescription = normalizedSegments.firstOrNull { it != temperature } ?: "Unavailable"
+    val compactText = listOfNotNull(weatherDescription, temperature).joinToString(" · ")
+
     val symbol = when {
-        contains("sun", ignoreCase = true) || contains("clear", ignoreCase = true) -> "☀️"
-        contains("rain", ignoreCase = true) || contains("drizzle", ignoreCase = true) -> "🌧️"
-        contains("storm", ignoreCase = true) || contains("thunder", ignoreCase = true) -> "⛈️"
-        contains("snow", ignoreCase = true) || contains("sleet", ignoreCase = true) -> "❄️"
-        contains("fog", ignoreCase = true) || contains("mist", ignoreCase = true) || contains("haze", ignoreCase = true) -> "🌫️"
-        contains("cloud", ignoreCase = true) || contains("overcast", ignoreCase = true) -> "☁️"
-        contains("wind", ignoreCase = true) -> "💨"
+        compactText.contains("sun", ignoreCase = true) || compactText.contains("clear", ignoreCase = true) -> "☀️"
+        compactText.contains("rain", ignoreCase = true) || compactText.contains("drizzle", ignoreCase = true) -> "🌧️"
+        compactText.contains("storm", ignoreCase = true) || compactText.contains("thunder", ignoreCase = true) -> "⛈️"
+        compactText.contains("snow", ignoreCase = true) || compactText.contains("sleet", ignoreCase = true) -> "❄️"
+        compactText.contains("fog", ignoreCase = true) || compactText.contains("mist", ignoreCase = true) || compactText.contains("haze", ignoreCase = true) -> "🌫️"
+        compactText.contains("cloud", ignoreCase = true) || compactText.contains("overcast", ignoreCase = true) -> "☁️"
+        compactText.contains("wind", ignoreCase = true) -> "💨"
         else -> "🌡️"
     }
-    return "$symbol $this"
+    return "$symbol $compactText"
 }
 
 @Composable
