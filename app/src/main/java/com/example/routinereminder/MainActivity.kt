@@ -2353,9 +2353,8 @@ private fun String.toCompactAddress(): String {
         }
     }
 
-    val cityCandidates = if (segments.size > 2) segments.drop(1).dropLast(1) else segments.drop(1)
+    val cityCandidates = segments.drop(1)
     val citySegment = cityCandidates
-        .asReversed()
         .firstOrNull { it.isLikelyCityName() }
         ?: segments.last()
 
@@ -2420,6 +2419,20 @@ private fun String.isLikelyCityName(): Boolean {
     val normalized = trim()
     if (normalized.isBlank()) return false
     if (normalized.matches(Regex("\\d{4,}"))) return false
+    val lowered = normalized.lowercase()
+    val blockedAdministrativeWords = listOf(
+        "county",
+        "state",
+        "province",
+        "region",
+        "district",
+        "departement",
+        "département",
+        "landkreis",
+        "regierungsbezirk",
+        "bundesland"
+    )
+    if (blockedAdministrativeWords.any { lowered.contains(it) }) return false
     return normalized.any { it.isLetter() }
 }
 
