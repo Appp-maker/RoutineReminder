@@ -2314,7 +2314,7 @@ private fun EventRouteAndWeatherSummary(
         } else {
             destination?.let { add("Location: $it") }
         }
-        etaDistanceSummary?.let { add("ETA • Distance: $it") }
+        etaDistanceSummary?.let { add("ETA • $it") }
         weatherSummary?.let { add(it) }
     }
     if (lines.isEmpty()) return
