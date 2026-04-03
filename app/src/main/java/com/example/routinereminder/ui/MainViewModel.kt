@@ -18,6 +18,7 @@ import com.example.routinereminder.data.DEFAULT_PRIMARY_COLOR_ARGB
 import com.example.routinereminder.data.defaultSeriesColorForIndex
 import com.example.routinereminder.data.EventBackgroundTransparency
 import com.example.routinereminder.data.EventCardDetailSettings
+import com.example.routinereminder.data.EventDialogFieldOption
 import com.example.routinereminder.data.EventColorDisplayCondition
 import com.example.routinereminder.data.EventTitleColorChoice
 import com.example.routinereminder.data.PastEventColorTreatment
@@ -213,6 +214,8 @@ class MainViewModel @Inject constructor(
     val eventTitleCustomColor: StateFlow<Int> = _eventTitleCustomColor.asStateFlow()
     private val _eventCardDetailSettings = MutableStateFlow(EventCardDetailSettings())
     val eventCardDetailSettings: StateFlow<EventCardDetailSettings> = _eventCardDetailSettings.asStateFlow()
+    private val _eventDialogFields = MutableStateFlow(EventDialogFieldOption.defaults())
+    val eventDialogFields: StateFlow<List<EventDialogFieldOption>> = _eventDialogFields.asStateFlow()
 
     private val _pastEventTextColorChoice = MutableStateFlow(PastEventTextColorChoice.GREYED_OUT)
     val pastEventTextColorChoice: StateFlow<PastEventTextColorChoice> =
@@ -305,6 +308,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getDefaultEventSettings().collectLatest { settings ->
                 _defaultEventSettings.value = settings
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventDialogFields().collectLatest { fields ->
+                _eventDialogFields.value = fields
             }
         }
         viewModelScope.launch {
@@ -1227,6 +1235,12 @@ class MainViewModel @Inject constructor(
     fun saveDefaultEventSettings(settings: DefaultEventSettings) {
         viewModelScope.launch {
             settingsRepository.saveDefaultEventSettings(settings)
+        }
+    }
+
+    fun saveEventDialogFields(fields: List<EventDialogFieldOption>) {
+        viewModelScope.launch {
+            settingsRepository.saveEventDialogFields(fields)
         }
     }
 

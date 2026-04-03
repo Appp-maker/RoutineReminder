@@ -35,6 +35,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.routinereminder.R
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.EventDialogField
+import com.example.routinereminder.data.EventDialogFieldOption
 import com.example.routinereminder.data.EventPredictionService
 import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.ScheduleItem
@@ -58,6 +60,7 @@ fun EditItemDialog(
     routeTravelMode: EventPredictionService.TravelMode,
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
+    eventDialogFields: List<EventDialogFieldOption>,
     recentCustomEventColors: List<Int>,
     onOpenDefaultSettings: () -> Unit,
     onDismissRequest: () -> Unit,
@@ -154,6 +157,12 @@ fun EditItemDialog(
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd.MM.yyyy") }
     var longRouteWarningItem by remember { mutableStateOf<ScheduleItem?>(null) }
     var longRouteWarningText by remember { mutableStateOf<String?>(null) }
+    val enabledFieldSet = remember(eventDialogFields) {
+        eventDialogFields.filter { it.enabled }.map { it.field }.toSet()
+    }
+    val isFieldEnabled: (EventDialogField) -> Boolean = { field ->
+        enabledFieldSet.contains(field)
+    }
 
     fun finalizeSave(itemToSave: ScheduleItem) {
         if (isCustomSeriesColor(itemToSave.colorArgb)) {
@@ -404,79 +413,89 @@ fun EditItemDialog(
                         singleLine = true
                     )
                     Spacer(Modifier.height(8.dp))
-                    RichTextEditor(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        label = "Notes (optional)",
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    AddressAutocompleteField(
-                        value = routeStart,
-                        onValueChange = { routeStart = it },
-                        label = "Start (optional)",
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
-                        }
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    AddressAutocompleteField(
-                        value = location,
-                        onValueChange = { location = it },
-                        label = "Destination (optional)",
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
-                        }
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Box(modifier = Modifier.clickable { timePickerDialog.show() }) {
-                        OutlinedTextField(
-                            value = selectedTime.format(timeFormatter),
-                            onValueChange = { },
-                            label = { Text("Time") },
+                    if (isFieldEnabled(EventDialogField.NOTES)) {
+                        RichTextEditor(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = "Notes (optional)",
                             modifier = Modifier.fillMaxWidth(),
-                            readOnly = true,
-                            enabled = false,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Select time") }
+                            minLines = 2
                         )
+                        Spacer(Modifier.height(8.dp))
                     }
-                    Spacer(Modifier.height(8.dp))
+                    if (isFieldEnabled(EventDialogField.START)) {
+                        AddressAutocompleteField(
+                            value = routeStart,
+                            onValueChange = { routeStart = it },
+                            label = "Start (optional)",
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.LocationOn,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    if (isFieldEnabled(EventDialogField.DESTINATION)) {
+                        AddressAutocompleteField(
+                            value = location,
+                            onValueChange = { location = it },
+                            label = "Destination (optional)",
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.LocationOn,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    if (isFieldEnabled(EventDialogField.TIME)) {
+                        Box(modifier = Modifier.clickable { timePickerDialog.show() }) {
+                            OutlinedTextField(
+                                value = selectedTime.format(timeFormatter),
+                                onValueChange = { },
+                                label = { Text("Time") },
+                                modifier = Modifier.fillMaxWidth(),
+                                readOnly = true,
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Select time") }
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
 
-                    Text("Duration:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextField(
-                            value = durationInputHours,
-                            onValueChange = { durationInputHours = it.filter { char -> char.isDigit() }.take(2) },
-                            label = { Text("Hours") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
-                        TextField(
-                            value = durationInputMinutes,
-                            onValueChange = { durationInputMinutes = it.filter { char -> char.isDigit() }.take(2) },
-                            label = { Text("Minutes") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
+                    if (isFieldEnabled(EventDialogField.DURATION)) {
+                        Text("Duration:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextField(
+                                value = durationInputHours,
+                                onValueChange = { durationInputHours = it.filter { char -> char.isDigit() }.take(2) },
+                                label = { Text("Hours") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                            TextField(
+                                value = durationInputMinutes,
+                                onValueChange = { durationInputMinutes = it.filter { char -> char.isDigit() }.take(2) },
+                                label = { Text("Minutes") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
                     }
-                    Spacer(Modifier.height(16.dp))
 
                     val isUsingSetColor = selectedSetId != null
                     val eventSetColorArgb = selectedSetId?.let { id ->
@@ -488,7 +507,7 @@ fun EditItemDialog(
                         eventSetNames.getOrNull(id - 1)
                     } ?: stringResource(R.string.event_set_none)
 
-                    if (isNewItem) {
+                    if (isFieldEnabled(EventDialogField.EVENT_SET) && isNewItem) {
                         ExposedDropdownMenuBox(
                             expanded = setMenuExpanded,
                             onExpandedChange = { setMenuExpanded = !setMenuExpanded }
@@ -527,7 +546,7 @@ fun EditItemDialog(
                             }
                         }
                         Spacer(Modifier.height(16.dp))
-                    } else if (selectedSetId != null) {
+                    } else if (isFieldEnabled(EventDialogField.EVENT_SET) && selectedSetId != null) {
                         OutlinedTextField(
                             value = selectedSetLabel,
                             onValueChange = {},
@@ -545,7 +564,7 @@ fun EditItemDialog(
                         Spacer(Modifier.height(16.dp))
                     }
 
-                    if (isUsingSetColor) {
+                    if (isFieldEnabled(EventDialogField.EVENT_COLOR) && isUsingSetColor) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -563,18 +582,21 @@ fun EditItemDialog(
                         Spacer(Modifier.height(6.dp))
                     }
 
-                    SeriesColorPicker(
-                        label = stringResource(R.string.event_color_label),
-                        selectedColor = Color(displayColorArgb),
-                        onColorSelected = { selectedColorArgb = it.toArgb() },
-                        enabled = !isUsingSetColor,
-                        colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else EventFoodColorOptions,
-                        showLabel = !isUsingSetColor,
-                        allowCustomColor = false,
-                        recentCustomColors = recentCustomEventColors
-                    )
-                    Spacer(Modifier.height(16.dp))
+                    if (isFieldEnabled(EventDialogField.EVENT_COLOR)) {
+                        SeriesColorPicker(
+                            label = stringResource(R.string.event_color_label),
+                            selectedColor = Color(displayColorArgb),
+                            onColorSelected = { selectedColorArgb = it.toArgb() },
+                            enabled = !isUsingSetColor,
+                            colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else EventFoodColorOptions,
+                            showLabel = !isUsingSetColor,
+                            allowCustomColor = false,
+                            recentCustomColors = recentCustomEventColors
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
 
+                    if (isFieldEnabled(EventDialogField.REPEAT)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -667,7 +689,9 @@ fun EditItemDialog(
                         }
                     }
                     Spacer(Modifier.height(16.dp))
+                    }
 
+                    if (isFieldEnabled(EventDialogField.CALENDAR)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -745,6 +769,8 @@ fun EditItemDialog(
                     }
 
                     Spacer(Modifier.height(16.dp))
+                    }
+                    if (isFieldEnabled(EventDialogField.NOTIFICATION)) {
                     Text("Notification options:", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(8.dp))
 
@@ -801,6 +827,7 @@ fun EditItemDialog(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(64.dp))
+                    }
                 }
             }
         }

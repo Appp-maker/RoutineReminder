@@ -451,6 +451,7 @@ fun MainAppUI(
         val pastEventBackgroundCustomColor by viewModel.pastEventBackgroundCustomColor.collectAsState()
         val pastEventBackgroundTransparency by viewModel.pastEventBackgroundTransparency.collectAsState()
         val recentCustomEventColors by viewModel.recentCustomEventColors.collectAsState()
+        val eventDialogFields by viewModel.eventDialogFields.collectAsState()
         val activeSetIds by viewModel.activeSetIds.collectAsState()
         val availableSetIds by viewModel.availableSetIds.collectAsState()
         val hasManualActiveSetsForDate by viewModel.hasManualActiveSetsForDate.collectAsState()
@@ -829,6 +830,7 @@ fun MainAppUI(
                             routeTravelMode = EventPredictionService.TravelMode.fromStoredValue(mapRouteTransportMode),
                             eventSetNames = eventSetNames,
                             eventSetColors = eventSetColors,
+                            eventDialogFields = eventDialogFields,
                             recentCustomEventColors = recentCustomEventColors,
                             onOpenDefaultSettings = {
                                 showEditDialog = false

@@ -124,6 +124,7 @@ fun WorkoutScreen(
     val eventSetNames by mainViewModel.eventSetNames.collectAsState()
     val eventSetColors by mainViewModel.eventSetColors.collectAsState()
     val recentCustomEventColors by mainViewModel.recentCustomEventColors.collectAsState()
+    val eventDialogFields by mainViewModel.eventDialogFields.collectAsState()
     val mapRouteTransportMode by mainViewModel.mapRouteTransportMode.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -624,6 +625,7 @@ fun WorkoutScreen(
             routeTravelMode = EventPredictionService.TravelMode.fromStoredValue(mapRouteTransportMode),
             eventSetNames = eventSetNames,
             eventSetColors = eventSetColors,
+            eventDialogFields = eventDialogFields,
             recentCustomEventColors = recentCustomEventColors,
             onOpenDefaultSettings = {
                 planToSchedule = null
