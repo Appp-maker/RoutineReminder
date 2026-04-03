@@ -2221,11 +2221,6 @@ private fun DefaultEventsSettingsSection(
                 color = MaterialTheme.colorScheme.secondary
             )
             Spacer(modifier = Modifier.height(8.dp))
-            EventDialogFieldConfigurator(
-                fields = eventDialogFields,
-                onFieldsChange = onEventDialogFieldsChange
-            )
-            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 stringResource(R.string.settings_default_events_notification_options_title),
                 style = MaterialTheme.typography.titleMedium,
