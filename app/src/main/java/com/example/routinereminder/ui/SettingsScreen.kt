@@ -2091,6 +2091,34 @@ private fun DefaultEventsSettingsSection(
                     recentCustomColors = recentCustomEventColors
                 )
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Event card details",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            SettingSwitchItem(
+                text = "Advanced mode",
+                checked = eventCardAdvancedModeEnabled,
+                onCheckedChange = onEventCardAdvancedModeEnabledChange
+            )
+            if (eventCardAdvancedModeEnabled) {
+                SettingSwitchItem(
+                    text = "Show location",
+                    checked = showLocationInEventCard,
+                    onCheckedChange = onShowLocationInEventCardChange
+                )
+                SettingSwitchItem(
+                    text = "Show ETA and distance",
+                    checked = showRouteEtaInEventCard,
+                    onCheckedChange = onShowRouteEtaInEventCardChange
+                )
+                SettingSwitchItem(
+                    text = "Show weather summary",
+                    checked = showWeatherInEventCard,
+                    onCheckedChange = onShowWeatherInEventCardChange
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.settings_event_appearance_past_title),
@@ -2158,7 +2186,42 @@ private fun DefaultEventsSettingsSection(
             )
         }
         EventDefaultsSubmenu.EVENT_DATA -> {
-            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.settings_default_events_notification_options_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            SettingSwitchItem(
+                text = stringResource(R.string.settings_default_events_system_notification),
+                checked = systemNotificationChecked,
+                onCheckedChange = onSystemNotificationChange
+            )
+            SettingSwitchItem(
+                text = stringResource(R.string.settings_default_events_show_details_notification),
+                checked = showDetailsInNotificationChecked,
+                enabled = systemNotificationChecked,
+                onCheckedChange = onShowDetailsInNotificationChange
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.titleSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = reminderCountText,
+                onValueChange = onReminderCountChange,
+                label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = systemNotificationChecked,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = reminderIntervalMinutesText,
+                onValueChange = onReminderIntervalMinutesChange,
+                label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = systemNotificationChecked,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
         EventDefaultsSubmenu.DEFAULT_VALUES -> {
             Text(
