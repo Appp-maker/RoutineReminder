@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -2220,11 +2221,6 @@ private fun DefaultEventsSettingsSection(
                 color = MaterialTheme.colorScheme.secondary
             )
             Spacer(modifier = Modifier.height(8.dp))
-            EventDialogFieldConfigurator(
-                fields = eventDialogFields,
-                onFieldsChange = onEventDialogFieldsChange
-            )
-            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 stringResource(R.string.settings_default_events_notification_options_title),
                 style = MaterialTheme.typography.titleMedium,
@@ -3379,7 +3375,7 @@ private fun EventDialogFieldConfigurator(
     onFieldsChange: (List<EventDialogFieldOption>) -> Unit
 ) {
     Text(
-        text = "Event creation fields",
+        text = stringResource(R.string.settings_event_data_fields_title),
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary
     )
@@ -3394,6 +3390,7 @@ private fun EventDialogFieldConfigurator(
                         onDragEnd = { dragOffset = 0f },
                         onDragCancel = { dragOffset = 0f },
                         onDrag = { change, dragAmount ->
+                            change.consume()
                             dragOffset += dragAmount.y
                             when {
                                 dragOffset > 40f && index < fields.lastIndex -> {
@@ -3449,16 +3446,16 @@ private fun EventDialogFieldConfigurator(
 @Composable
 private fun eventDialogFieldLabel(field: EventDialogField): String {
     return when (field) {
-        EventDialogField.NOTES -> "Notes"
-        EventDialogField.START -> "Start location"
-        EventDialogField.DESTINATION -> "Destination"
-        EventDialogField.TIME -> "Time"
-        EventDialogField.DURATION -> "Duration"
-        EventDialogField.EVENT_SET -> "Event set"
-        EventDialogField.EVENT_COLOR -> "Event color"
-        EventDialogField.REPEAT -> "Repeat / date"
-        EventDialogField.CALENDAR -> "Calendar entry"
-        EventDialogField.NOTIFICATION -> "Notifications"
+        EventDialogField.NOTES -> stringResource(R.string.settings_event_data_field_notes)
+        EventDialogField.START -> stringResource(R.string.settings_event_data_field_start)
+        EventDialogField.DESTINATION -> stringResource(R.string.settings_event_data_field_destination)
+        EventDialogField.TIME -> stringResource(R.string.settings_event_data_field_time)
+        EventDialogField.DURATION -> stringResource(R.string.settings_event_data_field_duration)
+        EventDialogField.EVENT_SET -> stringResource(R.string.settings_event_data_field_set)
+        EventDialogField.EVENT_COLOR -> stringResource(R.string.settings_event_data_field_color)
+        EventDialogField.REPEAT -> stringResource(R.string.settings_event_data_field_repeat)
+        EventDialogField.CALENDAR -> stringResource(R.string.settings_event_data_field_calendar)
+        EventDialogField.NOTIFICATION -> stringResource(R.string.settings_event_data_field_notification)
     }
 }
 
