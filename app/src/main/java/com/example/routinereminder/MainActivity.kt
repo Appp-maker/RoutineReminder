@@ -2441,6 +2441,7 @@ private fun String.isLikelyCityName(): Boolean {
         "bundesland"
     )
     if (blockedAdministrativeWords.any { lowered.contains(it) }) return false
+    if (lowered in knownCountryNamesNormalized) return false
     return normalized.any { it.isLetter() }
 }
 
