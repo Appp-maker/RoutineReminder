@@ -160,6 +160,17 @@
     <string name="settings_routine_insights_description">Show overall completion, streaks, and daily consistency on the Routine tab.</string>
     <string name="settings_calorie_track_consumed">Track consumed foods with checkboxes</string>
     <string name="settings_calorie_track_consumed_hint">When enabled, calories start at 0 until you check foods as consumed.</string>
+    <string name="settings_event_data_fields_title">Event dialog fields</string>
+    <string name="settings_event_data_field_notes">Notes</string>
+    <string name="settings_event_data_field_start">Start</string>
+    <string name="settings_event_data_field_destination">Destination</string>
+    <string name="settings_event_data_field_time">Time</string>
+    <string name="settings_event_data_field_duration">Duration</string>
+    <string name="settings_event_data_field_set">Event set</string>
+    <string name="settings_event_data_field_color">Event color</string>
+    <string name="settings_event_data_field_repeat">Repeat</string>
+    <string name="settings_event_data_field_calendar">Calendar</string>
+    <string name="settings_event_data_field_notification">Notification</string>
     <string name="settings_event_sets_title">Event Sets</string>
     <string name="settings_event_sets_intro">Event sets are named groups of routines you can turn on or off to swap between different plans.</string>
     <string name="settings_event_sets_options_title">Event set options</string>
