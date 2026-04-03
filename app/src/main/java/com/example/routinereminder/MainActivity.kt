@@ -152,13 +152,16 @@ import com.example.routinereminder.ui.bundle.CreateBundleScreen
 
 
 private val knownCountryNamesNormalized: Set<String> by lazy {
+    val locales = Locale.getAvailableLocales().toList() + Locale.ENGLISH + Locale.GERMAN
     Locale.getISOCountries()
-        .mapNotNull { code ->
-            runCatching { Locale("", code).displayCountry }
-                .getOrNull()
-                ?.trim()
-                ?.lowercase(Locale.getDefault())
-                ?.takeIf { it.isNotBlank() }
+        .flatMap { code ->
+            locales.mapNotNull { locale ->
+                runCatching { Locale("", code).getDisplayCountry(locale) }
+                    .getOrNull()
+                    ?.trim()
+                    ?.lowercase(locale)
+                    ?.takeIf { it.isNotBlank() }
+            }
         }
         .toSet()
 }
@@ -2370,10 +2373,17 @@ private fun String.toCompactAddress(): String {
     val cityCandidates = segments
         .filterIndexed { index, _ -> index != streetSourceIndex }
         .dropWhile { it.isLikelyHouseNumber() }
-    val citySegment = cityCandidates
+    val extractedCandidates = cityCandidates
         .asSequence()
         .map { candidate -> candidate.extractCityToken() }
-        .firstOrNull { candidate ->
+        .toList()
+    val citySegment = extractedCandidates
+        .asSequence()
+        .lastOrNull { candidate ->
+            candidate.isLikelyCityName() &&
+                !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
+        }
+        ?: extractedCandidates.firstOrNull { candidate ->
             candidate.isLikelyCityName() &&
                 !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
         }
@@ -2440,6 +2450,7 @@ private fun String.isLikelyCityName(): Boolean {
     val normalized = trim()
     if (normalized.isBlank()) return false
     if (normalized.matches(Regex("\\d{4,}"))) return false
+    if (normalized.length in 1..3 && normalized.all { it.isUpperCase() }) return false
     val lowered = normalized.lowercase()
     val blockedAdministrativeWords = listOf(
         "county",
