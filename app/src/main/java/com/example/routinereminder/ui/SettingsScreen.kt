@@ -2199,6 +2199,12 @@ private fun DefaultEventsSettingsSection(
         }
         EventDefaultsSubmenu.EVENT_DATA -> {
             Text(
+                text = stringResource(R.string.settings_default_events_event_data_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
                 stringResource(R.string.settings_default_events_notification_options_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
