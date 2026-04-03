@@ -187,26 +187,40 @@ object EventPredictionService {
             val weatherCodes = hourly.optJSONArray("weather_code") ?: return null
 
             val targetDateTime = plannedEventDateTime ?: LocalDateTime.now()
-            var closestIndex = -1
-            var closestDeltaMinutes = Long.MAX_VALUE
+            var selectedIndex = -1
+            var fallbackClosestIndex = -1
+            var fallbackClosestDeltaMinutes = Long.MAX_VALUE
+
             for (index in 0 until times.length()) {
                 val timestamp = times.optString(index)
                 val weatherDateTime = runCatching { LocalDateTime.parse(timestamp) }.getOrNull() ?: continue
+
+                if (selectedIndex == -1 && !weatherDateTime.isBefore(targetDateTime)) {
+                    selectedIndex = index
+                }
+
                 val deltaMinutes = kotlin.math.abs(
                     Duration.between(weatherDateTime, targetDateTime).toMinutes()
                 )
-                if (deltaMinutes < closestDeltaMinutes) {
-                    closestDeltaMinutes = deltaMinutes
-                    closestIndex = index
+                if (deltaMinutes < fallbackClosestDeltaMinutes) {
+                    fallbackClosestDeltaMinutes = deltaMinutes
+                    fallbackClosestIndex = index
                 }
             }
 
-            if (closestIndex == -1) return null
-            val temp = temperatures.optDouble(closestIndex, Double.NaN)
-            val weatherCode = weatherCodes.optInt(closestIndex, -1)
+            if (selectedIndex == -1) {
+                selectedIndex = fallbackClosestIndex
+            }
+            if (selectedIndex == -1) return null
+
+            val selectedTimestamp = times.optString(selectedIndex)
+            val selectedDateTime = runCatching { LocalDateTime.parse(selectedTimestamp) }.getOrNull()
+
+            val temp = temperatures.optDouble(selectedIndex, Double.NaN)
+            val weatherCode = weatherCodes.optInt(selectedIndex, -1)
             if (temp.isNaN() || weatherCode == -1) return null
             val condition = weatherCodeToText(weatherCode)
-            val timeLabel = targetDateTime.toLocalTime()
+            val timeLabel = (selectedDateTime ?: targetDateTime).toLocalTime()
                 .truncatedTo(ChronoUnit.HOURS)
                 .toString()
                 .padEnd(5, '0')
