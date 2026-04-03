@@ -2427,7 +2427,7 @@ private fun String.toStreetAndHouseNumber(): String {
 private fun String.toCompactWeatherSummaryOrNull(): String? {
     val timePattern = Regex("\\b\\d{1,2}:\\d{2}\\b")
     val temperaturePattern = Regex("-?\\d+(?:[.,]\\d+)?\\s*°\\s*[CF]?")
-    val normalizedSegments = split("·")
+    val normalizedSegments = split(Regex("\\s*[•·]\\s*"))
         .map { it.trim() }
         .filter { it.isNotEmpty() && !timePattern.containsMatchIn(it) }
 
