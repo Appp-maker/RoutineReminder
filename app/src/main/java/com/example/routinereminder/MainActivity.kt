@@ -2306,7 +2306,7 @@ private fun EventRouteAndWeatherSummary(
     }
 
     val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }?.toCompactWeatherSummary()
-        ?: if (destination != null) "Unavailable" else null
+        ?: "🌡️ Unavailable"
 
     val lines = buildList {
         if (hasRoute) {
