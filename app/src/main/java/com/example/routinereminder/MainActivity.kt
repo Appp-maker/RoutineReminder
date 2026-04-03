@@ -2373,7 +2373,7 @@ private fun String.toCompactAddress(): String {
     val cityCandidates = segments
         .filterIndexed { index, _ -> index != streetSourceIndex }
         .dropWhile { it.isLikelyHouseNumber() }
-    val extractedCandidates = cityCandidates
+    val citySegment = cityCandidates
         .asSequence()
         .map { candidate -> candidate.extractCityToken() }
         .lastOrNull { candidate ->
