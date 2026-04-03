@@ -846,7 +846,7 @@ private fun AddressAutocompleteField(
                 .fillMaxWidth()
                 .focusRequester(focusRequester)
                 .onFocusChanged { isTextFieldFocused = it.isFocused }
-                .menuAnchor(type = MenuAnchorType.PrimaryEditable, enabled = true),
+                .menuAnchor(),
             leadingIcon = leadingIcon,
             trailingIcon = {
                 if (value.isNotBlank()) {
