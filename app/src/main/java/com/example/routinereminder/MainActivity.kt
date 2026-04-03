@@ -2282,18 +2282,32 @@ private fun EventRouteAndWeatherSummary(
     item: ScheduleItem,
     detailColor: Color
 ) {
-    val destination = item.location?.takeIf { it.isNotBlank() } ?: item.routeEnd?.takeIf { it.isNotBlank() }
-    val routeStart = item.routeStart?.takeIf { it.isNotBlank() }
-    val routeSummary = if (routeStart != null && destination != null) "$routeStart → $destination" else null
-    val hasRoute = routeStart != null && destination != null
-    val etaSummary = item.predictedTravelMinutes?.let { "$it min" } ?: if (hasRoute) "Unavailable" else null
-    val routeDistanceSummary = item.predictedRouteDistanceKm?.let { String.format(Locale.getDefault(), "%.1f km", it) }
-        ?: if (hasRoute) "Unavailable" else null
-    val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() } ?: if (destination != null) "Unavailable" else null
+    val destinationAddress = item.routeEnd?.takeIf { it.isNotBlank() }
+        ?: item.location?.takeIf { it.isNotBlank() }
+    val startAddress = item.routeStart?.takeIf { it.isNotBlank() }
+    val destination = destinationAddress?.toCompactAddress()
+    val start = startAddress?.toCompactAddress()
+    val hasRoute = start != null && destination != null
+    val etaSummary = if (hasRoute) {
+        item.predictedTravelMinutes?.let { "$it min" } ?: "Unavailable"
+    } else {
+        null
+    }
+    val routeDistanceSummary = if (hasRoute) {
+        item.predictedRouteDistanceKm?.let { String.format(Locale.getDefault(), "%.1f km", it) } ?: "Unavailable"
+    } else {
+        null
+    }
+    val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }?.withWeatherSymbol()
+        ?: if (destination != null) "Unavailable" else null
 
     val lines = buildList {
-        destination?.let { add("Location: $it") }
-        routeSummary?.let { add("Route: $it") }
+        if (hasRoute) {
+            start?.let { add("Start: $it") }
+            destination?.let { add("Destination: $it") }
+        } else {
+            destination?.let { add("Location: $it") }
+        }
         etaSummary?.let { add("ETA: $it") }
         routeDistanceSummary?.let { add("Distance: $it") }
         weatherSummary?.let { add("Weather: $it") }
@@ -2310,6 +2324,43 @@ private fun EventRouteAndWeatherSummary(
             overflow = TextOverflow.Ellipsis
         )
     }
+}
+
+private fun String.toCompactAddress(): String {
+    val segments = split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    if (segments.isEmpty()) return trim()
+    if (segments.size == 1) return segments.first()
+
+    val streetSegment = segments.first().let { segment ->
+        val houseNumberMatch = "\\b\\d+[A-Za-z]?\\b".toRegex().find(segment)?.value
+        if (houseNumberMatch != null) {
+            val tokens = segment.split(Regex("\\s+")).filter { it.isNotBlank() }
+            val houseIndex = tokens.indexOfFirst { it.contains(houseNumberMatch) }
+            if (houseIndex > 0) {
+                "${tokens[houseIndex - 1]} $houseNumberMatch"
+            } else {
+                segment
+            }
+        } else {
+            segment
+        }
+    }
+    val citySegment = segments.last()
+    return "$streetSegment, $citySegment"
+}
+
+private fun String.withWeatherSymbol(): String {
+    val symbol = when {
+        contains("sun", ignoreCase = true) || contains("clear", ignoreCase = true) -> "☀️"
+        contains("rain", ignoreCase = true) || contains("drizzle", ignoreCase = true) -> "🌧️"
+        contains("storm", ignoreCase = true) || contains("thunder", ignoreCase = true) -> "⛈️"
+        contains("snow", ignoreCase = true) || contains("sleet", ignoreCase = true) -> "❄️"
+        contains("fog", ignoreCase = true) || contains("mist", ignoreCase = true) || contains("haze", ignoreCase = true) -> "🌫️"
+        contains("cloud", ignoreCase = true) || contains("overcast", ignoreCase = true) -> "☁️"
+        contains("wind", ignoreCase = true) -> "💨"
+        else -> "🌡️"
+    }
+    return "$symbol $this"
 }
 
 @Composable

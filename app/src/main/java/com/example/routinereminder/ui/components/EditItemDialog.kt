@@ -415,7 +415,7 @@ fun EditItemDialog(
                     AddressAutocompleteField(
                         value = routeStart,
                         onValueChange = { routeStart = it },
-                        label = "Route start (optional)",
+                        label = "Start (optional)",
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = {
                             Icon(
@@ -429,7 +429,7 @@ fun EditItemDialog(
                     AddressAutocompleteField(
                         value = location,
                         onValueChange = { location = it },
-                        label = "Destination / Location (optional)",
+                        label = "Destination (optional)",
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = {
                             Icon(
