@@ -2220,41 +2220,9 @@ private fun DefaultEventsSettingsSection(
                 color = MaterialTheme.colorScheme.secondary
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.settings_default_events_notification_options_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            SettingSwitchItem(
-                text = stringResource(R.string.settings_default_events_system_notification),
-                checked = systemNotificationChecked,
-                onCheckedChange = onSystemNotificationChange
-            )
-            SettingSwitchItem(
-                text = stringResource(R.string.settings_default_events_show_details_notification),
-                checked = showDetailsInNotificationChecked,
-                enabled = systemNotificationChecked,
-                onCheckedChange = onShowDetailsInNotificationChange
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.titleSmall)
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = reminderCountText,
-                onValueChange = onReminderCountChange,
-                label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = systemNotificationChecked,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = reminderIntervalMinutesText,
-                onValueChange = onReminderIntervalMinutesChange,
-                label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = systemNotificationChecked,
-                modifier = Modifier.fillMaxWidth()
+            EventDialogFieldConfigurator(
+                fields = eventDialogFields,
+                onFieldsChange = onEventDialogFieldsChange
             )
         }
         EventDefaultsSubmenu.DEFAULT_VALUES -> {
@@ -3445,6 +3413,7 @@ private fun EventDialogFieldConfigurator(
 @Composable
 private fun eventDialogFieldLabel(field: EventDialogField): String {
     return when (field) {
+        EventDialogField.TITLE -> stringResource(R.string.settings_event_data_field_title)
         EventDialogField.NOTES -> stringResource(R.string.settings_event_data_field_notes)
         EventDialogField.START -> stringResource(R.string.settings_event_data_field_start)
         EventDialogField.DESTINATION -> stringResource(R.string.settings_event_data_field_destination)
@@ -3453,8 +3422,12 @@ private fun eventDialogFieldLabel(field: EventDialogField): String {
         EventDialogField.EVENT_SET -> stringResource(R.string.settings_event_data_field_set)
         EventDialogField.EVENT_COLOR -> stringResource(R.string.settings_event_data_field_color)
         EventDialogField.REPEAT -> stringResource(R.string.settings_event_data_field_repeat)
+        EventDialogField.DATE_DETAILS -> stringResource(R.string.settings_event_data_field_date_details)
         EventDialogField.CALENDAR -> stringResource(R.string.settings_event_data_field_calendar)
+        EventDialogField.CALENDAR_TARGET -> stringResource(R.string.settings_event_data_field_calendar_target)
         EventDialogField.NOTIFICATION -> stringResource(R.string.settings_event_data_field_notification)
+        EventDialogField.NOTIFICATION_DETAILS -> stringResource(R.string.settings_event_data_field_notification_details)
+        EventDialogField.REMINDER_OPTIONS -> stringResource(R.string.settings_event_data_field_reminder_options)
     }
 }
 
