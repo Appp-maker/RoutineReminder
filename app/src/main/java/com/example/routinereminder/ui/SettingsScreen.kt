@@ -91,14 +91,14 @@ enum class DriveBackupAction {
 private enum class EventDefaultsSubmenu {
     EVENT_CARD,
     EVENT_DATA,
-    DEFAULT_VALUES
+    DEFAULT_VALUES,
+    EVENT_SETS
 }
 
 enum class SettingsCategory {
     PROFILE,
     SYNC,
     DEFAULT_EVENTS,
-    EVENT_SETS,
     MAP,
     APP
 }
@@ -699,7 +699,6 @@ fun SettingsScreen(
                 val allowedCategories = when (from) {
                     "routine" -> listOfNotNull(
                         if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else null,
-                        if (routineEnabled) SettingsCategory.EVENT_SETS else null,
                         SettingsCategory.SYNC,
                         if (includeMapTab) SettingsCategory.MAP else null,
                         SettingsCategory.APP
@@ -745,7 +744,6 @@ fun SettingsScreen(
                             SettingsCategory.SYNC -> stringResource(R.string.settings_category_sync)
                             SettingsCategory.MAP -> stringResource(R.string.settings_category_map)
                             SettingsCategory.APP -> stringResource(R.string.settings_category_app)
-                            SettingsCategory.EVENT_SETS -> stringResource(R.string.settings_event_sets_title)
                         }
 
                         Tab(
@@ -927,9 +925,7 @@ fun SettingsScreen(
                         onPastEventBackgroundTransparencyChange = { transparency ->
                             pastEventBackgroundTransparencyState = transparency
                             justSavedSuccessfully = false
-                        }
-                    )
-                    SettingsCategory.EVENT_SETS -> EventSetsSettingsSection(
+                        },
                         eventSetsEnabled = eventSetsEnabledChecked,
                         onEventSetsEnabledChange = { enabled ->
                             eventSetsEnabledChecked = enabled
@@ -2022,7 +2018,16 @@ private fun DefaultEventsSettingsSection(
     pastEventBackgroundCustomColor: Int,
     onPastEventBackgroundCustomColorChange: (Int) -> Unit,
     pastEventBackgroundTransparency: EventBackgroundTransparency,
-    onPastEventBackgroundTransparencyChange: (EventBackgroundTransparency) -> Unit
+    onPastEventBackgroundTransparencyChange: (EventBackgroundTransparency) -> Unit,
+    eventSetsEnabled: Boolean,
+    onEventSetsEnabledChange: (Boolean) -> Unit,
+    eventSetNames: List<String>,
+    eventSetColors: List<Int>,
+    defaultActiveSetsByWeekday: Map<DayOfWeek, Set<Int>>,
+    onResetManualActiveSets: () -> Unit,
+    onEventSetNameChange: (Int, String) -> Unit,
+    onEventSetColorChange: (Int, Int) -> Unit,
+    onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit
 ) {
     var selectedSubmenu by remember { mutableStateOf(EventDefaultsSubmenu.EVENT_CARD) }
 
@@ -2038,6 +2043,7 @@ private fun DefaultEventsSettingsSection(
                 EventDefaultsSubmenu.EVENT_CARD -> "Event card"
                 EventDefaultsSubmenu.EVENT_DATA -> "Event data"
                 EventDefaultsSubmenu.DEFAULT_VALUES -> "Default values"
+                EventDefaultsSubmenu.EVENT_SETS -> stringResource(R.string.settings_event_sets_title)
             }
             Tab(
                 selected = selectedSubmenu == submenu,
@@ -2364,6 +2370,19 @@ private fun DefaultEventsSettingsSection(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 enabled = systemNotificationChecked,
                 modifier = Modifier.fillMaxWidth()
+            )
+        }
+        EventDefaultsSubmenu.EVENT_SETS -> {
+            EventSetsSettingsSection(
+                eventSetsEnabled = eventSetsEnabled,
+                onEventSetsEnabledChange = onEventSetsEnabledChange,
+                eventSetNames = eventSetNames,
+                eventSetColors = eventSetColors,
+                defaultActiveSetsByWeekday = defaultActiveSetsByWeekday,
+                onResetManualActiveSets = onResetManualActiveSets,
+                onEventSetNameChange = onEventSetNameChange,
+                onEventSetColorChange = onEventSetColorChange,
+                onDefaultActiveSetsChange = onDefaultActiveSetsChange
             )
         }
     }
