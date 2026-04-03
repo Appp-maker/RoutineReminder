@@ -152,13 +152,16 @@ import com.example.routinereminder.ui.bundle.CreateBundleScreen
 
 
 private val knownCountryNamesNormalized: Set<String> by lazy {
+    val locales = Locale.getAvailableLocales().toList() + Locale.ENGLISH + Locale.GERMAN
     Locale.getISOCountries()
-        .mapNotNull { code ->
-            runCatching { Locale("", code).displayCountry }
-                .getOrNull()
-                ?.trim()
-                ?.lowercase(Locale.getDefault())
-                ?.takeIf { it.isNotBlank() }
+        .flatMap { code ->
+            locales.mapNotNull { locale ->
+                runCatching { Locale("", code).getDisplayCountry(locale) }
+                    .getOrNull()
+                    ?.trim()
+                    ?.lowercase(locale)
+                    ?.takeIf { it.isNotBlank() }
+            }
         }
         .toSet()
 }
@@ -2370,7 +2373,7 @@ private fun String.toCompactAddress(): String {
     val cityCandidates = segments
         .filterIndexed { index, _ -> index != streetSourceIndex }
         .dropWhile { it.isLikelyHouseNumber() }
-    val citySegment = cityCandidates
+    val extractedCandidates = cityCandidates
         .asSequence()
         .map { candidate -> candidate.extractCityToken() }
         .lastOrNull { candidate ->
