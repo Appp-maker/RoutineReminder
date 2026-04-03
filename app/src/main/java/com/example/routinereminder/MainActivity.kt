@@ -2310,8 +2310,7 @@ private fun EventRouteAndWeatherSummary(
 
     val lines = buildList {
         if (hasRoute) {
-            start?.let { add("Start: $it") }
-            destination?.let { add("Destination: $it") }
+            add("$start -> $destination")
         } else {
             destination?.let { add("Location: $it") }
         }
