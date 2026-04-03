@@ -2348,8 +2348,9 @@ private fun EventRouteAndWeatherSummary(
         else -> null
     }
 
-    val weatherSummary = item.weatherSummary?.takeIf { it.isNotBlank() }?.toCompactWeatherSummary()
-        ?: "🌡️ Unavailable"
+    val weatherSummary = item.weatherSummary
+        ?.takeIf { it.isNotBlank() }
+        ?.toCompactWeatherSummaryOrNull()
 
     val lines = buildList {
         if (hasRoute) {
@@ -2423,7 +2424,7 @@ private fun String.toStreetAndHouseNumber(): String {
     return "${streetTokens.joinToString(" ")} $houseNumber"
 }
 
-private fun String.toCompactWeatherSummary(): String {
+private fun String.toCompactWeatherSummaryOrNull(): String? {
     val timePattern = Regex("\\b\\d{1,2}:\\d{2}\\b")
     val temperaturePattern = Regex("-?\\d+(?:[.,]\\d+)?\\s*°\\s*[CF]?")
     val normalizedSegments = split("·")
@@ -2440,9 +2441,10 @@ private fun String.toCompactWeatherSummary(): String {
     val compactText = buildList {
         temperature?.let { add(it) }
         weatherDescription?.let { add(it) }
-        if (hasUnavailable) add("Unavailable")
-        if (isEmpty()) add("Unavailable")
     }.joinToString(" · ")
+
+    if (compactText.isBlank()) return null
+    if (hasUnavailable && weatherDescription == null && temperature == null) return null
 
     val symbol = when {
         compactText.contains("sun", ignoreCase = true) || compactText.contains("clear", ignoreCase = true) -> "☀️"
