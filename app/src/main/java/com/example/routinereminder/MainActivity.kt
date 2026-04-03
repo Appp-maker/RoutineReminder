@@ -2228,12 +2228,14 @@ fun ScheduleItemView(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
-                EventRouteAndWeatherSummary(
-                    item = item,
-                    detailColor = MaterialTheme.colorScheme.secondary.copy(alpha = doneAlpha)
-                )
             }
         }
+        val routeSummaryStartIndent = if (showIndicatorBar) 90.dp else 78.dp
+        EventRouteAndWeatherSummary(
+            item = item,
+            detailColor = MaterialTheme.colorScheme.secondary.copy(alpha = doneAlpha),
+            modifier = Modifier.padding(start = routeSummaryStartIndent)
+        )
         if (notesText.isNotBlank()) {
             val checklistLines = remember(notesText) { parseChecklistLines(notesText) }
             val visibleChecklistLines = if (isExpanded) checklistLines else checklistLines.take(3)
@@ -2323,7 +2325,8 @@ fun ScheduleItemView(
 @Composable
 private fun EventRouteAndWeatherSummary(
     item: ScheduleItem,
-    detailColor: Color
+    detailColor: Color,
+    modifier: Modifier = Modifier
 ) {
     val destinationAddress = item.routeEnd?.takeIf { it.isNotBlank() }
         ?: item.location?.takeIf { it.isNotBlank() }
@@ -2363,15 +2366,17 @@ private fun EventRouteAndWeatherSummary(
     }
     if (lines.isEmpty()) return
 
-    Spacer(modifier = Modifier.height(4.dp))
-    lines.forEach { detail ->
-        Text(
-            text = detail,
-            style = MaterialTheme.typography.labelSmall,
-            color = detailColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+    Column(modifier = modifier) {
+        Spacer(modifier = Modifier.height(4.dp))
+        lines.forEach { detail ->
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.labelSmall,
+                color = detailColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
