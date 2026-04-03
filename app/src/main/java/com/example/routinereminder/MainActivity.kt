@@ -2336,8 +2336,29 @@ private fun String.toCompactAddress(): String {
     if (segments.isEmpty()) return trim()
     if (segments.size == 1) return segments.first().toStreetAndHouseNumber()
 
-    val streetSegment = segments.first().toStreetAndHouseNumber()
-    val citySegment = if (segments.size >= 3) segments[segments.lastIndex - 1] else segments.last()
+    val streetSourceIndex = when {
+        segments.first().isLikelyStreetName() -> 0
+        segments.size > 1 && segments[1].isLikelyStreetName() -> 1
+        else -> 0
+    }
+
+    val leadingHouseNumber = segments.firstOrNull()
+        ?.takeIf { streetSourceIndex != 0 && it.isLikelyHouseNumber() }
+
+    val streetSegment = buildString {
+        append(segments[streetSourceIndex].toStreetAndHouseNumber())
+        if (!leadingHouseNumber.isNullOrBlank() && !contains(leadingHouseNumber)) {
+            append(" ")
+            append(leadingHouseNumber)
+        }
+    }
+
+    val cityCandidates = if (segments.size > 2) segments.drop(1).dropLast(1) else segments.drop(1)
+    val citySegment = cityCandidates
+        .asReversed()
+        .firstOrNull { it.isLikelyCityName() }
+        ?: segments.last()
+
     return "$streetSegment, $citySegment"
 }
 
@@ -2357,11 +2378,21 @@ private fun String.toCompactWeatherSummary(): String {
     val temperaturePattern = Regex("-?\\d+(?:[.,]\\d+)?\\s*°\\s*[CF]?")
     val normalizedSegments = split("·")
         .map { it.trim() }
-        .filter { it.isNotEmpty() && !timePattern.matches(it) }
+        .filter { it.isNotEmpty() && !timePattern.containsMatchIn(it) }
 
     val temperature = normalizedSegments.firstOrNull { temperaturePattern.containsMatchIn(it) }
-    val weatherDescription = normalizedSegments.firstOrNull { it != temperature } ?: "Unavailable"
-    val compactText = listOfNotNull(weatherDescription, temperature).joinToString(" · ")
+    val hasUnavailable = normalizedSegments.any { it.equals("Unavailable", ignoreCase = true) }
+    val weatherDescription = normalizedSegments
+        .firstOrNull {
+            it != temperature &&
+                !it.equals("Unavailable", ignoreCase = true)
+        }
+    val compactText = buildList {
+        weatherDescription?.let { add(it) }
+        temperature?.let { add(it) }
+        if (hasUnavailable) add("Unavailable")
+        if (isEmpty()) add("Unavailable")
+    }.joinToString(" · ")
 
     val symbol = when {
         compactText.contains("sun", ignoreCase = true) || compactText.contains("clear", ignoreCase = true) -> "☀️"
@@ -2374,6 +2405,22 @@ private fun String.toCompactWeatherSummary(): String {
         else -> "🌡️"
     }
     return "$symbol $compactText"
+}
+
+private fun String.isLikelyHouseNumber(): Boolean = matches(Regex("\\d+[A-Za-z-]*"))
+
+private fun String.isLikelyStreetName(): Boolean {
+    val normalized = trim()
+    if (normalized.isBlank()) return false
+    if (normalized.matches(Regex("\\d{4,}"))) return false
+    return normalized.any { it.isLetter() }
+}
+
+private fun String.isLikelyCityName(): Boolean {
+    val normalized = trim()
+    if (normalized.isBlank()) return false
+    if (normalized.matches(Regex("\\d{4,}"))) return false
+    return normalized.any { it.isLetter() }
 }
 
 @Composable
