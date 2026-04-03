@@ -2438,8 +2438,8 @@ private fun String.toCompactWeatherSummary(): String {
                 !it.equals("Unavailable", ignoreCase = true)
         }
     val compactText = buildList {
-        weatherDescription?.let { add(it) }
         temperature?.let { add(it) }
+        weatherDescription?.let { add(it) }
         if (hasUnavailable) add("Unavailable")
         if (isEmpty()) add("Unavailable")
     }.joinToString(" · ")
