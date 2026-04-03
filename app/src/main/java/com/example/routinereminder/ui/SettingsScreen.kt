@@ -2322,6 +2322,43 @@ private fun DefaultEventsSettingsSection(
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                stringResource(R.string.settings_default_events_notification_options_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            SettingSwitchItem(
+                text = stringResource(R.string.settings_default_events_system_notification),
+                checked = systemNotificationChecked,
+                onCheckedChange = onSystemNotificationChange
+            )
+            SettingSwitchItem(
+                text = stringResource(R.string.settings_default_events_show_details_notification),
+                checked = showDetailsInNotificationChecked,
+                enabled = systemNotificationChecked,
+                onCheckedChange = onShowDetailsInNotificationChange
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.titleSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = reminderCountText,
+                onValueChange = onReminderCountChange,
+                label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = systemNotificationChecked,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = reminderIntervalMinutesText,
+                onValueChange = onReminderIntervalMinutesChange,
+                label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                enabled = systemNotificationChecked,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
     Spacer(modifier = Modifier.height(16.dp))
