@@ -159,6 +159,7 @@ fun SettingsScreen(
     val currentCalendarSyncCalendarToAppEnabled by viewModel.calendarSyncCalendarToAppEnabled.collectAsState()
     val mapTrackingMode by viewModel.mapTrackingMode.collectAsState()
     val mapRouteEstimationEnabled by viewModel.mapRouteEstimationEnabled.collectAsState()
+    val mapRouteTransportMode by viewModel.mapRouteTransportMode.collectAsState()
     val routeTimeAddBeforeEvent by viewModel.routeTimeAddBeforeEvent.collectAsState()
     val routeTimeAddAfterEvent by viewModel.routeTimeAddAfterEvent.collectAsState()
     val currentFoodConsumedTrackingEnabled by viewModel.foodConsumedTrackingEnabled.collectAsState()
@@ -1033,6 +1034,7 @@ fun SettingsScreen(
                     }
                     SettingsCategory.MAP -> MapSettingsSection(
                         trackingMode = TrackingMode.fromValue(mapTrackingMode),
+                        routeTransportMode = EventPredictionService.TravelMode.fromStoredValue(mapRouteTransportMode),
                         routeEstimationEnabled = mapRouteEstimationEnabled,
                         addRouteTimeBeforeEvent = routeTimeAddBeforeEvent,
                         addRouteTimeAfterEvent = routeTimeAddAfterEvent,
@@ -1043,6 +1045,10 @@ fun SettingsScreen(
                         },
                         onRouteEstimationEnabledChange = { enabled ->
                             viewModel.saveMapRouteEstimationEnabled(enabled)
+                            justSavedSuccessfully = false
+                        },
+                        onRouteTransportModeChange = { mode ->
+                            viewModel.saveMapRouteTransportMode(mode.storedValue)
                             justSavedSuccessfully = false
                         },
                         onAddRouteTimeBeforeEventChange = { enabled ->
@@ -2899,16 +2905,19 @@ private fun EventSetsSettingsSection(
 @Composable
 private fun MapSettingsSection(
     trackingMode: TrackingMode,
+    routeTransportMode: EventPredictionService.TravelMode,
     routeEstimationEnabled: Boolean,
     addRouteTimeBeforeEvent: Boolean,
     addRouteTimeAfterEvent: Boolean,
     routeSettingsEnabled: Boolean,
     onTrackingModeChange: (TrackingMode) -> Unit,
     onRouteEstimationEnabledChange: (Boolean) -> Unit,
+    onRouteTransportModeChange: (EventPredictionService.TravelMode) -> Unit,
     onAddRouteTimeBeforeEventChange: (Boolean) -> Unit,
     onAddRouteTimeAfterEventChange: (Boolean) -> Unit
 ) {
     var trackingMenuExpanded by remember { mutableStateOf(false) }
+    var transportMenuExpanded by remember { mutableStateOf(false) }
 
     Text(stringResource(R.string.settings_category_map), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
     Row(
@@ -2963,6 +2972,52 @@ private fun MapSettingsSection(
         onCheckedChange = onRouteEstimationEnabledChange,
         enabled = routeSettingsEnabled
     )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Travel mode", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = routeTransportMode.settingsLabel(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        ExposedDropdownMenuBox(
+            expanded = transportMenuExpanded,
+            onExpandedChange = { transportMenuExpanded = !transportMenuExpanded }
+        ) {
+            FilledTonalButton(
+                onClick = { transportMenuExpanded = !transportMenuExpanded },
+                modifier = Modifier.menuAnchor()
+            ) {
+                Text(routeTransportMode.settingsLabel())
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = if (transportMenuExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+            ExposedDropdownMenu(
+                expanded = transportMenuExpanded,
+                onDismissRequest = { transportMenuExpanded = false }
+            ) {
+                EventPredictionService.TravelMode.entries.forEach { mode ->
+                    DropdownMenuItem(
+                        text = { Text(mode.settingsLabel()) },
+                        onClick = {
+                            onRouteTransportModeChange(mode)
+                            transportMenuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
     Text(
         text = "Use API-based traffic/construction estimation for route time.",
         style = MaterialTheme.typography.bodySmall,
@@ -2994,6 +3049,13 @@ private fun MapSettingsSection(
         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
     )
     Spacer(modifier = Modifier.height(16.dp))
+}
+
+private fun EventPredictionService.TravelMode.settingsLabel(): String = when (this) {
+    EventPredictionService.TravelMode.DRIVING -> "Driving"
+    EventPredictionService.TravelMode.CYCLING -> "Cycling"
+    EventPredictionService.TravelMode.WALKING -> "Walking"
+    EventPredictionService.TravelMode.PUBLIC_TRANSPORT -> "Public transport"
 }
 
 @Composable
