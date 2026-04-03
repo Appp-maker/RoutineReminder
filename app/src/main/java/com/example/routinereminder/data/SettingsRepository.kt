@@ -59,6 +59,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val EXERCISE_DB_CACHE_TOTAL = intPreferencesKey("exercise_db_cache_total")
     val MAP_TRACKING_MODE = stringPreferencesKey("map_tracking_mode")
     val MAP_ROUTE_ESTIMATION_ENABLED = booleanPreferencesKey("map_route_estimation_enabled")
+    val MAP_ROUTE_TRANSPORT_MODE = stringPreferencesKey("map_route_transport_mode")
     val ROUTE_TIME_ADD_BEFORE_EVENT = booleanPreferencesKey("route_time_add_before_event")
     val ROUTE_TIME_ADD_AFTER_EVENT = booleanPreferencesKey("route_time_add_after_event")
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
@@ -211,6 +212,18 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getMapRouteEstimationEnabled(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[MAP_ROUTE_ESTIMATION_ENABLED] ?: true
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveMapRouteTransportMode(mode: String) {
+        dataStore.edit { preferences ->
+            preferences[MAP_ROUTE_TRANSPORT_MODE] = mode
+        }
+    }
+
+    fun getMapRouteTransportMode(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[MAP_ROUTE_TRANSPORT_MODE] ?: EventPredictionService.TravelMode.DRIVING.storedValue
         }.distinctUntilChanged()
     }
 

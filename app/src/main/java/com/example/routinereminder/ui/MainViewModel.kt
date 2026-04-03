@@ -381,6 +381,11 @@ class MainViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            settingsRepository.getMapRouteTransportMode().collectLatest { mode ->
+                _mapRouteTransportMode.value = mode
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.getRouteTimeAddBeforeEvent().collectLatest { enabled ->
                 _routeTimeAddBeforeEvent.value = enabled
             }
@@ -654,6 +659,12 @@ class MainViewModel @Inject constructor(
     fun saveMapRouteEstimationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.saveMapRouteEstimationEnabled(enabled)
+        }
+    }
+
+    fun saveMapRouteTransportMode(mode: String) {
+        viewModelScope.launch {
+            settingsRepository.saveMapRouteTransportMode(mode)
         }
     }
 
