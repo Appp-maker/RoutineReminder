@@ -2353,10 +2353,18 @@ private fun String.toCompactAddress(): String {
         }
     }
 
-    val cityCandidates = segments.drop(1)
+    val normalizedStreetName = streetSegment.withoutHouseNumber().normalizeForAddressComparison()
+    val cityCandidates = segments
+        .filterIndexed { index, _ -> index != streetSourceIndex }
+        .dropWhile { it.isLikelyHouseNumber() }
     val citySegment = cityCandidates
-        .firstOrNull { it.isLikelyCityName() }
-        ?: segments.last()
+        .asSequence()
+        .map { candidate -> candidate.extractCityToken() }
+        .firstOrNull { candidate ->
+            candidate.isLikelyCityName() &&
+                !candidate.normalizeForAddressComparison().equals(normalizedStreetName, ignoreCase = true)
+        }
+        ?: segments.last().extractCityToken()
 
     return "$streetSegment, $citySegment"
 }
@@ -2435,6 +2443,24 @@ private fun String.isLikelyCityName(): Boolean {
     if (blockedAdministrativeWords.any { lowered.contains(it) }) return false
     return normalized.any { it.isLetter() }
 }
+
+private fun String.extractCityToken(): String {
+    val value = trim()
+    if (value.isBlank()) return value
+    val postalPrefix = Regex("^\\d{4,5}\\s+(.+)$").find(value)?.groupValues?.getOrNull(1)
+    if (!postalPrefix.isNullOrBlank()) return postalPrefix.trim()
+    val postalSuffix = Regex("^(.+?)\\s+\\d{4,5}$").find(value)?.groupValues?.getOrNull(1)
+    if (!postalSuffix.isNullOrBlank()) return postalSuffix.trim()
+    return value
+}
+
+private fun String.withoutHouseNumber(): String = trim()
+    .replace(Regex("\\b\\d+[A-Za-z-]*\\b"), " ")
+    .replace(Regex("\\s+"), " ")
+    .trim()
+
+private fun String.normalizeForAddressComparison(): String = lowercase(Locale.getDefault())
+    .replace(Regex("[^\\p{L}\\p{N}]"), "")
 
 @Composable
 private fun QuickDoneToggle(
