@@ -3368,33 +3368,7 @@ private fun EventDialogFieldConfigurator(
                 Icon(
                     imageVector = Icons.Filled.Menu,
                     contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.pointerInput(fields) {
-                        detectDragGestures(
-                            onDragEnd = { dragOffset = 0f },
-                            onDragCancel = { dragOffset = 0f },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                dragOffset += dragAmount.y
-                                when {
-                                    dragOffset > 56f && index < fields.lastIndex -> {
-                                        val updated = fields.toMutableList()
-                                        updated[index] = fields[index + 1]
-                                        updated[index + 1] = option
-                                        onFieldsChange(updated)
-                                        dragOffset = 0f
-                                    }
-                                    dragOffset < -56f && index > 0 -> {
-                                        val updated = fields.toMutableList()
-                                        updated[index] = fields[index - 1]
-                                        updated[index - 1] = option
-                                        onFieldsChange(updated)
-                                        dragOffset = 0f
-                                    }
-                                }
-                            }
-                        )
-                    }
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
