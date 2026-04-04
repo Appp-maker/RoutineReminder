@@ -11,8 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -3371,67 +3370,39 @@ private fun EventDialogFieldConfigurator(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val isRequiredField = EventDialogFieldOption.isRequired(option.field)
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .pointerInput(option.field, fields) {
-                            awaitEachGesture {
-                                val down = awaitFirstDown(requireUnconsumed = false)
-                                down.consume()
-                                val longPress = awaitLongPressOrCancellation(down.id)
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.pointerInput(option.field, fields) {
+                        detectDragGesturesAfterLongPress(
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                dragOffset += dragAmount.y
 
-                                if (longPress == null) {
-                                    while (true) {
-                                        val event = awaitPointerEvent()
-                                        event.changes.forEach { if (it.pressed) it.consume() }
-                                        if (event.changes.none { it.pressed }) break
-                                    }
-                                    dragOffset = 0f
-                                    return@awaitEachGesture
-                                }
-
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    val pointerChange = event.changes.firstOrNull { it.id == down.id }
-                                        ?: event.changes.firstOrNull()
-                                        ?: break
-
-                                    val deltaY = pointerChange.positionChange().y
-                                    if (deltaY != 0f) {
-                                        dragOffset += deltaY
-                                        when {
-                                            dragOffset > reorderThreshold && index < fields.lastIndex -> {
-                                                val updated = fields.toMutableList()
-                                                updated[index] = fields[index + 1]
-                                                updated[index + 1] = option
-                                                onFieldsChange(updated)
-                                                dragOffset -= reorderThreshold
-                                            }
-
-                                            dragOffset < -reorderThreshold && index > 0 -> {
-                                                val updated = fields.toMutableList()
-                                                updated[index] = fields[index - 1]
-                                                updated[index - 1] = option
-                                                onFieldsChange(updated)
-                                                dragOffset += reorderThreshold
-                                            }
-                                        }
+                                when {
+                                    dragOffset > reorderThreshold && index < fields.lastIndex -> {
+                                        val updated = fields.toMutableList()
+                                        updated[index] = fields[index + 1]
+                                        updated[index + 1] = option
+                                        onFieldsChange(updated)
+                                        dragOffset -= reorderThreshold
                                     }
 
-                                    event.changes.forEach { if (it.pressed) it.consume() }
-                                    if (event.changes.none { it.pressed }) break
+                                    dragOffset < -reorderThreshold && index > 0 -> {
+                                        val updated = fields.toMutableList()
+                                        updated[index] = fields[index - 1]
+                                        updated[index - 1] = option
+                                        onFieldsChange(updated)
+                                        dragOffset += reorderThreshold
+                                    }
                                 }
-                                dragOffset = 0f
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Menu,
-                        contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                            },
+                            onDragCancel = { dragOffset = 0f },
+                            onDragEnd = { dragOffset = 0f }
+                        )
+                    }
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = eventDialogFieldLabel(option.field),
