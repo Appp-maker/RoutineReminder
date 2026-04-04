@@ -2861,7 +2861,7 @@ private fun EventSetsSettingsSection(
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
-                        .fillMaxSize()
+                        .size(56.dp)
                         .align(Alignment.Center)
                 )
             }
