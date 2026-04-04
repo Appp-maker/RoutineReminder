@@ -26,8 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -3346,6 +3345,11 @@ private fun EventDialogFieldConfigurator(
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary
     )
+    Text(
+        text = stringResource(R.string.settings_event_data_fields_reorder_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
     Spacer(modifier = Modifier.height(8.dp))
     fields.forEachIndexed { index, option ->
         var dragOffset by remember(option.field, fields) { mutableStateOf(0f) }
@@ -3388,9 +3392,9 @@ private fun EventDialogFieldConfigurator(
             ) {
                 val isRequiredField = EventDialogFieldOption.isRequired(option.field)
                 Icon(
-                    imageVector = if (isRequiredField) Icons.Filled.Lock else Icons.Filled.Edit,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
