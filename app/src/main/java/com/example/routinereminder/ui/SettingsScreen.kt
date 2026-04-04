@@ -11,6 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
@@ -2842,12 +2844,34 @@ private fun EventSetsSettingsSection(
 
     eventSetNames.forEachIndexed { index, name ->
         val label = stringResource(R.string.settings_event_set_name_label, ('A' + index))
-        OutlinedTextField(
-            value = name,
-            onValueChange = { onEventSetNameChange(index, it.take(24)) },
-            label = { Text(label) },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(92.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.DirectionsWalk,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .align(Alignment.Center)
+                )
+            }
+            OutlinedTextField(
+                value = name,
+                onValueChange = { onEventSetNameChange(index, it.take(24)) },
+                label = { Text(label) },
+                modifier = Modifier.weight(1f)
+            )
+        }
         val currentColor = eventSetColors.getOrNull(index) ?: DEFAULT_SERIES_COLOR_ARGB
         SeriesColorPicker(
             label = stringResource(R.string.settings_event_set_color_label, ('A' + index)),
