@@ -11,7 +11,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -35,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.awaitFirstDown
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -130,6 +133,7 @@ fun SettingsScreen(
      var selectedCategory by remember(from, enabledTabs, initialCategory) {
          mutableStateOf(initialCategory ?: fallbackCategory)
      }
+    var isEventFieldDragActive by remember { mutableStateOf(false) }
 
 
     val userSettings by viewModel.userSettings.collectAsState()
@@ -777,7 +781,7 @@ fun SettingsScreen(
             Column(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState(), enabled = !isEventFieldDragActive),
                 horizontalAlignment = Alignment.Start
             ) {
                 when (selectedCategory) {
@@ -969,7 +973,8 @@ fun SettingsScreen(
                                 put(day, selections)
                             }
                             justSavedSuccessfully = false
-                        }
+                        },
+                        onEventDataFieldDragActiveChange = { isEventFieldDragActive = it }
                     )
                     SettingsCategory.SYNC -> {
                         DataSyncSettingsSection(
@@ -2043,7 +2048,8 @@ private fun DefaultEventsSettingsSection(
     onResetManualActiveSets: () -> Unit,
     onEventSetNameChange: (Int, String) -> Unit,
     onEventSetColorChange: (Int, Int) -> Unit,
-    onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit
+    onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit,
+    onEventDataFieldDragActiveChange: (Boolean) -> Unit
 ) {
     var selectedSubmenu by remember { mutableStateOf(EventDefaultsSubmenu.EVENT_CARD) }
 
@@ -2214,6 +2220,9 @@ private fun DefaultEventsSettingsSection(
             )
         }
         EventDefaultsSubmenu.EVENT_DATA -> {
+            LaunchedEffect(Unit) {
+                onEventDataFieldDragActiveChange(false)
+            }
             Text(
                 text = stringResource(R.string.settings_default_events_event_data_description),
                 style = MaterialTheme.typography.bodyMedium,
@@ -2222,7 +2231,8 @@ private fun DefaultEventsSettingsSection(
             Spacer(modifier = Modifier.height(8.dp))
             EventDialogFieldConfigurator(
                 fields = eventDialogFields,
-                onFieldsChange = onEventDialogFieldsChange
+                onFieldsChange = onEventDialogFieldsChange,
+                onDragActiveChange = onEventDataFieldDragActiveChange
             )
         }
         EventDefaultsSubmenu.DEFAULT_VALUES -> {
@@ -3339,8 +3349,14 @@ private fun AppSettingsSection(
 @Composable
 private fun EventDialogFieldConfigurator(
     fields: List<EventDialogFieldOption>,
-    onFieldsChange: (List<EventDialogFieldOption>) -> Unit
+    onFieldsChange: (List<EventDialogFieldOption>) -> Unit,
+    onDragActiveChange: (Boolean) -> Unit
 ) {
+    val reorderThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
+    DisposableEffect(Unit) {
+        onDispose { onDragActiveChange(false) }
+    }
+
     Text(
         text = stringResource(R.string.settings_event_data_fields_title),
         style = MaterialTheme.typography.titleSmall,
@@ -3366,11 +3382,70 @@ private fun EventDialogFieldConfigurator(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val isRequiredField = EventDialogFieldOption.isRequired(option.field)
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .pointerInput(option.field, fields) {
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                down.consume()
+                                onDragActiveChange(true)
+                                val longPress = awaitLongPressOrCancellation(down.id)
+
+                                if (longPress == null) {
+                                    while (true) {
+                                        val event = awaitPointerEvent()
+                                        event.changes.forEach { if (it.pressed) it.consume() }
+                                        if (event.changes.none { it.pressed }) break
+                                    }
+                                    dragOffset = 0f
+                                    onDragActiveChange(false)
+                                    return@awaitEachGesture
+                                }
+
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val pointerChange = event.changes.firstOrNull { it.id == down.id }
+                                        ?: event.changes.firstOrNull()
+                                        ?: break
+
+                                    val deltaY = pointerChange.positionChange().y
+                                    if (deltaY != 0f) {
+                                        dragOffset += deltaY
+                                        when {
+                                            dragOffset > reorderThreshold && index < fields.lastIndex -> {
+                                                val updated = fields.toMutableList()
+                                                updated[index] = fields[index + 1]
+                                                updated[index + 1] = option
+                                                onFieldsChange(updated)
+                                                dragOffset -= reorderThreshold
+                                            }
+
+                                            dragOffset < -reorderThreshold && index > 0 -> {
+                                                val updated = fields.toMutableList()
+                                                updated[index] = fields[index - 1]
+                                                updated[index - 1] = option
+                                                onFieldsChange(updated)
+                                                dragOffset += reorderThreshold
+                                            }
+                                        }
+                                    }
+
+                                    event.changes.forEach { if (it.pressed) it.consume() }
+                                    if (event.changes.none { it.pressed }) break
+                                }
+                                dragOffset = 0f
+                                onDragActiveChange(false)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Menu,
+                        contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = eventDialogFieldLabel(option.field),
