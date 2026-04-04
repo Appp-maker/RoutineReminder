@@ -27,6 +27,20 @@ data class EventDialogFieldOption(
     val enabled: Boolean
 ) {
     companion object {
+        private val requiredFields = setOf(
+            EventDialogField.TITLE,
+            EventDialogField.START,
+            EventDialogField.TIME
+        )
+
+        fun isRequired(field: EventDialogField): Boolean = field in requiredFields
+
+        fun enforceRequired(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
+            return fields.map { option ->
+                if (isRequired(option.field)) option.copy(enabled = true) else option
+            }
+        }
+
         fun defaults(): List<EventDialogFieldOption> = listOf(
             EventDialogFieldOption(EventDialogField.TITLE, true),
             EventDialogFieldOption(EventDialogField.NOTES, true),
