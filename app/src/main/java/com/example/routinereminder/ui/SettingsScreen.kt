@@ -3386,8 +3386,9 @@ private fun EventDialogFieldConfigurator(
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val isRequiredField = EventDialogFieldOption.isRequired(option.field)
                 Icon(
-                    imageVector = Icons.Filled.Edit,
+                    imageVector = if (isRequiredField) Icons.Filled.Lock else Icons.Filled.Edit,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.secondary
                 )
@@ -3402,7 +3403,8 @@ private fun EventDialogFieldConfigurator(
                         val updated = fields.toMutableList()
                         updated[index] = option.copy(enabled = enabled)
                         onFieldsChange(updated)
-                    }
+                    },
+                    enabled = !isRequiredField
                 )
             }
         }

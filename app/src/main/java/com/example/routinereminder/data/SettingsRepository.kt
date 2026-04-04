@@ -693,7 +693,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     }
 
     suspend fun saveEventDialogFields(fields: List<EventDialogFieldOption>) {
-        val serialized = fields.mapIndexed { index, option ->
+        val sanitizedFields = EventDialogFieldOption.enforceRequired(fields)
+        val serialized = sanitizedFields.mapIndexed { index, option ->
             "${index}|${option.field.key}|${option.enabled}"
         }.toSet()
         dataStore.edit { preferences ->
@@ -716,11 +717,13 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             if (parsedByIndex.isEmpty()) return@map defaults
 
             val parsedMap = parsedByIndex.associateBy { it.field }
-            defaults.map { default ->
+            EventDialogFieldOption.enforceRequired(
+                defaults.map { default ->
                 parsedMap[default.field] ?: default
-            }.sortedBy { option ->
-                parsedByIndex.indexOfFirst { it.field == option.field }.let { if (it == -1) Int.MAX_VALUE else it }
-            }
+                }.sortedBy { option ->
+                    parsedByIndex.indexOfFirst { it.field == option.field }.let { if (it == -1) Int.MAX_VALUE else it }
+                }
+            )
         }.distinctUntilChanged()
     }
 
