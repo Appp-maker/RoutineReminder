@@ -11,7 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,8 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -3346,38 +3345,17 @@ private fun EventDialogFieldConfigurator(
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary
     )
+    Text(
+        text = stringResource(R.string.settings_event_data_fields_reorder_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
     Spacer(modifier = Modifier.height(8.dp))
     fields.forEachIndexed { index, option ->
         var dragOffset by remember(option.field, fields) { mutableStateOf(0f) }
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .pointerInput(fields) {
-                    detectDragGesturesAfterLongPress(
-                        onDragEnd = { dragOffset = 0f },
-                        onDragCancel = { dragOffset = 0f },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            dragOffset += dragAmount.y
-                            when {
-                                dragOffset > 40f && index < fields.lastIndex -> {
-                                    val updated = fields.toMutableList()
-                                    updated[index] = fields[index + 1]
-                                    updated[index + 1] = option
-                                    onFieldsChange(updated)
-                                    dragOffset = 0f
-                                }
-                                dragOffset < -40f && index > 0 -> {
-                                    val updated = fields.toMutableList()
-                                    updated[index] = fields[index - 1]
-                                    updated[index - 1] = option
-                                    onFieldsChange(updated)
-                                    dragOffset = 0f
-                                }
-                            }
-                        }
-                    )
-                },
+                .fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             Row(
@@ -3388,9 +3366,35 @@ private fun EventDialogFieldConfigurator(
             ) {
                 val isRequiredField = EventDialogFieldOption.isRequired(option.field)
                 Icon(
-                    imageVector = if (isRequiredField) Icons.Filled.Lock else Icons.Filled.Edit,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.pointerInput(fields) {
+                        detectDragGestures(
+                            onDragEnd = { dragOffset = 0f },
+                            onDragCancel = { dragOffset = 0f },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                dragOffset += dragAmount.y
+                                when {
+                                    dragOffset > 56f && index < fields.lastIndex -> {
+                                        val updated = fields.toMutableList()
+                                        updated[index] = fields[index + 1]
+                                        updated[index + 1] = option
+                                        onFieldsChange(updated)
+                                        dragOffset = 0f
+                                    }
+                                    dragOffset < -56f && index > 0 -> {
+                                        val updated = fields.toMutableList()
+                                        updated[index] = fields[index - 1]
+                                        updated[index - 1] = option
+                                        onFieldsChange(updated)
+                                        dragOffset = 0f
+                                    }
+                                }
+                            }
+                        )
+                    }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(

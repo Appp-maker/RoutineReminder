@@ -161,6 +161,8 @@
     <string name="settings_calorie_track_consumed">Track consumed foods with checkboxes</string>
     <string name="settings_calorie_track_consumed_hint">When enabled, calories start at 0 until you check foods as consumed.</string>
     <string name="settings_event_data_fields_title">Event dialog fields</string>
+    <string name="settings_event_data_fields_reorder_hint">Drag the handle on each row to set the default Create New Entry order.</string>
+    <string name="settings_event_data_fields_drag_handle_description">Drag to reorder</string>
     <string name="settings_event_data_field_title">Title</string>
     <string name="settings_event_data_field_notes">Notes</string>
     <string name="settings_event_data_field_start">Start</string>
