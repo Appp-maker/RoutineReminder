@@ -131,6 +131,7 @@ fun SettingsScreen(
      var selectedCategory by remember(from, enabledTabs, initialCategory) {
          mutableStateOf(initialCategory ?: fallbackCategory)
      }
+    var isEventFieldDragActive by remember { mutableStateOf(false) }
 
 
     val userSettings by viewModel.userSettings.collectAsState()
@@ -778,7 +779,7 @@ fun SettingsScreen(
             Column(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState(), enabled = !isEventFieldDragActive),
                 horizontalAlignment = Alignment.Start
             ) {
                 when (selectedCategory) {
@@ -970,7 +971,8 @@ fun SettingsScreen(
                                 put(day, selections)
                             }
                             justSavedSuccessfully = false
-                        }
+                        },
+                        onEventDataFieldDragActiveChange = { isEventFieldDragActive = it }
                     )
                     SettingsCategory.SYNC -> {
                         DataSyncSettingsSection(
@@ -2044,7 +2046,8 @@ private fun DefaultEventsSettingsSection(
     onResetManualActiveSets: () -> Unit,
     onEventSetNameChange: (Int, String) -> Unit,
     onEventSetColorChange: (Int, Int) -> Unit,
-    onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit
+    onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit,
+    onEventDataFieldDragActiveChange: (Boolean) -> Unit
 ) {
     var selectedSubmenu by remember { mutableStateOf(EventDefaultsSubmenu.EVENT_CARD) }
 
@@ -2215,6 +2218,9 @@ private fun DefaultEventsSettingsSection(
             )
         }
         EventDefaultsSubmenu.EVENT_DATA -> {
+            LaunchedEffect(Unit) {
+                onEventDataFieldDragActiveChange(false)
+            }
             Text(
                 text = stringResource(R.string.settings_default_events_event_data_description),
                 style = MaterialTheme.typography.bodyMedium,
@@ -2223,7 +2229,8 @@ private fun DefaultEventsSettingsSection(
             Spacer(modifier = Modifier.height(8.dp))
             EventDialogFieldConfigurator(
                 fields = eventDialogFields,
-                onFieldsChange = onEventDialogFieldsChange
+                onFieldsChange = onEventDialogFieldsChange,
+                onDragActiveChange = onEventDataFieldDragActiveChange
             )
         }
         EventDefaultsSubmenu.DEFAULT_VALUES -> {
@@ -3340,7 +3347,8 @@ private fun AppSettingsSection(
 @Composable
 private fun EventDialogFieldConfigurator(
     fields: List<EventDialogFieldOption>,
-    onFieldsChange: (List<EventDialogFieldOption>) -> Unit
+    onFieldsChange: (List<EventDialogFieldOption>) -> Unit,
+    onDragActiveChange: (Boolean) -> Unit
 ) {
     val reorderThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
 
