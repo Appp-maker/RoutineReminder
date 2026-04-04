@@ -22,6 +22,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
@@ -3365,9 +3367,21 @@ private fun EventDialogFieldConfigurator(
     Spacer(modifier = Modifier.height(8.dp))
     fields.forEachIndexed { index, option ->
         var dragOffset by remember(option.field, fields) { mutableStateOf(0f) }
+        var isDragging by remember(option.field, fields) { mutableStateOf(false) }
+        val rowScale by animateFloatAsState(
+            targetValue = if (isDragging) 1.03f else 1f,
+            label = "eventFieldRowScale"
+        )
         Card(
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = rowScale
+                    scaleY = rowScale
+                },
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = if (isDragging) 10.dp else 0.dp
+            ),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             Row(
