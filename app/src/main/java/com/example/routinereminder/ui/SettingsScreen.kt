@@ -29,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
@@ -48,6 +47,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewModelScope
@@ -177,6 +178,7 @@ fun SettingsScreen(
     val currentRoutineInsightsEnabled by viewModel.routineInsightsEnabled.collectAsState()
     val eventSetNames by viewModel.eventSetNames.collectAsState()
     val eventSetColors by viewModel.eventSetColors.collectAsState()
+    val eventSetImageKeys by viewModel.eventSetImageKeys.collectAsState()
     val eventSetsEnabled by viewModel.eventSetsEnabled.collectAsState()
     val recentCustomEventColors by viewModel.recentCustomEventColors.collectAsState()
     val appThemeColors by viewModel.appThemeColors.collectAsState()
@@ -232,6 +234,7 @@ fun SettingsScreen(
     var eventSetsEnabledChecked by remember(eventSetsEnabled) { mutableStateOf(eventSetsEnabled) }
     val eventSetNameInputs = remember { mutableStateListOf<String>() }
     val eventSetColorInputs = remember { mutableStateListOf<Int>() }
+    val eventSetImageInputs = remember { mutableStateListOf<String>() }
     var primaryColorInput by remember { mutableStateOf(appThemeColors.primary) }
     var secondaryColorInput by remember { mutableStateOf(appThemeColors.secondary) }
     var defaultActiveSetSelections by remember { mutableStateOf<Map<DayOfWeek, Set<Int>>>(emptyMap()) }
@@ -405,6 +408,11 @@ fun SettingsScreen(
         eventSetColorInputs.addAll(eventSetColors)
     }
 
+    LaunchedEffect(eventSetImageKeys) {
+        eventSetImageInputs.clear()
+        eventSetImageInputs.addAll(eventSetImageKeys.map { EventSetImageCatalog.normalizeKey(it) })
+    }
+
     LaunchedEffect(appThemeColors) {
         primaryColorInput = appThemeColors.primary
         secondaryColorInput = appThemeColors.secondary
@@ -480,7 +488,10 @@ fun SettingsScreen(
         showAllEventsChecked, showAllEvents,
         selectedTabs, enabledTabs,
         routineInsightsEnabledChecked, currentRoutineInsightsEnabled,
-        eventSetsEnabledChecked, eventSetsEnabled
+        eventSetsEnabledChecked, eventSetsEnabled,
+        eventSetNameInputs.joinToString("|"), eventSetNames.joinToString("|"),
+        eventSetColorInputs.joinToString("|"), eventSetColors.joinToString("|"),
+        eventSetImageInputs.joinToString("|"), eventSetImageKeys.joinToString("|")
     ) {
         derivedStateOf {
             if (weightInput.toDoubleOrNull() != userSettings?.weightKg) return@derivedStateOf true
@@ -525,6 +536,9 @@ fun SettingsScreen(
             if (foodConsumedTrackingEnabledChecked != currentFoodConsumedTrackingEnabled) return@derivedStateOf true
             if (routineInsightsEnabledChecked != currentRoutineInsightsEnabled) return@derivedStateOf true
             if (eventSetsEnabledChecked != eventSetsEnabled) return@derivedStateOf true
+            if (eventSetNameInputs != eventSetNames) return@derivedStateOf true
+            if (eventSetColorInputs != eventSetColors) return@derivedStateOf true
+            if (eventSetImageInputs != eventSetImageKeys) return@derivedStateOf true
             if (selectedTabs != enabledTabs) return@derivedStateOf true
             // We don't directly compare selectedGoogleAccountName to a stored value for unsaved changes,
             // as its change directly triggers other settings to change, which are covered above.
@@ -656,6 +670,7 @@ fun SettingsScreen(
                         viewModel.updateEventSetsEnabled(eventSetsEnabledChecked)
                         viewModel.saveEventSetNames(eventSetNameInputs.toList())
                         viewModel.saveEventSetColors(eventSetColorInputs.toList())
+                        viewModel.saveEventSetImageKeys(eventSetImageInputs.toList())
                         viewModel.saveAppThemeColors(
                             AppThemeColors(
                                 primary = primaryColorInput,
@@ -956,6 +971,7 @@ fun SettingsScreen(
                         },
                         eventSetNames = eventSetNameInputs,
                         eventSetColors = eventSetColorInputs,
+                        eventSetImageKeys = eventSetImageInputs,
                         defaultActiveSetsByWeekday = defaultActiveSetSelections,
                         onResetManualActiveSets = {
                             viewModel.resetManualActiveEventSets()
@@ -970,6 +986,12 @@ fun SettingsScreen(
                         onEventSetColorChange = { index, color ->
                             if (index in eventSetColorInputs.indices) {
                                 eventSetColorInputs[index] = color
+                                justSavedSuccessfully = false
+                            }
+                        },
+                        onEventSetImageChange = { index, imageKey ->
+                            if (index in eventSetImageInputs.indices) {
+                                eventSetImageInputs[index] = EventSetImageCatalog.normalizeKey(imageKey)
                                 justSavedSuccessfully = false
                             }
                         },
@@ -2049,10 +2071,12 @@ private fun DefaultEventsSettingsSection(
     onEventSetsEnabledChange: (Boolean) -> Unit,
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
+    eventSetImageKeys: List<String>,
     defaultActiveSetsByWeekday: Map<DayOfWeek, Set<Int>>,
     onResetManualActiveSets: () -> Unit,
     onEventSetNameChange: (Int, String) -> Unit,
     onEventSetColorChange: (Int, Int) -> Unit,
+    onEventSetImageChange: (Int, String) -> Unit,
     onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit,
     onEventDataFieldDragActiveChange: (Boolean) -> Unit
 ) {
@@ -2383,10 +2407,12 @@ private fun DefaultEventsSettingsSection(
                 onEventSetsEnabledChange = onEventSetsEnabledChange,
                 eventSetNames = eventSetNames,
                 eventSetColors = eventSetColors,
+                eventSetImageKeys = eventSetImageKeys,
                 defaultActiveSetsByWeekday = defaultActiveSetsByWeekday,
                 onResetManualActiveSets = onResetManualActiveSets,
                 onEventSetNameChange = onEventSetNameChange,
                 onEventSetColorChange = onEventSetColorChange,
+                onEventSetImageChange = onEventSetImageChange,
                 onDefaultActiveSetsChange = onDefaultActiveSetsChange
             )
         }
@@ -2782,10 +2808,12 @@ private fun EventSetsSettingsSection(
     onEventSetsEnabledChange: (Boolean) -> Unit,
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
+    eventSetImageKeys: List<String>,
     defaultActiveSetsByWeekday: Map<DayOfWeek, Set<Int>>,
     onResetManualActiveSets: () -> Unit,
     onEventSetNameChange: (Int, String) -> Unit,
     onEventSetColorChange: (Int, Int) -> Unit,
+    onEventSetImageChange: (Int, String) -> Unit,
     onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit
 ) {
     val context = LocalContext.current
@@ -2847,6 +2875,8 @@ private fun EventSetsSettingsSection(
 
     eventSetNames.forEachIndexed { index, name ->
         val label = stringResource(R.string.settings_event_set_name_label, ('A' + index))
+        val selectedImageKey = eventSetImageKeys.getOrNull(index) ?: EventSetImageCatalog.DEFAULT_KEY
+        val selectedImage = EventSetImageCatalog.optionFor(selectedImageKey)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -2859,12 +2889,13 @@ private fun EventSetsSettingsSection(
                     .size(56.dp)
                     .offset(y = 4.dp)
                     .border(1.dp, MaterialTheme.colorScheme.outline)
+                    .clickable {
+                        onEventSetImageChange(index, EventSetImageCatalog.nextKey(selectedImageKey))
+                    }
             ) {
-                Image(
-                    imageVector = Icons.Filled.DirectionsWalk,
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
-                    contentScale = ContentScale.Fit,
+                EventSetImageGlyph(
+                    option = selectedImage,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(6.dp)
@@ -2878,6 +2909,12 @@ private fun EventSetsSettingsSection(
                 modifier = Modifier.weight(1f)
             )
         }
+        Text(
+            text = stringResource(R.string.settings_event_set_image_hint, selectedImage.label),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         val currentColor = eventSetColors.getOrNull(index) ?: DEFAULT_SERIES_COLOR_ARGB
         SeriesColorPicker(
             label = stringResource(R.string.settings_event_set_color_label, ('A' + index)),
@@ -2948,6 +2985,32 @@ private fun EventSetsSettingsSection(
         color = MaterialTheme.colorScheme.error,
         modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
     )
+}
+
+@Composable
+private fun EventSetImageGlyph(
+    option: EventSetImageOption,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    if (option.icon != null) {
+        Image(
+            imageVector = option.icon,
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(tint),
+            contentScale = ContentScale.Fit,
+            modifier = modifier
+        )
+    } else {
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            Text(
+                text = option.textGlyph.orEmpty(),
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.SemiBold),
+                color = tint,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
