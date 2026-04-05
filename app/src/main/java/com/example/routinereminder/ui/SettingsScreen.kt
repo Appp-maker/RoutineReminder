@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -3564,6 +3565,7 @@ private fun EventDialogFieldConfigurator(
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
             var totalDragOffset by remember(option.field) { mutableStateOf(0f) }
+            var rowHeightPx by remember(option.field) { mutableStateOf(0f) }
             var isDragging by remember(option.field) { mutableStateOf(false) }
             val visualDragOffset = dragOffset
             val rowScale by animateFloatAsState(
@@ -3573,6 +3575,7 @@ private fun EventDialogFieldConfigurator(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onSizeChanged { rowHeightPx = it.height.toFloat() }
                     .offset { IntOffset(0, if (isDragging) visualDragOffset.roundToInt() else 0) }
                     .zIndex(if (isDragging) 1f else 0f)
                     .graphicsLayer {
@@ -3616,7 +3619,8 @@ private fun EventDialogFieldConfigurator(
                                     onDragEnd = {
                                         val currentIndex = fields.indexOfFirst { it.field == option.field }
                                         if (currentIndex != -1) {
-                                            val moveSteps = (totalDragOffset / reorderThreshold).toInt()
+                                            val stepThreshold = if (rowHeightPx > 0f) rowHeightPx else reorderThreshold
+                                            val moveSteps = (totalDragOffset / stepThreshold).toInt()
                                             if (moveSteps != 0) {
                                                 val targetIndex = (currentIndex + moveSteps)
                                                     .coerceIn(0, fields.lastIndex)
