@@ -12,7 +12,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -3589,10 +3592,15 @@ private fun EventDialogFieldConfigurator(
                     contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.pointerInput(option.field, fields) {
-                        detectDragGesturesAfterLongPress(
-                            onDrag = { change, dragAmount ->
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            down.consume()
+                            isDragging = true
+                            onDragActiveChange(true)
+
+                            drag(down.id) { change ->
                                 change.consume()
-                                dragOffset += dragAmount.y
+                                dragOffset += change.positionChange().y
 
                                 when {
                                     dragOffset > reorderThreshold && index < fields.lastIndex -> {
@@ -3611,10 +3619,13 @@ private fun EventDialogFieldConfigurator(
                                         dragOffset += reorderThreshold
                                     }
                                 }
-                            },
-                            onDragCancel = { dragOffset = 0f },
-                            onDragEnd = { dragOffset = 0f }
-                        )
+                            }
+
+                            waitForUpOrCancellation()
+                            dragOffset = 0f
+                            isDragging = false
+                            onDragActiveChange(false)
+                        }
                     }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
