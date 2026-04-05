@@ -66,6 +66,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val FOOD_CONSUMED_TRACKING_ENABLED = booleanPreferencesKey("food_consumed_tracking_enabled")
     val EVENT_SET_NAMES = stringSetPreferencesKey("event_set_names")
     val EVENT_SET_COLORS = stringSetPreferencesKey("event_set_colors")
+    val EVENT_SET_IMAGE_KEYS = stringSetPreferencesKey("event_set_image_keys")
     val EVENT_SETS_ENABLED = booleanPreferencesKey("event_sets_enabled")
     val APP_PRIMARY_COLOR = intPreferencesKey("app_primary_color")
     val APP_SECONDARY_COLOR = intPreferencesKey("app_secondary_color")
@@ -360,6 +361,36 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }.toSet()
         dataStore.edit { preferences ->
             preferences[EVENT_SET_COLORS] = normalizedColors
+        }
+    }
+
+    fun getEventSetImageKeys(): Flow<List<String>> {
+        return dataStore.data.map { preferences ->
+            val storedKeys = preferences[EVENT_SET_IMAGE_KEYS].orEmpty()
+            val imageKeyMap = storedKeys.mapNotNull { entry ->
+                val parts = entry.split("|", limit = 2)
+                val id = parts.firstOrNull()?.toIntOrNull()
+                val imageKey = parts.getOrNull(1)?.trim().orEmpty()
+                if (id != null && imageKey.isNotBlank()) {
+                    id to imageKey
+                } else {
+                    null
+                }
+            }.toMap()
+
+            List(MAX_EVENT_SETS) { index ->
+                imageKeyMap[index + 1] ?: defaultEventSetImageKey()
+            }
+        }
+    }
+
+    suspend fun saveEventSetImageKeys(imageKeys: List<String>) {
+        val normalizedImageKeys = imageKeys.take(MAX_EVENT_SETS).mapIndexed { index, key ->
+            val finalKey = key.trim().ifBlank { defaultEventSetImageKey() }
+            "${index + 1}|$finalKey"
+        }.toSet()
+        dataStore.edit { preferences ->
+            preferences[EVENT_SET_IMAGE_KEYS] = normalizedImageKeys
         }
     }
 
@@ -939,6 +970,10 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
 
     private fun defaultEventSetColor(index: Int): Int {
         return defaultSeriesColorForIndex(index)
+    }
+
+    private fun defaultEventSetImageKey(): String {
+        return "activity_walk"
     }
 
     private fun defaultEventSetKey(day: DayOfWeek): Preferences.Key<Set<String>> {

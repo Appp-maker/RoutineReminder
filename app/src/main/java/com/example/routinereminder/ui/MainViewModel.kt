@@ -181,6 +181,10 @@ class MainViewModel @Inject constructor(
         }
     )
     val eventSetColors: StateFlow<List<Int>> = _eventSetColors.asStateFlow()
+    private val _eventSetImageKeys = MutableStateFlow(
+        List(SettingsRepository.MAX_EVENT_SETS) { EventSetImageCatalog.DEFAULT_KEY }
+    )
+    val eventSetImageKeys: StateFlow<List<String>> = _eventSetImageKeys.asStateFlow()
 
     private val _eventSetsEnabled = MutableStateFlow(true)
     val eventSetsEnabled: StateFlow<Boolean> = _eventSetsEnabled.asStateFlow()
@@ -432,6 +436,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getEventSetColors().collectLatest { colors ->
                 _eventSetColors.value = colors
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getEventSetImageKeys().collectLatest { imageKeys ->
+                _eventSetImageKeys.value = imageKeys.map { EventSetImageCatalog.normalizeKey(it) }
             }
         }
         viewModelScope.launch {
@@ -790,6 +799,12 @@ class MainViewModel @Inject constructor(
     fun saveEventSetColors(colors: List<Int>) {
         viewModelScope.launch {
             settingsRepository.saveEventSetColors(colors)
+        }
+    }
+
+    fun saveEventSetImageKeys(imageKeys: List<String>) {
+        viewModelScope.launch {
+            settingsRepository.saveEventSetImageKeys(imageKeys.map { EventSetImageCatalog.normalizeKey(it) })
         }
     }
 
