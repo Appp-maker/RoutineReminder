@@ -2110,9 +2110,9 @@ private fun DefaultEventsSettingsSection(
     ) {
         EventDefaultsSubmenu.entries.forEach { submenu ->
             val submenuLabel = when (submenu) {
-                EventDefaultsSubmenu.EVENT_CARD -> "Event card"
-                EventDefaultsSubmenu.EVENT_DATA -> "Event data"
-                EventDefaultsSubmenu.DEFAULT_VALUES -> "Default values"
+                EventDefaultsSubmenu.EVENT_CARD -> stringResource(R.string.settings_submenu_event_card)
+                EventDefaultsSubmenu.EVENT_DATA -> stringResource(R.string.settings_submenu_event_fields)
+                EventDefaultsSubmenu.DEFAULT_VALUES -> stringResource(R.string.settings_submenu_default)
                 EventDefaultsSubmenu.EVENT_SETS -> stringResource(R.string.settings_event_sets_title)
             }
             Tab(
