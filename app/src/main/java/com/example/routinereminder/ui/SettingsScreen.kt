@@ -922,6 +922,57 @@ fun SettingsScreen(
                             eventCardAdvancedModeEnabledState = enabled
                             justSavedSuccessfully = false
                         },
+                        onResetAllEventSettings = {
+                            defaultEventHourState = 8
+                            defaultEventMinuteState = 0
+                            startTimeOption = StartTimeOption.NEXT_FULL_HOUR
+                            defaultDurationHoursText = SettingsRepository.DEFAULT_EVENT_DURATION_HOURS.toString()
+                            defaultDurationMinutesText = SettingsRepository.DEFAULT_EVENT_DURATION_MINUTES.toString()
+                            isOneTimeChecked = false
+                            createCalendarEntryChecked = true
+                            selectedCalendarIdForNewEvents = SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL
+                            systemNotificationChecked = true
+                            showDetailsInNotificationChecked = true
+                            reminderCountText = "0"
+                            reminderIntervalMinutesText = "60"
+                            eventDialogFieldState.clear()
+                            eventDialogFieldState.addAll(EventDialogFieldOption.defaults())
+                            viewModel.saveEventDialogFields(eventDialogFieldState.toList())
+                            indicatorDisplayConditionState = EventColorDisplayCondition.ALWAYS
+                            backgroundDisplayConditionState = EventColorDisplayCondition.NEVER
+                            backgroundTransparencyState = EventBackgroundTransparency.PERCENT_20
+                            eventTitleColorChoiceState = EventTitleColorChoice.PRIMARY
+                            eventTitleCustomColorState = DEFAULT_PRIMARY_COLOR_ARGB
+                            eventCardAdvancedModeEnabledState = false
+                            showLocationInEventCardState = true
+                            showRouteEtaInEventCardState = true
+                            showWeatherInEventCardState = true
+                            pastEventTextColorChoiceState = PastEventTextColorChoice.GREYED_OUT
+                            pastEventTextCustomColorState = DEFAULT_PRIMARY_COLOR_ARGB
+                            pastEventDetailTextColorChoiceState = PastEventDetailTextColorChoice.GREYED_OUT
+                            pastEventDetailTextCustomColorState = DEFAULT_PRIMARY_COLOR_ARGB
+                            pastEventBackgroundTreatmentState = PastEventColorTreatment.GREYED_OUT
+                            pastEventBackgroundCustomColorState = DEFAULT_PRIMARY_COLOR_ARGB
+                            pastEventBackgroundTransparencyState = EventBackgroundTransparency.PERCENT_20
+                            eventSetsEnabledChecked = true
+                            val defaultSetNames = List(SettingsRepository.MAX_EVENT_SETS) { index ->
+                                "Set ${'A' + index}"
+                            }
+                            val defaultSetColors = List(SettingsRepository.MAX_EVENT_SETS) { index ->
+                                defaultSeriesColorForIndex(index)
+                            }
+                            val defaultSetImages = List(SettingsRepository.MAX_EVENT_SETS) {
+                                EventSetImageCatalog.DEFAULT_KEY
+                            }
+                            eventSetNameInputs.clear()
+                            eventSetNameInputs.addAll(defaultSetNames)
+                            eventSetColorInputs.clear()
+                            eventSetColorInputs.addAll(defaultSetColors)
+                            eventSetImageInputs.clear()
+                            eventSetImageInputs.addAll(defaultSetImages)
+                            defaultActiveSetSelections = DayOfWeek.values().associateWith { emptySet() }
+                            justSavedSuccessfully = false
+                        },
                         showLocationInEventCard = showLocationInEventCardState,
                         onShowLocationInEventCardChange = { enabled ->
                             showLocationInEventCardState = enabled
@@ -2064,6 +2115,7 @@ private fun DefaultEventsSettingsSection(
     onEventTitleCustomColorChange: (Int) -> Unit,
     eventCardAdvancedModeEnabled: Boolean,
     onEventCardAdvancedModeEnabledChange: (Boolean) -> Unit,
+    onResetAllEventSettings: () -> Unit,
     showLocationInEventCard: Boolean,
     onShowLocationInEventCardChange: (Boolean) -> Unit,
     showRouteEtaInEventCard: Boolean,
@@ -2100,6 +2152,24 @@ private fun DefaultEventsSettingsSection(
     parentScrollState: ScrollState
 ) {
     var selectedSubmenu by remember { mutableStateOf(EventDefaultsSubmenu.EVENT_CARD) }
+    var showResetEventSettingsDialog by remember { mutableStateOf(false) }
+    val visibleSubmenus = remember(eventCardAdvancedModeEnabled) {
+        if (eventCardAdvancedModeEnabled) {
+            EventDefaultsSubmenu.entries
+        } else {
+            listOf(EventDefaultsSubmenu.DEFAULT_VALUES, EventDefaultsSubmenu.EVENT_SETS)
+        }
+    }
+    LaunchedEffect(eventCardAdvancedModeEnabled) {
+        if (!eventCardAdvancedModeEnabled && selectedSubmenu in listOf(
+                EventDefaultsSubmenu.EVENT_CARD,
+                EventDefaultsSubmenu.EVENT_DATA
+            )
+        ) {
+            selectedSubmenu = EventDefaultsSubmenu.DEFAULT_VALUES
+        }
+    }
+    val activeSubmenu = selectedSubmenu.takeIf { it in visibleSubmenus } ?: EventDefaultsSubmenu.DEFAULT_VALUES
 
     Text(stringResource(R.string.settings_default_events_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
     SettingSwitchItem(
@@ -2107,14 +2177,41 @@ private fun DefaultEventsSettingsSection(
         checked = eventCardAdvancedModeEnabled,
         onCheckedChange = onEventCardAdvancedModeEnabledChange
     )
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedButton(
+        onClick = { showResetEventSettingsDialog = true },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(stringResource(R.string.settings_default_events_reset_all_action))
+    }
+    if (showResetEventSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetEventSettingsDialog = false },
+            title = { Text(stringResource(R.string.settings_default_events_reset_all_title)) },
+            text = { Text(stringResource(R.string.settings_default_events_reset_all_warning)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showResetEventSettingsDialog = false
+                    onResetAllEventSettings()
+                }) {
+                    Text(stringResource(R.string.settings_default_events_reset_all_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetEventSettingsDialog = false }) {
+                    Text(stringResource(R.string.alert_action_cancel))
+                }
+            }
+        )
+    }
     Spacer(modifier = Modifier.height(12.dp))
     ScrollableTabRow(
-        selectedTabIndex = selectedSubmenu.ordinal,
+        selectedTabIndex = visibleSubmenus.indexOf(activeSubmenu).coerceAtLeast(0),
         edgePadding = 0.dp,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        EventDefaultsSubmenu.entries.forEach { submenu ->
+        visibleSubmenus.forEach { submenu ->
             val submenuLabel = when (submenu) {
                 EventDefaultsSubmenu.EVENT_CARD -> stringResource(R.string.settings_submenu_event_card)
                 EventDefaultsSubmenu.EVENT_DATA -> stringResource(R.string.settings_submenu_event_fields)
@@ -2122,7 +2219,7 @@ private fun DefaultEventsSettingsSection(
                 EventDefaultsSubmenu.EVENT_SETS -> stringResource(R.string.settings_event_sets_title)
             }
             Tab(
-                selected = selectedSubmenu == submenu,
+                selected = activeSubmenu == submenu,
                 onClick = { selectedSubmenu = submenu },
                 selectedContentColor = MaterialTheme.colorScheme.secondary,
                 unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2131,7 +2228,7 @@ private fun DefaultEventsSettingsSection(
         }
     }
     Spacer(modifier = Modifier.height(12.dp))
-    when (selectedSubmenu) {
+    when (activeSubmenu) {
         EventDefaultsSubmenu.EVENT_CARD -> {
             Text(
                 text = stringResource(R.string.settings_event_appearance_title),
