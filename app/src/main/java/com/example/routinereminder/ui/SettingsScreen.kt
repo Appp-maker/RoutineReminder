@@ -14,6 +14,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,6 +50,8 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.awaitFirstDown
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -3619,6 +3625,25 @@ private fun EventDialogFieldConfigurator(
                                             onFieldsChange(updated)
                                             dragOffset -= reorderThreshold
                                         }
+                    modifier = Modifier.pointerInput(option.field, fields) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            down.consume()
+                            isDragging = true
+                            onDragActiveChange(true)
+
+                            drag(down.id) { change ->
+                                change.consume()
+                                dragOffset += change.positionChange().y
+
+                                when {
+                                    dragOffset > reorderThreshold && index < fields.lastIndex -> {
+                                        val updated = fields.toMutableList()
+                                        updated[index] = fields[index + 1]
+                                        updated[index + 1] = option
+                                        onFieldsChange(updated)
+                                        dragOffset -= reorderThreshold
+                                    }
 
                                         dragOffset < -reorderThreshold && index > 0 -> {
                                             val updated = fields.toMutableList()
@@ -3641,6 +3666,14 @@ private fun EventDialogFieldConfigurator(
                                 }
                             )
                         }
+                            }
+
+                            waitForUpOrCancellation()
+                            dragOffset = 0f
+                            isDragging = false
+                            onDragActiveChange(false)
+                        }
+                    }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
