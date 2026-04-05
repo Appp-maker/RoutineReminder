@@ -2179,11 +2179,6 @@ private fun DefaultEventsSettingsSection(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.secondary
             )
-            SettingSwitchItem(
-                text = "Advanced mode",
-                checked = eventCardAdvancedModeEnabled,
-                onCheckedChange = onEventCardAdvancedModeEnabledChange
-            )
             if (eventCardAdvancedModeEnabled) {
                 SettingSwitchItem(
                     text = "Show location",
@@ -2300,6 +2295,17 @@ private fun DefaultEventsSettingsSection(
             val notificationDetailsEnabled = isDefaultFieldEnabled(EventDialogField.NOTIFICATION_DETAILS)
             val reminderOptionsEnabled = isDefaultFieldEnabled(EventDialogField.REMINDER_OPTIONS)
 
+            Text(
+                text = "Event card details",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            SettingSwitchItem(
+                text = "Advanced mode",
+                checked = eventCardAdvancedModeEnabled,
+                onCheckedChange = onEventCardAdvancedModeEnabledChange
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 stringResource(R.string.settings_default_events_start_time),
                 style = MaterialTheme.typography.titleMedium,
