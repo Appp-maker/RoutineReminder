@@ -2852,7 +2852,7 @@ private fun EventSetsSettingsSection(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
@@ -2863,9 +2863,10 @@ private fun EventSetsSettingsSection(
                     imageVector = Icons.Filled.DirectionsWalk,
                     contentDescription = null,
                     colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
-                    contentScale = ContentScale.FillBounds,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(6.dp)
                         .align(Alignment.Center)
                 )
             }
