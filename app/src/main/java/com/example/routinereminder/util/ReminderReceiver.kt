@@ -1,5 +1,7 @@
 package com.example.routinereminder.util
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.Manifest
 import android.content.BroadcastReceiver
@@ -31,6 +33,8 @@ class ReminderReceiver : BroadcastReceiver() {
     companion object {
         const val EXTRA_MINUTES_BEFORE = "extra_minutes_before"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
+        private const val CHANNEL_ID = "routine_channel"
+        private const val CHANNEL_NAME = "Routine Reminders"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -75,6 +79,8 @@ class ReminderReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        ensureReminderChannel(context)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
@@ -83,7 +89,7 @@ class ReminderReceiver : BroadcastReceiver() {
             return
         }
 
-        val notification = NotificationCompat.Builder(context, "routine_channel")
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(message)
@@ -97,4 +103,22 @@ class ReminderReceiver : BroadcastReceiver() {
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
+
+    private fun ensureReminderChannel(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val existingChannel = notificationManager.getNotificationChannel(CHANNEL_ID)
+        if (existingChannel == null) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifications for scheduled routines"
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
 }
+
