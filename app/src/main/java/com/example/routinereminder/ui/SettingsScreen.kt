@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -68,6 +69,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.R
 import com.example.routinereminder.ui.components.SeriesColorOptions
 import com.example.routinereminder.data.*
+import com.example.routinereminder.util.NotificationDebugUtils
 import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -3541,6 +3543,39 @@ private fun AppSettingsSection(
         }
     }
     Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        text = "Notifications",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+    )
+    OutlinedButton(
+        onClick = {
+            val result = NotificationDebugUtils.sendTestReminderNotification(context)
+            val message = if (result == NotificationDebugUtils.TestNotificationResult.SENT) {
+                "Test notification sent"
+            } else {
+                "Please allow notifications for this app first"
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text("Send test notification")
+    }
+    OutlinedButton(
+        onClick = {
+            context.startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+        },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text("Open notification settings")
+    }
     OutlinedButton(onClick = onBackupClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(stringResource(R.string.settings_app_import_export))
     }
