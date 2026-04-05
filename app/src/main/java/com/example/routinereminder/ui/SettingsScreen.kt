@@ -2857,6 +2857,7 @@ private fun EventSetsSettingsSection(
             Box(
                 modifier = Modifier
                     .size(56.dp)
+                    .offset(y = 4.dp)
                     .border(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Image(
