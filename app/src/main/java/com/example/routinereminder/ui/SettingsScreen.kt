@@ -3604,18 +3604,23 @@ private fun EventDialogFieldConfigurator(
                                         change.consume()
                                         dragOffset += dragAmount.y
 
+                                        val currentIndex = fields.indexOfFirst { it.field == option.field }
+                                        if (currentIndex == -1) {
+                                            return@detectDragGestures
+                                        }
+
                                         when {
-                                            dragOffset > reorderThreshold && index < fields.lastIndex -> {
+                                            dragOffset > reorderThreshold && currentIndex < fields.lastIndex -> {
                                                 val updated = fields.toMutableList()
-                                                updated[index] = fields[index + 1]
-                                                updated[index + 1] = option
+                                                updated[currentIndex] = fields[currentIndex + 1]
+                                                updated[currentIndex + 1] = fields[currentIndex]
                                                 onFieldsChange(updated)
                                                 dragOffset -= reorderThreshold
                                             }
-                                            dragOffset < -reorderThreshold && index > 0 -> {
+                                            dragOffset < -reorderThreshold && currentIndex > 0 -> {
                                                 val updated = fields.toMutableList()
-                                                updated[index] = fields[index - 1]
-                                                updated[index - 1] = option
+                                                updated[currentIndex] = fields[currentIndex - 1]
+                                                updated[currentIndex - 1] = fields[currentIndex]
                                                 onFieldsChange(updated)
                                                 dragOffset += reorderThreshold
                                             }
