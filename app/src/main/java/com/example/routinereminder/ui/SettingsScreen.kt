@@ -2850,15 +2850,13 @@ private fun EventSetsSettingsSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
                 .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .aspectRatio(1f)
+                    .size(56.dp)
                     .border(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Image(
@@ -2876,10 +2874,7 @@ private fun EventSetsSettingsSection(
                 value = name,
                 onValueChange = { onEventSetNameChange(index, it.take(24)) },
                 label = { Text(label) },
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                singleLine = true
+                modifier = Modifier.weight(1f)
             )
         }
         val currentColor = eventSetColors.getOrNull(index) ?: DEFAULT_SERIES_COLOR_ARGB
