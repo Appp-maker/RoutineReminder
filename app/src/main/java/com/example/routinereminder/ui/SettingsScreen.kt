@@ -3563,7 +3563,6 @@ private fun EventDialogFieldConfigurator(
     fields.forEachIndexed { index, option ->
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
-            var totalDragOffset by remember(option.field) { mutableStateOf(0f) }
             var isDragging by remember(option.field) { mutableStateOf(false) }
             val visualDragOffset = dragOffset.coerceIn(-reorderThreshold, reorderThreshold)
             val rowScale by animateFloatAsState(
@@ -3604,32 +3603,33 @@ private fun EventDialogFieldConfigurator(
                                     },
                                     onDrag = { change, dragAmount ->
                                         change.consume()
-                                        totalDragOffset += dragAmount.y
-                                        dragOffset = totalDragOffset
+                                        dragOffset = (dragOffset + dragAmount.y)
+                                            .coerceIn(-reorderThreshold, reorderThreshold)
                                     },
                                     onDragCancel = {
                                         dragOffset = 0f
-                                        totalDragOffset = 0f
                                         isDragging = false
                                         onDragActiveChange(false)
                                     },
                                     onDragEnd = {
                                         val currentIndex = fields.indexOfFirst { it.field == option.field }
                                         if (currentIndex != -1) {
-                                            val moveSteps = (totalDragOffset / reorderThreshold).toInt()
-                                            if (moveSteps != 0) {
-                                                val targetIndex = (currentIndex + moveSteps)
-                                                    .coerceIn(0, fields.lastIndex)
-                                                if (targetIndex != currentIndex) {
+                                            when {
+                                                dragOffset >= reorderThreshold && currentIndex < fields.lastIndex -> {
                                                     val updated = fields.toMutableList()
-                                                    val movedItem = updated.removeAt(currentIndex)
-                                                    updated.add(targetIndex, movedItem)
+                                                    updated[currentIndex] = fields[currentIndex + 1]
+                                                    updated[currentIndex + 1] = fields[currentIndex]
+                                                    onFieldsChange(updated)
+                                                }
+                                                dragOffset <= -reorderThreshold && currentIndex > 0 -> {
+                                                    val updated = fields.toMutableList()
+                                                    updated[currentIndex] = fields[currentIndex - 1]
+                                                    updated[currentIndex - 1] = fields[currentIndex]
                                                     onFieldsChange(updated)
                                                 }
                                             }
                                         }
                                         dragOffset = 0f
-                                        totalDragOffset = 0f
                                         isDragging = false
                                         onDragActiveChange(false)
                                     }
