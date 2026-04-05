@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,7 @@ import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import java.util.*
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -3558,93 +3560,97 @@ private fun EventDialogFieldConfigurator(
     )
     Spacer(modifier = Modifier.height(8.dp))
     fields.forEachIndexed { index, option ->
-        var dragOffset by remember(option.field, fields) { mutableStateOf(0f) }
-        var isDragging by remember(option.field, fields) { mutableStateOf(false) }
-        val rowScale by animateFloatAsState(
-            targetValue = if (isDragging) 1.03f else 1f,
-            label = "eventFieldRowScale"
-        )
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    scaleX = rowScale
-                    scaleY = rowScale
-                },
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = if (isDragging) 10.dp else 0.dp
-            ),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-        ) {
-            Row(
+        key(option.field) {
+            var dragOffset by remember(option.field) { mutableStateOf(0f) }
+            var isDragging by remember(option.field) { mutableStateOf(false) }
+            val rowScale by animateFloatAsState(
+                targetValue = if (isDragging) 1.03f else 1f,
+                label = "eventFieldRowScale"
+            )
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val isRequiredField = EventDialogFieldOption.isRequired(option.field)
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .pointerInput(option.field, fields) {
-                            detectDragGestures(
-                                onDragStart = {
-                                    isDragging = true
-                                    onDragActiveChange(true)
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragOffset += dragAmount.y
-
-                                    when {
-                                        dragOffset > reorderThreshold && index < fields.lastIndex -> {
-                                            val updated = fields.toMutableList()
-                                        updated[index] = fields[index + 1]
-                                        updated[index + 1] = option
-                                        onFieldsChange(updated)
-                                        dragOffset -= reorderThreshold
-                                    }
-                                    dragOffset < -reorderThreshold && index > 0 -> {
-                                        val updated = fields.toMutableList()
-                                        updated[index] = fields[index - 1]
-                                        updated[index - 1] = option
-                                        onFieldsChange(updated)
-                                        dragOffset += reorderThreshold
-                                    }
-                                }
-                            },
-                            onDragCancel = {
-                                dragOffset = 0f
-                                isDragging = false
-                                onDragActiveChange(false)
-                            },
-                            onDragEnd = {
-                                dragOffset = 0f
-                                isDragging = false
-                                onDragActiveChange(false)
-                            }
-                        )
-                        }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = eventDialogFieldLabel(option.field),
-                    modifier = Modifier.weight(1f)
-                )
-                Switch(
-                    checked = option.enabled,
-                    onCheckedChange = { enabled ->
-                        val updated = fields.toMutableList()
-                        updated[index] = option.copy(enabled = enabled)
-                        onFieldsChange(updated)
+                    .offset { IntOffset(0, if (isDragging) dragOffset.roundToInt() else 0) }
+                    .zIndex(if (isDragging) 1f else 0f)
+                    .graphicsLayer {
+                        scaleX = rowScale
+                        scaleY = rowScale
                     },
-                    enabled = !isRequiredField
-                )
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = if (isDragging) 10.dp else 0.dp
+                ),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val isRequiredField = EventDialogFieldOption.isRequired(option.field)
+                    Icon(
+                        imageVector = Icons.Filled.Menu,
+                        contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .pointerInput(option.field, fields) {
+                                detectDragGestures(
+                                    onDragStart = {
+                                        isDragging = true
+                                        onDragActiveChange(true)
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragOffset += dragAmount.y
+
+                                        when {
+                                            dragOffset > reorderThreshold && index < fields.lastIndex -> {
+                                                val updated = fields.toMutableList()
+                                                updated[index] = fields[index + 1]
+                                                updated[index + 1] = option
+                                                onFieldsChange(updated)
+                                                dragOffset -= reorderThreshold
+                                            }
+                                            dragOffset < -reorderThreshold && index > 0 -> {
+                                                val updated = fields.toMutableList()
+                                                updated[index] = fields[index - 1]
+                                                updated[index - 1] = option
+                                                onFieldsChange(updated)
+                                                dragOffset += reorderThreshold
+                                            }
+                                        }
+                                    },
+                                    onDragCancel = {
+                                        dragOffset = 0f
+                                        isDragging = false
+                                        onDragActiveChange(false)
+                                    },
+                                    onDragEnd = {
+                                        dragOffset = 0f
+                                        isDragging = false
+                                        onDragActiveChange(false)
+                                    }
+                                )
+                            }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = eventDialogFieldLabel(option.field),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = option.enabled,
+                        onCheckedChange = { enabled ->
+                            val updated = fields.toMutableList()
+                            updated[index] = option.copy(enabled = enabled)
+                            onFieldsChange(updated)
+                        },
+                        enabled = !isRequiredField
+                    )
+                }
             }
+            Spacer(modifier = Modifier.height(8.dp))
         }
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
