@@ -816,7 +816,7 @@ fun SettingsScreen(
             Column(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .verticalScroll(settingsScrollState, enabled = !isEventFieldDragActive),
+                    .verticalScroll(settingsScrollState),
                 horizontalAlignment = Alignment.Start
             ) {
                 when (selectedCategory) {
