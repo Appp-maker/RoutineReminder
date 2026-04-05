@@ -2890,6 +2890,7 @@ private fun EventSetsSettingsSection(
                     .size(56.dp)
                     .offset(y = 4.dp)
                     .border(1.dp, MaterialTheme.colorScheme.outline)
+                    .clickable { imageMenuExpanded = true }
             ) {
                 EventSetImageGlyph(
                     option = selectedImage,
@@ -2899,6 +2900,27 @@ private fun EventSetsSettingsSection(
                         .padding(6.dp)
                         .align(Alignment.Center)
                 )
+                DropdownMenu(
+                    expanded = imageMenuExpanded,
+                    onDismissRequest = { imageMenuExpanded = false }
+                ) {
+                    EventSetImageCatalog.options.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.label) },
+                            leadingIcon = {
+                                EventSetImageGlyph(
+                                    option = option,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            onClick = {
+                                onEventSetImageChange(index, option.key)
+                                imageMenuExpanded = false
+                            }
+                        )
+                    }
+                }
             }
             OutlinedTextField(
                 value = name,
@@ -2913,38 +2935,7 @@ private fun EventSetsSettingsSection(
             color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        Box(modifier = Modifier.padding(bottom = 8.dp)) {
-            OutlinedButton(onClick = { imageMenuExpanded = true }) {
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.settings_event_set_image_menu_action))
-            }
-            DropdownMenu(
-                expanded = imageMenuExpanded,
-                onDismissRequest = { imageMenuExpanded = false }
-            ) {
-                EventSetImageCatalog.options.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option.label) },
-                        leadingIcon = {
-                            EventSetImageGlyph(
-                                option = option,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        onClick = {
-                            onEventSetImageChange(index, option.key)
-                            imageMenuExpanded = false
-                        }
-                    )
-                }
-            }
-        }
+        Spacer(modifier = Modifier.height(8.dp))
         val currentColor = eventSetColors.getOrNull(index) ?: DEFAULT_SERIES_COLOR_ARGB
         SeriesColorPicker(
             label = stringResource(R.string.settings_event_set_color_label, ('A' + index)),
