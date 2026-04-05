@@ -62,7 +62,7 @@
     <string name="settings_calendar_sync_on_calendar_delete_delete_from_app">Delete the event from this app</string>
 
     <!-- Default Events Settings -->
-    <string name="settings_default_events_title">Default Event Settings</string>
+    <string name="settings_default_events_title">Event settings</string>
     <string name="settings_default_events_shortcut">Defaults</string>
     <string name="settings_default_events_start_time">Start Time</string>
     <string name="settings_start_time_option_current_time">Current time</string>
@@ -161,6 +161,9 @@
     <string name="settings_calorie_track_consumed">Track consumed foods with checkboxes</string>
     <string name="settings_calorie_track_consumed_hint">When enabled, calories start at 0 until you check foods as consumed.</string>
     <string name="settings_event_data_fields_title">Event dialog fields</string>
+    <string name="settings_submenu_event_card">Event card</string>
+    <string name="settings_submenu_event_fields">Event fields</string>
+    <string name="settings_submenu_default">Default</string>
     <string name="settings_event_data_fields_reorder_hint">Drag rows to set the default Create New Entry order.</string>
     <string name="settings_event_data_fields_drag_handle_description">Drag to reorder</string>
     <string name="settings_event_data_field_title">Title</string>
