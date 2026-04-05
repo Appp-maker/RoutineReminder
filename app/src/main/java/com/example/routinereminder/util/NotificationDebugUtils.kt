@@ -3,12 +3,15 @@ package com.example.routinereminder.util
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.example.routinereminder.MainActivity
 import com.example.routinereminder.R
 
 object NotificationDebugUtils {
@@ -32,6 +35,16 @@ object NotificationDebugUtils {
             return TestNotificationResult.PERMISSION_MISSING
         }
 
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val openAppPendingIntent = PendingIntent.getActivity(
+            context,
+            TEST_NOTIFICATION_ID,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(context.getString(R.string.app_name))
@@ -41,6 +54,11 @@ object NotificationDebugUtils {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
+            .setContentIntent(openAppPendingIntent)
+            .extend(
+                NotificationCompat.WearableExtender()
+                    .setHintContentIntentLaunchesActivity(true)
+            )
             .build()
 
         NotificationManagerCompat.from(context).notify(TEST_NOTIFICATION_ID, notification)

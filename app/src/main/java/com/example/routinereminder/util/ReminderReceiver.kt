@@ -10,6 +10,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.routinereminder.MainActivity
 import com.example.routinereminder.R
 import com.example.routinereminder.data.DefaultEventSettings
 import kotlinx.serialization.json.Json
@@ -81,6 +82,16 @@ class ReminderReceiver : BroadcastReceiver() {
 
         ensureReminderChannel(context)
 
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val openAppPendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
@@ -98,6 +109,11 @@ class ReminderReceiver : BroadcastReceiver() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
+            .setContentIntent(openAppPendingIntent)
+            .extend(
+                NotificationCompat.WearableExtender()
+                    .setHintContentIntentLaunchesActivity(true)
+            )
             .addAction(0, "Close", closePendingIntent)
             .build()
 
