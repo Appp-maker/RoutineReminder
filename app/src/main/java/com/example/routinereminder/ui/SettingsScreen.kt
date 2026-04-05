@@ -3602,7 +3602,8 @@ private fun EventDialogFieldConfigurator(
                                     },
                                     onDrag = { change, dragAmount ->
                                         change.consume()
-                                        dragOffset += dragAmount.y
+                                        dragOffset = (dragOffset + dragAmount.y)
+                                            .coerceIn(-reorderThreshold, reorderThreshold)
 
                                         val currentIndex = fields.indexOfFirst { it.field == option.field }
                                         if (currentIndex == -1) {
@@ -3615,14 +3616,14 @@ private fun EventDialogFieldConfigurator(
                                                 updated[currentIndex] = fields[currentIndex + 1]
                                                 updated[currentIndex + 1] = fields[currentIndex]
                                                 onFieldsChange(updated)
-                                                dragOffset -= reorderThreshold
+                                                dragOffset = 0f
                                             }
                                             dragOffset < -reorderThreshold && currentIndex > 0 -> {
                                                 val updated = fields.toMutableList()
                                                 updated[currentIndex] = fields[currentIndex - 1]
                                                 updated[currentIndex - 1] = fields[currentIndex]
                                                 onFieldsChange(updated)
-                                                dragOffset += reorderThreshold
+                                                dragOffset = 0f
                                             }
                                         }
                                     },
