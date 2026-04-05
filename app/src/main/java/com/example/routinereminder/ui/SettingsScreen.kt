@@ -3605,28 +3605,6 @@ private fun EventDialogFieldConfigurator(
                                         change.consume()
                                         dragOffset = (dragOffset + dragAmount.y)
                                             .coerceIn(-reorderThreshold, reorderThreshold)
-
-                                        val currentIndex = fields.indexOfFirst { it.field == option.field }
-                                        if (currentIndex == -1) {
-                                            return@detectDragGestures
-                                        }
-
-                                        when {
-                                            dragOffset >= reorderThreshold && currentIndex < fields.lastIndex -> {
-                                                val updated = fields.toMutableList()
-                                                updated[currentIndex] = fields[currentIndex + 1]
-                                                updated[currentIndex + 1] = fields[currentIndex]
-                                                onFieldsChange(updated)
-                                                dragOffset = 0f
-                                            }
-                                            dragOffset <= -reorderThreshold && currentIndex > 0 -> {
-                                                val updated = fields.toMutableList()
-                                                updated[currentIndex] = fields[currentIndex - 1]
-                                                updated[currentIndex - 1] = fields[currentIndex]
-                                                onFieldsChange(updated)
-                                                dragOffset = 0f
-                                            }
-                                        }
                                     },
                                     onDragCancel = {
                                         dragOffset = 0f
@@ -3634,6 +3612,23 @@ private fun EventDialogFieldConfigurator(
                                         onDragActiveChange(false)
                                     },
                                     onDragEnd = {
+                                        val currentIndex = fields.indexOfFirst { it.field == option.field }
+                                        if (currentIndex != -1) {
+                                            when {
+                                                dragOffset >= reorderThreshold && currentIndex < fields.lastIndex -> {
+                                                    val updated = fields.toMutableList()
+                                                    updated[currentIndex] = fields[currentIndex + 1]
+                                                    updated[currentIndex + 1] = fields[currentIndex]
+                                                    onFieldsChange(updated)
+                                                }
+                                                dragOffset <= -reorderThreshold && currentIndex > 0 -> {
+                                                    val updated = fields.toMutableList()
+                                                    updated[currentIndex] = fields[currentIndex - 1]
+                                                    updated[currentIndex - 1] = fields[currentIndex]
+                                                    onFieldsChange(updated)
+                                                }
+                                            }
+                                        }
                                         dragOffset = 0f
                                         isDragging = false
                                         onDragActiveChange(false)
