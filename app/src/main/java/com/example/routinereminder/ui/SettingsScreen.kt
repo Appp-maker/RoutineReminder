@@ -50,9 +50,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -3561,7 +3561,7 @@ private fun EventDialogFieldConfigurator(
 ) {
     val reorderThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
     val density = LocalDensity.current
-    val screenHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+    val viewportHeightPx = LocalView.current.height.toFloat()
     val autoScrollEdgePx = with(density) { 120.dp.toPx() }
     val maxAutoScrollStepPx = with(density) { 22.dp.toPx() }
 
@@ -3589,9 +3589,9 @@ private fun EventDialogFieldConfigurator(
                 targetValue = if (isDragging) 1.03f else 1f,
                 label = "eventFieldRowScale"
             )
-            LaunchedEffect(isDragging, rowTopInWindowPx, rowBottomInWindowPx, screenHeightPx) {
+            LaunchedEffect(isDragging, rowTopInWindowPx, rowBottomInWindowPx, viewportHeightPx) {
                 while (isDragging) {
-                    val bottomEdgeStart = screenHeightPx - autoScrollEdgePx
+                    val bottomEdgeStart = viewportHeightPx - autoScrollEdgePx
                     val autoScrollDelta = when {
                         rowBottomInWindowPx > bottomEdgeStart -> {
                             val progress = ((rowBottomInWindowPx - bottomEdgeStart) / autoScrollEdgePx)
@@ -3631,6 +3631,11 @@ private fun EventDialogFieldConfigurator(
                     .graphicsLayer {
                         scaleX = rowScale
                         scaleY = rowScale
+                    }
+                    .onGloballyPositioned { coordinates ->
+                        val bounds = coordinates.boundsInWindow()
+                        rowTopInWindowPx = bounds.top
+                        rowBottomInWindowPx = bounds.bottom
                     },
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = if (isDragging) 10.dp else 0.dp
