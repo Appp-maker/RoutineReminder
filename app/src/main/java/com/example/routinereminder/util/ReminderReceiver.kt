@@ -1,14 +1,19 @@
 package com.example.routinereminder.util
 
 import android.app.PendingIntent
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.routinereminder.R
 import com.example.routinereminder.data.DefaultEventSettings
 import kotlinx.serialization.json.Json
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Log
 
 private fun loadSettings(context: Context): DefaultEventSettings? {
     return try {
@@ -70,12 +75,23 @@ class ReminderReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("ReminderReceiver", "Skipping notification: POST_NOTIFICATIONS not granted")
+            return
+        }
+
         val notification = NotificationCompat.Builder(context, "routine_channel")
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setAutoCancel(true)
             .addAction(0, "Close", closePendingIntent)
             .build()
 
