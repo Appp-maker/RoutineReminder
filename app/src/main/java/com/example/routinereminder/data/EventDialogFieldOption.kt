@@ -29,8 +29,8 @@ data class EventDialogFieldOption(
     companion object {
         private val requiredFields = setOf(
             EventDialogField.TITLE,
-            EventDialogField.START,
-            EventDialogField.TIME
+            EventDialogField.TIME,
+            EventDialogField.DATE_DETAILS
         )
 
         fun isRequired(field: EventDialogField): Boolean = field in requiredFields

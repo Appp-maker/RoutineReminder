@@ -628,83 +628,83 @@ fun EditItemDialog(
                                     Text(stringResource(R.string.event_repeats_weekly_label))
                                 }
                                 Spacer(Modifier.height(8.dp))
+                            }
 
-                                if (isFieldEnabled(EventDialogField.DATE_DETAILS)) {
-                                    if (isOneTime) {
-                                        Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
-                                            OutlinedTextField(
-                                                value = selectedDate.format(dateFormatter),
-                                                onValueChange = { },
-                                                label = { Text("Date") },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                readOnly = true,
-                                                enabled = false,
-                                                colors = OutlinedTextFieldDefaults.colors(
-                                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                                ),
-                                                trailingIcon = { Icon(Icons.Default.DateRange, "Select Date") }
-                                            )
-                                        }
-                                    } else {
-                                        Text("Select Weekdays:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
-                                        Row(
+                            EventDialogField.DATE_DETAILS -> {
+                                if (isOneTime) {
+                                    Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
+                                        OutlinedTextField(
+                                            value = selectedDate.format(dateFormatter),
+                                            onValueChange = { },
+                                            label = { Text("Date") },
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            DayOfWeek.values().forEach { day ->
-                                                val isSelected = day in selectedRepeatDays
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        if (isSelected) {
-                                                            selectedRepeatDays = selectedRepeatDays - day
-                                                        } else {
-                                                            selectedRepeatDays = selectedRepeatDays + day
-                                                        }
-                                                    },
-                                                    colors = ButtonDefaults.outlinedButtonColors(
-                                                        containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                                                        contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
-                                                    ),
-                                                    modifier = Modifier.weight(1f).height(40.dp),
-                                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
-                                                ) {
-                                                    Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault()), style = MaterialTheme.typography.labelSmall)
-                                                }
+                                            readOnly = true,
+                                            enabled = false,
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            ),
+                                            trailingIcon = { Icon(Icons.Default.DateRange, "Select Date") }
+                                        )
+                                    }
+                                } else {
+                                    Text("Select Weekdays:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        DayOfWeek.values().forEach { day ->
+                                            val isSelected = day in selectedRepeatDays
+                                            OutlinedButton(
+                                                onClick = {
+                                                    if (isSelected) {
+                                                        selectedRepeatDays = selectedRepeatDays - day
+                                                    } else {
+                                                        selectedRepeatDays = selectedRepeatDays + day
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.outlinedButtonColors(
+                                                    containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                                                ),
+                                                modifier = Modifier.weight(1f).height(40.dp),
+                                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
+                                            ) {
+                                                Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault()), style = MaterialTheme.typography.labelSmall)
                                             }
                                         }
-                                        Spacer(Modifier.height(8.dp))
-                                        TextField(
-                                            value = repeatEveryWeeks,
-                                            onValueChange = { repeatEveryWeeks = it.filter { char -> char.isDigit() }.take(2) },
-                                            label = { Text("Every N weeks (1 = every)") },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                                        )
-                                        Spacer(Modifier.height(8.dp))
-                                        Text("Starts in week of (optional for N-weeks):", style = MaterialTheme.typography.labelSmall)
-                                        Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
-                                            OutlinedTextField(
-                                                value = selectedDate.format(dateFormatter),
-                                                onValueChange = { },
-                                                label = { Text("Start anchor date") },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                readOnly = true,
-                                                enabled = false,
-                                                colors = OutlinedTextFieldDefaults.colors(
-                                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                                ),
-                                                trailingIcon = { Icon(Icons.Default.DateRange, "Select Date") }
-                                            )
-                                        }
                                     }
-                                    Spacer(Modifier.height(16.dp))
+                                    Spacer(Modifier.height(8.dp))
+                                    TextField(
+                                        value = repeatEveryWeeks,
+                                        onValueChange = { repeatEveryWeeks = it.filter { char -> char.isDigit() }.take(2) },
+                                        label = { Text("Every N weeks (1 = every)") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text("Starts in week of (optional for N-weeks):", style = MaterialTheme.typography.labelSmall)
+                                    Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
+                                        OutlinedTextField(
+                                            value = selectedDate.format(dateFormatter),
+                                            onValueChange = { },
+                                            label = { Text("Start anchor date") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            readOnly = true,
+                                            enabled = false,
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            ),
+                                            trailingIcon = { Icon(Icons.Default.DateRange, "Select Date") }
+                                        )
+                                    }
                                 }
+                                Spacer(Modifier.height(16.dp))
                             }
 
                             EventDialogField.CALENDAR -> {
@@ -850,7 +850,6 @@ fun EditItemDialog(
                                 }
                             }
 
-                            EventDialogField.DATE_DETAILS,
                             EventDialogField.CALENDAR_TARGET,
                             EventDialogField.NOTIFICATION_DETAILS,
                             EventDialogField.REMINDER_OPTIONS -> Unit
