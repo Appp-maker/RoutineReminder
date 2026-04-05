@@ -12,6 +12,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
@@ -3592,6 +3594,37 @@ private fun EventDialogFieldConfigurator(
                     imageVector = Icons.Filled.Menu,
                     contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .pointerInput(option.field, fields) {
+                            detectTapGestures(
+                                onPress = {
+                                    isDragging = true
+                                    onDragActiveChange(true)
+                                    tryAwaitRelease()
+                                    dragOffset = 0f
+                                    isDragging = false
+                                    onDragActiveChange(false)
+                                }
+                            )
+                        }
+                        .pointerInput(option.field, fields) {
+                            detectDragGestures(
+                                onDragStart = {
+                                    isDragging = true
+                                    onDragActiveChange(true)
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    dragOffset += dragAmount.y
+
+                                    when {
+                                        dragOffset > reorderThreshold && index < fields.lastIndex -> {
+                                            val updated = fields.toMutableList()
+                                            updated[index] = fields[index + 1]
+                                            updated[index + 1] = option
+                                            onFieldsChange(updated)
+                                            dragOffset -= reorderThreshold
+                                        }
                     modifier = Modifier.pointerInput(option.field, fields) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
@@ -3612,14 +3645,27 @@ private fun EventDialogFieldConfigurator(
                                         dragOffset -= reorderThreshold
                                     }
 
-                                    dragOffset < -reorderThreshold && index > 0 -> {
-                                        val updated = fields.toMutableList()
-                                        updated[index] = fields[index - 1]
-                                        updated[index - 1] = option
-                                        onFieldsChange(updated)
-                                        dragOffset += reorderThreshold
+                                        dragOffset < -reorderThreshold && index > 0 -> {
+                                            val updated = fields.toMutableList()
+                                            updated[index] = fields[index - 1]
+                                            updated[index - 1] = option
+                                            onFieldsChange(updated)
+                                            dragOffset += reorderThreshold
+                                        }
                                     }
+                                },
+                                onDragCancel = {
+                                    dragOffset = 0f
+                                    isDragging = false
+                                    onDragActiveChange(false)
+                                },
+                                onDragEnd = {
+                                    dragOffset = 0f
+                                    isDragging = false
+                                    onDragActiveChange(false)
                                 }
+                            )
+                        }
                             }
 
                             waitForUpOrCancellation()
