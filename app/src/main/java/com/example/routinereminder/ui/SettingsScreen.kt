@@ -3626,7 +3626,6 @@ private fun EventDialogFieldConfigurator(
                                 onDragActiveChange(false)
                             }
                         }
-                    )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
