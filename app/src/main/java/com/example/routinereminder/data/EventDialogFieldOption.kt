@@ -27,11 +27,7 @@ data class EventDialogFieldOption(
     val enabled: Boolean
 ) {
     companion object {
-        private val requiredFields = setOf(
-            EventDialogField.TITLE,
-            EventDialogField.TIME,
-            EventDialogField.DATE_DETAILS
-        )
+        private val requiredFields = emptySet<EventDialogField>()
 
         fun isRequired(field: EventDialogField): Boolean = field in requiredFields
 
@@ -42,21 +38,21 @@ data class EventDialogFieldOption(
         }
 
         fun defaults(): List<EventDialogFieldOption> = listOf(
-            EventDialogFieldOption(EventDialogField.TITLE, true),
+            EventDialogFieldOption(EventDialogField.TITLE, false),
             EventDialogFieldOption(EventDialogField.NOTES, true),
-            EventDialogFieldOption(EventDialogField.START, true),
-            EventDialogFieldOption(EventDialogField.DESTINATION, true),
-            EventDialogFieldOption(EventDialogField.TIME, true),
+            EventDialogFieldOption(EventDialogField.TIME, false),
             EventDialogFieldOption(EventDialogField.DURATION, true),
-            EventDialogFieldOption(EventDialogField.EVENT_SET, true),
-            EventDialogFieldOption(EventDialogField.EVENT_COLOR, true),
             EventDialogFieldOption(EventDialogField.REPEAT, true),
-            EventDialogFieldOption(EventDialogField.DATE_DETAILS, true),
+            EventDialogFieldOption(EventDialogField.DATE_DETAILS, false),
+            EventDialogFieldOption(EventDialogField.START, false),
+            EventDialogFieldOption(EventDialogField.DESTINATION, true),
             EventDialogFieldOption(EventDialogField.CALENDAR, true),
             EventDialogFieldOption(EventDialogField.CALENDAR_TARGET, true),
             EventDialogFieldOption(EventDialogField.NOTIFICATION, true),
             EventDialogFieldOption(EventDialogField.NOTIFICATION_DETAILS, true),
-            EventDialogFieldOption(EventDialogField.REMINDER_OPTIONS, true)
+            EventDialogFieldOption(EventDialogField.REMINDER_OPTIONS, false),
+            EventDialogFieldOption(EventDialogField.EVENT_SET, false),
+            EventDialogFieldOption(EventDialogField.EVENT_COLOR, false)
         )
     }
 }
