@@ -18,7 +18,6 @@ object NotificationDebugUtils {
 
     private const val CHANNEL_ID = "routine_channel"
     private const val CHANNEL_NAME = "Routine Reminders"
-    private const val TEST_NOTIFICATION_ID = 916001
 
     enum class TestNotificationResult {
         SENT,
@@ -35,12 +34,14 @@ object NotificationDebugUtils {
             return TestNotificationResult.PERMISSION_MISSING
         }
 
+        val testNotificationId = (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
+
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val openAppPendingIntent = PendingIntent.getActivity(
             context,
-            TEST_NOTIFICATION_ID,
+            testNotificationId,
             openAppIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -50,7 +51,9 @@ object NotificationDebugUtils {
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText("Test reminder notification")
             .setStyle(NotificationCompat.BigTextStyle().bigText("Test reminder notification"))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVibrate(longArrayOf(0, 250, 200, 250))
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
@@ -61,7 +64,7 @@ object NotificationDebugUtils {
             )
             .build()
 
-        NotificationManagerCompat.from(context).notify(TEST_NOTIFICATION_ID, notification)
+        NotificationManagerCompat.from(context).notify(testNotificationId, notification)
         return TestNotificationResult.SENT
     }
 
@@ -78,6 +81,9 @@ object NotificationDebugUtils {
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
                     description = "Notifications for scheduled routines"
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 250, 200, 250)
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 }
             )
         }
