@@ -47,21 +47,17 @@ object NotificationDebugUtils {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText("Test reminder notification")
             .setStyle(NotificationCompat.BigTextStyle().bigText("Test reminder notification"))
-            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setVibrate(longArrayOf(0, 250, 200, 250))
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(openAppPendingIntent)
-            .extend(
-                NotificationCompat.WearableExtender()
-                    .setHintContentIntentLaunchesActivity(true)
-            )
             .build()
 
         NotificationManagerCompat.from(context).notify(testNotificationId, notification)
