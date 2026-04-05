@@ -2185,23 +2185,21 @@ private fun DefaultEventsSettingsSection(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.secondary
             )
-            if (eventCardAdvancedModeEnabled) {
-                SettingSwitchItem(
-                    text = "Show location",
-                    checked = showLocationInEventCard,
-                    onCheckedChange = onShowLocationInEventCardChange
-                )
-                SettingSwitchItem(
-                    text = "Show ETA and distance",
-                    checked = showRouteEtaInEventCard,
-                    onCheckedChange = onShowRouteEtaInEventCardChange
-                )
-                SettingSwitchItem(
-                    text = "Show weather summary",
-                    checked = showWeatherInEventCard,
-                    onCheckedChange = onShowWeatherInEventCardChange
-                )
-            }
+            SettingSwitchItem(
+                text = "Show location",
+                checked = showLocationInEventCard,
+                onCheckedChange = onShowLocationInEventCardChange
+            )
+            SettingSwitchItem(
+                text = "Show ETA and distance",
+                checked = showRouteEtaInEventCard,
+                onCheckedChange = onShowRouteEtaInEventCardChange
+            )
+            SettingSwitchItem(
+                text = "Show weather summary",
+                checked = showWeatherInEventCard,
+                onCheckedChange = onShowWeatherInEventCardChange
+            )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.settings_event_appearance_past_title),
@@ -2301,6 +2299,11 @@ private fun DefaultEventsSettingsSection(
             val notificationDetailsEnabled = isDefaultFieldEnabled(EventDialogField.NOTIFICATION_DETAILS)
             val reminderOptionsEnabled = isDefaultFieldEnabled(EventDialogField.REMINDER_OPTIONS)
 
+            Text(
+                text = "Event card details",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 stringResource(R.string.settings_default_events_start_time),
