@@ -2874,7 +2874,7 @@ private fun EventSetsSettingsSection(
     }
 
     eventSetNames.forEachIndexed { index, name ->
-        var imageMenuExpanded by remember(index) { mutableStateOf(false) }
+        var showImagePickerDialog by remember(index) { mutableStateOf(false) }
         val label = stringResource(R.string.settings_event_set_name_label, ('A' + index))
         val selectedImageKey = eventSetImageKeys.getOrNull(index) ?: EventSetImageCatalog.DEFAULT_KEY
         val selectedImage = EventSetImageCatalog.optionFor(selectedImageKey)
@@ -2890,7 +2890,7 @@ private fun EventSetsSettingsSection(
                     .size(56.dp)
                     .offset(y = 4.dp)
                     .border(1.dp, MaterialTheme.colorScheme.outline)
-                    .clickable { imageMenuExpanded = true }
+                    .clickable { showImagePickerDialog = true }
             ) {
                 EventSetImageGlyph(
                     option = selectedImage,
@@ -2900,33 +2900,56 @@ private fun EventSetsSettingsSection(
                         .padding(6.dp)
                         .align(Alignment.Center)
                 )
-                DropdownMenu(
-                    expanded = imageMenuExpanded,
-                    onDismissRequest = { imageMenuExpanded = false }
-                ) {
-                    EventSetImageCatalog.options.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option.label) },
-                            leadingIcon = {
-                                EventSetImageGlyph(
-                                    option = option,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            },
-                            onClick = {
-                                onEventSetImageChange(index, option.key)
-                                imageMenuExpanded = false
-                            }
-                        )
-                    }
-                }
             }
             OutlinedTextField(
                 value = name,
                 onValueChange = { onEventSetNameChange(index, it.take(24)) },
                 label = { Text(label) },
                 modifier = Modifier.weight(1f)
+            )
+        }
+        if (showImagePickerDialog) {
+            AlertDialog(
+                onDismissRequest = { showImagePickerDialog = false },
+                title = { Text(stringResource(R.string.settings_event_set_image_dialog_title, ('A' + index))) },
+                text = {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 280.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(EventSetImageCatalog.options) { option ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onEventSetImageChange(index, option.key)
+                                        showImagePickerDialog = false
+                                    }
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                EventSetImageGlyph(
+                                    option = option,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = option.label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showImagePickerDialog = false }) {
+                        Text(stringResource(R.string.alert_action_cancel))
+                    }
+                }
             )
         }
         Text(
