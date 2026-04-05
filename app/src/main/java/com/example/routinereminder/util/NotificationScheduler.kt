@@ -146,6 +146,33 @@ class NotificationScheduler(private val context: Context) {
         }
     }
 
+
+    private fun scheduleAlarm(triggerAtMillis: Long, pendingIntent: PendingIntent) {
+        val canUseExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            true
+        }
+
+        if (canUseExact) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
+            )
+        } else {
+            Log.w(
+                TAG,
+                "Exact alarm permission missing; scheduling inexact alarm fallback at $triggerAtMillis"
+            )
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
+            )
+        }
+    }
+
     fun cancelSingleOccurrence(item: ScheduleItem, epochDay: Long) {
         val intent = Intent(context, ReminderReceiver::class.java)
         for (index in 0..(maxPreReminders + 1)) {
