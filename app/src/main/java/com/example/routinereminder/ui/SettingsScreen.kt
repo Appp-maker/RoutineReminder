@@ -2140,6 +2140,27 @@ private fun DefaultEventsSettingsSection(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
+                text = "Event card details",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            SettingSwitchItem(
+                text = "Show location",
+                checked = showLocationInEventCard,
+                onCheckedChange = onShowLocationInEventCardChange
+            )
+            SettingSwitchItem(
+                text = "Show ETA and distance",
+                checked = showRouteEtaInEventCard,
+                onCheckedChange = onShowRouteEtaInEventCardChange
+            )
+            SettingSwitchItem(
+                text = "Show weather summary",
+                checked = showWeatherInEventCard,
+                onCheckedChange = onShowWeatherInEventCardChange
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
                 text = stringResource(R.string.settings_event_appearance_upcoming_title),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(bottom = 4.dp)
@@ -2179,27 +2200,6 @@ private fun DefaultEventsSettingsSection(
                     recentCustomColors = recentCustomEventColors
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "Event card details",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            SettingSwitchItem(
-                text = "Show location",
-                checked = showLocationInEventCard,
-                onCheckedChange = onShowLocationInEventCardChange
-            )
-            SettingSwitchItem(
-                text = "Show ETA and distance",
-                checked = showRouteEtaInEventCard,
-                onCheckedChange = onShowRouteEtaInEventCardChange
-            )
-            SettingSwitchItem(
-                text = "Show weather summary",
-                checked = showWeatherInEventCard,
-                onCheckedChange = onShowWeatherInEventCardChange
-            )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.settings_event_appearance_past_title),
