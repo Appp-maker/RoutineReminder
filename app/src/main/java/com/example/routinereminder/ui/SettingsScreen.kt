@@ -31,6 +31,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
@@ -2912,41 +2914,88 @@ private fun EventSetsSettingsSection(
             )
         }
         if (showImagePickerDialog) {
+            val imageOptions = EventSetImageCatalog.options
+            val optionsPerPage = 8
+            val pages = remember(imageOptions) { imageOptions.chunked(optionsPerPage) }
+            val selectedImageIndex = remember(selectedImageKey, imageOptions) {
+                imageOptions.indexOfFirst { it.key == selectedImageKey }.coerceAtLeast(0)
+            }
+            var currentImagePage by remember(index, selectedImageKey) {
+                mutableIntStateOf((selectedImageIndex / optionsPerPage).coerceIn(0, (pages.size - 1).coerceAtLeast(0)))
+            }
+            val pageOptions = pages.getOrNull(currentImagePage).orEmpty()
             AlertDialog(
                 onDismissRequest = { showImagePickerDialog = false },
                 title = { Text(stringResource(R.string.settings_event_set_image_dialog_title, ('A' + index))) },
                 text = {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 120.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 280.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(EventSetImageCatalog.options) { option ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onEventSetImageChange(index, option.key)
-                                        showImagePickerDialog = false
-                                    }
-                                    .padding(vertical = 10.dp, horizontal = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = { currentImagePage = (currentImagePage - 1).coerceAtLeast(0) },
+                                enabled = currentImagePage > 0
                             ) {
-                                EventSetImageGlyph(
-                                    option = option,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
+                                Icon(
+                                    imageVector = Icons.Filled.KeyboardArrowLeft,
+                                    contentDescription = "Previous symbols page"
                                 )
-                                Text(
-                                    text = option.label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                            }
+                            Text(
+                                text = "Page ${currentImagePage + 1} / ${pages.size.coerceAtLeast(1)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            IconButton(
+                                onClick = {
+                                    currentImagePage =
+                                        (currentImagePage + 1).coerceAtMost((pages.size - 1).coerceAtLeast(0))
+                                },
+                                enabled = currentImagePage < pages.lastIndex
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.KeyboardArrowRight,
+                                    contentDescription = "Next symbols page"
                                 )
+                            }
+                        }
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(pageOptions) { option ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onEventSetImageChange(index, option.key)
+                                            showImagePickerDialog = false
+                                        }
+                                        .padding(vertical = 10.dp, horizontal = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    EventSetImageGlyph(
+                                        option = option,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = option.label,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
                     }
