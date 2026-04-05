@@ -3621,6 +3621,11 @@ private fun EventDialogFieldConfigurator(
                 modifier = Modifier
                     .fillMaxWidth()
                     .onSizeChanged { rowHeightPx = it.height.toFloat() }
+                    .onGloballyPositioned { coordinates ->
+                        val bounds = coordinates.boundsInWindow()
+                        rowTopInWindowPx = bounds.top
+                        rowBottomInWindowPx = bounds.bottom
+                    }
                     .offset { IntOffset(0, if (isDragging) visualDragOffset.roundToInt() else 0) }
                     .zIndex(if (isDragging) 1f else 0f)
                     .graphicsLayer {
