@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
@@ -45,8 +46,12 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -806,10 +811,11 @@ fun SettingsScreen(
 
 
             }
+            val settingsScrollState = rememberScrollState()
             Column(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState(), enabled = !isEventFieldDragActive),
+                    .verticalScroll(settingsScrollState, enabled = !isEventFieldDragActive),
                 horizontalAlignment = Alignment.Start
             ) {
                 when (selectedCategory) {
@@ -1009,7 +1015,8 @@ fun SettingsScreen(
                             }
                             justSavedSuccessfully = false
                         },
-                        onEventDataFieldDragActiveChange = { isEventFieldDragActive = it }
+                        onEventDataFieldDragActiveChange = { isEventFieldDragActive = it },
+                        parentScrollState = settingsScrollState
                     )
                     SettingsCategory.SYNC -> {
                         DataSyncSettingsSection(
@@ -2086,7 +2093,8 @@ private fun DefaultEventsSettingsSection(
     onEventSetColorChange: (Int, Int) -> Unit,
     onEventSetImageChange: (Int, String) -> Unit,
     onDefaultActiveSetsChange: (DayOfWeek, Set<Int>) -> Unit,
-    onEventDataFieldDragActiveChange: (Boolean) -> Unit
+    onEventDataFieldDragActiveChange: (Boolean) -> Unit,
+    parentScrollState: ScrollState
 ) {
     var selectedSubmenu by remember { mutableStateOf(EventDefaultsSubmenu.EVENT_CARD) }
 
@@ -2269,7 +2277,8 @@ private fun DefaultEventsSettingsSection(
             EventDialogFieldConfigurator(
                 fields = eventDialogFields,
                 onFieldsChange = onEventDialogFieldsChange,
-                onDragActiveChange = onEventDataFieldDragActiveChange
+                onDragActiveChange = onEventDataFieldDragActiveChange,
+                parentScrollState = parentScrollState
             )
         }
         EventDefaultsSubmenu.DEFAULT_VALUES -> {
@@ -3546,9 +3555,14 @@ private fun AppSettingsSection(
 private fun EventDialogFieldConfigurator(
     fields: List<EventDialogFieldOption>,
     onFieldsChange: (List<EventDialogFieldOption>) -> Unit,
-    onDragActiveChange: (Boolean) -> Unit
+    onDragActiveChange: (Boolean) -> Unit,
+    parentScrollState: ScrollState
 ) {
     val reorderThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
+    val density = LocalDensity.current
+    val screenHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+    val autoScrollEdgePx = with(density) { 120.dp.toPx() }
+    val maxAutoScrollStepPx = with(density) { 22.dp.toPx() }
 
     Text(
         text = stringResource(R.string.settings_event_data_fields_title),
@@ -3567,15 +3581,50 @@ private fun EventDialogFieldConfigurator(
             var totalDragOffset by remember(option.field) { mutableStateOf(0f) }
             var rowHeightPx by remember(option.field) { mutableStateOf(0f) }
             var isDragging by remember(option.field) { mutableStateOf(false) }
+            var rowTopInWindowPx by remember(option.field) { mutableStateOf(0f) }
+            var rowBottomInWindowPx by remember(option.field) { mutableStateOf(0f) }
             val visualDragOffset = dragOffset
             val rowScale by animateFloatAsState(
                 targetValue = if (isDragging) 1.03f else 1f,
                 label = "eventFieldRowScale"
             )
+            LaunchedEffect(isDragging, rowTopInWindowPx, rowBottomInWindowPx, screenHeightPx) {
+                while (isDragging) {
+                    val bottomEdgeStart = screenHeightPx - autoScrollEdgePx
+                    val autoScrollDelta = when {
+                        rowBottomInWindowPx > bottomEdgeStart -> {
+                            val progress = ((rowBottomInWindowPx - bottomEdgeStart) / autoScrollEdgePx)
+                                .coerceIn(0f, 1f)
+                            maxAutoScrollStepPx * progress
+                        }
+                        rowTopInWindowPx < autoScrollEdgePx -> {
+                            val progress = ((autoScrollEdgePx - rowTopInWindowPx) / autoScrollEdgePx)
+                                .coerceIn(0f, 1f)
+                            -maxAutoScrollStepPx * progress
+                        }
+                        else -> 0f
+                    }
+
+                    if (autoScrollDelta != 0f) {
+                        val consumed = parentScrollState.scrollBy(autoScrollDelta)
+                        if (consumed != 0f) {
+                            totalDragOffset += consumed
+                            dragOffset = totalDragOffset
+                        }
+                    }
+
+                    withFrameNanos { }
+                }
+            }
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .onSizeChanged { rowHeightPx = it.height.toFloat() }
+                    .onGloballyPositioned { coordinates ->
+                        val bounds = coordinates.boundsInWindow()
+                        rowTopInWindowPx = bounds.top
+                        rowBottomInWindowPx = bounds.bottom
+                    }
                     .offset { IntOffset(0, if (isDragging) visualDragOffset.roundToInt() else 0) }
                     .zIndex(if (isDragging) 1f else 0f)
                     .graphicsLayer {
