@@ -189,6 +189,7 @@
     <string name="settings_event_sets_reset_manual_confirm_action">Reset manual sets</string>
     <string name="settings_event_set_name_label">Set %1$c name</string>
     <string name="settings_event_set_color_label">Set %1$c color</string>
+    <string name="settings_event_set_image_dialog_title">Set %1$c image</string>
     <string name="settings_event_set_image_hint">Selected image: %1$s.</string>
     <string name="settings_event_sets_defaults_title">Default active sets by weekday</string>
     <string name="settings_event_sets_defaults_hint">Choose up to %1$d sets that are active by default for each weekday.</string>
