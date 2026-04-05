@@ -405,100 +405,6 @@ fun EditItemDialog(
                         .padding(16.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    if (isFieldEnabled(EventDialogField.TITLE)) {
-                        TextField(
-                            value = title,
-                            onValueChange = { title = it },
-                            label = { Text("Title") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
-                    if (isFieldEnabled(EventDialogField.NOTES)) {
-                        RichTextEditor(
-                            value = notes,
-                            onValueChange = { notes = it },
-                            label = "Notes (optional)",
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 2
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
-                    if (isFieldEnabled(EventDialogField.START)) {
-                        AddressAutocompleteField(
-                            value = routeStart,
-                            onValueChange = { routeStart = it },
-                            label = "Start (optional)",
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.LocationOn,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
-                    if (isFieldEnabled(EventDialogField.DESTINATION)) {
-                        AddressAutocompleteField(
-                            value = location,
-                            onValueChange = { location = it },
-                            label = "Destination (optional)",
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.LocationOn,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
-                    if (isFieldEnabled(EventDialogField.TIME)) {
-                        Box(modifier = Modifier.clickable { timePickerDialog.show() }) {
-                            OutlinedTextField(
-                                value = selectedTime.format(timeFormatter),
-                                onValueChange = { },
-                                label = { Text("Time") },
-                                modifier = Modifier.fillMaxWidth(),
-                                readOnly = true,
-                                enabled = false,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Select time") }
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                    }
-
-                    if (isFieldEnabled(EventDialogField.DURATION)) {
-                        Text("Duration:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextField(
-                                value = durationInputHours,
-                                onValueChange = { durationInputHours = it.filter { char -> char.isDigit() }.take(2) },
-                                label = { Text("Hours") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                            TextField(
-                                value = durationInputMinutes,
-                                onValueChange = { durationInputMinutes = it.filter { char -> char.isDigit() }.take(2) },
-                                label = { Text("Minutes") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                        }
-                        Spacer(Modifier.height(16.dp))
-                    }
-
                     val isUsingSetColor = selectedSetId != null
                     val eventSetColorArgb = selectedSetId?.let { id ->
                         eventSetColors.getOrNull(id - 1)
@@ -509,337 +415,446 @@ fun EditItemDialog(
                         eventSetNames.getOrNull(id - 1)
                     } ?: stringResource(R.string.event_set_none)
 
-                    if (isFieldEnabled(EventDialogField.EVENT_SET) && isNewItem) {
-                        ExposedDropdownMenuBox(
-                            expanded = setMenuExpanded,
-                            onExpandedChange = { setMenuExpanded = !setMenuExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = selectedSetLabel,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.event_set_label)) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = setMenuExpanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = setMenuExpanded,
-                                onDismissRequest = { setMenuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.event_set_none)) },
-                                    onClick = {
-                                        selectedSetId = null
-                                        setMenuExpanded = false
+                    val orderedEnabledFields = remember(eventDialogFields) {
+                        eventDialogFields.filter { it.enabled }.map { it.field }
+                    }
+
+                    orderedEnabledFields.forEach { field ->
+                        when (field) {
+                            EventDialogField.TITLE -> {
+                                TextField(
+                                    value = title,
+                                    onValueChange = { title = it },
+                                    label = { Text("Title") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+                                Spacer(Modifier.height(8.dp))
+                            }
+
+                            EventDialogField.NOTES -> {
+                                RichTextEditor(
+                                    value = notes,
+                                    onValueChange = { notes = it },
+                                    label = "Notes (optional)",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 2
+                                )
+                                Spacer(Modifier.height(8.dp))
+                            }
+
+                            EventDialogField.START -> {
+                                AddressAutocompleteField(
+                                    value = routeStart,
+                                    onValueChange = { routeStart = it },
+                                    label = "Start (optional)",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.LocationOn,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
                                     }
                                 )
-                                eventSetNames.forEachIndexed { index, name ->
-                                    val setId = index + 1
-                                    DropdownMenuItem(
-                                        text = { Text(name) },
-                                        onClick = {
-                                            selectedSetId = setId
-                                            setMenuExpanded = false
-                                        }
+                                Spacer(Modifier.height(8.dp))
+                            }
+
+                            EventDialogField.DESTINATION -> {
+                                AddressAutocompleteField(
+                                    value = location,
+                                    onValueChange = { location = it },
+                                    label = "Destination (optional)",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.LocationOn,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                )
+                                Spacer(Modifier.height(8.dp))
+                            }
+
+                            EventDialogField.TIME -> {
+                                Box(modifier = Modifier.clickable { timePickerDialog.show() }) {
+                                    OutlinedTextField(
+                                        value = selectedTime.format(timeFormatter),
+                                        onValueChange = { },
+                                        label = { Text("Time") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        readOnly = true,
+                                        enabled = false,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                            disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Select time") }
                                     )
                                 }
+                                Spacer(Modifier.height(8.dp))
                             }
-                        }
-                        Spacer(Modifier.height(16.dp))
-                    } else if (isFieldEnabled(EventDialogField.EVENT_SET) && selectedSetId != null) {
-                        OutlinedTextField(
-                            value = selectedSetLabel,
-                            onValueChange = {},
-                            readOnly = true,
-                            enabled = false,
-                            label = { Text(stringResource(R.string.event_set_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                        Spacer(Modifier.height(16.dp))
-                    }
 
-                    if (isFieldEnabled(EventDialogField.EVENT_COLOR) && isUsingSetColor) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                stringResource(R.string.event_color_label),
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                            Text(
-                                stringResource(R.string.event_set_color_predefined_helper),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Spacer(Modifier.height(6.dp))
-                    }
+                            EventDialogField.DURATION -> {
+                                Text("Duration:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    TextField(
+                                        value = durationInputHours,
+                                        onValueChange = { durationInputHours = it.filter { char -> char.isDigit() }.take(2) },
+                                        label = { Text("Hours") },
+                                        modifier = Modifier.weight(1f),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                    )
+                                    TextField(
+                                        value = durationInputMinutes,
+                                        onValueChange = { durationInputMinutes = it.filter { char -> char.isDigit() }.take(2) },
+                                        label = { Text("Minutes") },
+                                        modifier = Modifier.weight(1f),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                    )
+                                }
+                                Spacer(Modifier.height(16.dp))
+                            }
 
-                    if (isFieldEnabled(EventDialogField.EVENT_COLOR)) {
-                        SeriesColorPicker(
-                            label = stringResource(R.string.event_color_label),
-                            selectedColor = Color(displayColorArgb),
-                            onColorSelected = { selectedColorArgb = it.toArgb() },
-                            enabled = !isUsingSetColor,
-                            colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else EventFoodColorOptions,
-                            showLabel = !isUsingSetColor,
-                            allowCustomColor = false,
-                            recentCustomColors = recentCustomEventColors
-                        )
-                        Spacer(Modifier.height(16.dp))
-                    }
-
-                    if (isFieldEnabled(EventDialogField.REPEAT)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.clickable { isOneTime = !isOneTime }
-                        ) {
-                            Checkbox(
-                                checked = !isOneTime,
-                                onCheckedChange = { isRepeating ->
-                                    isOneTime = !isRepeating
-                                    if (isRepeating && selectedRepeatDays.isEmpty()) {
-                                        selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
+                            EventDialogField.EVENT_SET -> {
+                                if (isNewItem) {
+                                    ExposedDropdownMenuBox(
+                                        expanded = setMenuExpanded,
+                                        onExpandedChange = { setMenuExpanded = !setMenuExpanded }
+                                    ) {
+                                        OutlinedTextField(
+                                            value = selectedSetLabel,
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            label = { Text(stringResource(R.string.event_set_label)) },
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = setMenuExpanded) },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .menuAnchor()
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = setMenuExpanded,
+                                            onDismissRequest = { setMenuExpanded = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.event_set_none)) },
+                                                onClick = {
+                                                    selectedSetId = null
+                                                    setMenuExpanded = false
+                                                }
+                                            )
+                                            eventSetNames.forEachIndexed { index, name ->
+                                                val setId = index + 1
+                                                DropdownMenuItem(
+                                                    text = { Text(name) },
+                                                    onClick = {
+                                                        selectedSetId = setId
+                                                        setMenuExpanded = false
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
-                                },
-                            )
-                            Text(stringResource(R.string.event_repeats_weekly_label))
-                        }
-                        Spacer(Modifier.height(8.dp))
-                    }
-
-                    if (isFieldEnabled(EventDialogField.REPEAT) && isFieldEnabled(EventDialogField.DATE_DETAILS)) {
-                        if (isOneTime) {
-                            Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
-                                OutlinedTextField(
-                                    value = selectedDate.format(dateFormatter),
-                                    onValueChange = { },
-                                    label = { Text("Date") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    readOnly = true,
-                                    enabled = false,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    ),
-                                    trailingIcon = { Icon(Icons.Default.DateRange, "Select Date") }
-                                )
+                                    Spacer(Modifier.height(16.dp))
+                                } else if (selectedSetId != null) {
+                                    OutlinedTextField(
+                                        value = selectedSetLabel,
+                                        onValueChange = {},
+                                        readOnly = true,
+                                        enabled = false,
+                                        label = { Text(stringResource(R.string.event_set_label)) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                    Spacer(Modifier.height(16.dp))
+                                }
                             }
-                        } else {
-                            Text("Select Weekdays:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                DayOfWeek.values().forEach { day ->
-                                    val isSelected = day in selectedRepeatDays
-                                    OutlinedButton(
-                                        onClick = {
-                                            if (isSelected) {
-                                                selectedRepeatDays = selectedRepeatDays - day
-                                            } else {
-                                                selectedRepeatDays = selectedRepeatDays + day
+
+                            EventDialogField.EVENT_COLOR -> {
+                                if (isUsingSetColor) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            stringResource(R.string.event_color_label),
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                        Text(
+                                            stringResource(R.string.event_set_color_predefined_helper),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                }
+
+                                SeriesColorPicker(
+                                    label = stringResource(R.string.event_color_label),
+                                    selectedColor = Color(displayColorArgb),
+                                    onColorSelected = { selectedColorArgb = it.toArgb() },
+                                    enabled = !isUsingSetColor,
+                                    colorOptions = if (isUsingSetColor) listOf(Color(displayColorArgb)) else EventFoodColorOptions,
+                                    showLabel = !isUsingSetColor,
+                                    allowCustomColor = false,
+                                    recentCustomColors = recentCustomEventColors
+                                )
+                                Spacer(Modifier.height(16.dp))
+                            }
+
+                            EventDialogField.REPEAT -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.clickable { isOneTime = !isOneTime }
+                                ) {
+                                    Checkbox(
+                                        checked = !isOneTime,
+                                        onCheckedChange = { isRepeating ->
+                                            isOneTime = !isRepeating
+                                            if (isRepeating && selectedRepeatDays.isEmpty()) {
+                                                selectedRepeatDays = selectedRepeatDays + selectedDate.dayOfWeek
                                             }
                                         },
-                                        colors = ButtonDefaults.outlinedButtonColors(
-                                            containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                                            contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
-                                        ),
-                                        modifier = Modifier.weight(1f).height(40.dp),
-                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
+                                    )
+                                    Text(stringResource(R.string.event_repeats_weekly_label))
+                                }
+                                Spacer(Modifier.height(8.dp))
+
+                                if (isFieldEnabled(EventDialogField.DATE_DETAILS)) {
+                                    if (isOneTime) {
+                                        Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
+                                            OutlinedTextField(
+                                                value = selectedDate.format(dateFormatter),
+                                                onValueChange = { },
+                                                label = { Text("Date") },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                readOnly = true,
+                                                enabled = false,
+                                                colors = OutlinedTextFieldDefaults.colors(
+                                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                                ),
+                                                trailingIcon = { Icon(Icons.Default.DateRange, "Select Date") }
+                                            )
+                                        }
+                                    } else {
+                                        Text("Select Weekdays:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            DayOfWeek.values().forEach { day ->
+                                                val isSelected = day in selectedRepeatDays
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        if (isSelected) {
+                                                            selectedRepeatDays = selectedRepeatDays - day
+                                                        } else {
+                                                            selectedRepeatDays = selectedRepeatDays + day
+                                                        }
+                                                    },
+                                                    colors = ButtonDefaults.outlinedButtonColors(
+                                                        containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                                                        contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                                                    ),
+                                                    modifier = Modifier.weight(1f).height(40.dp),
+                                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
+                                                ) {
+                                                    Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault()), style = MaterialTheme.typography.labelSmall)
+                                                }
+                                            }
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        TextField(
+                                            value = repeatEveryWeeks,
+                                            onValueChange = { repeatEveryWeeks = it.filter { char -> char.isDigit() }.take(2) },
+                                            label = { Text("Every N weeks (1 = every)") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                        )
+                                        Spacer(Modifier.height(8.dp))
+                                        Text("Starts in week of (optional for N-weeks):", style = MaterialTheme.typography.labelSmall)
+                                        Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
+                                            OutlinedTextField(
+                                                value = selectedDate.format(dateFormatter),
+                                                onValueChange = { },
+                                                label = { Text("Start anchor date") },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                readOnly = true,
+                                                enabled = false,
+                                                colors = OutlinedTextFieldDefaults.colors(
+                                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                                ),
+                                                trailingIcon = { Icon(Icons.Default.DateRange, "Select Date") }
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.height(16.dp))
+                                }
+                            }
+
+                            EventDialogField.CALENDAR -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.clickable(enabled = !useGoogleBackupMode) {
+                                        if (!useGoogleBackupMode) {
+                                            addToCalendar = !addToCalendar
+                                        }
+                                    }
+                                ) {
+                                    Checkbox(
+                                        checked = addToCalendar,
+                                        onCheckedChange = { if (!useGoogleBackupMode) addToCalendar = it },
+                                        enabled = !useGoogleBackupMode,
+                                    )
+                                    Text(
+                                        text = "Calendar entry",
+                                        color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else LocalContentColor.current
+                                    )
+                                }
+
+                                if (addToCalendar && !useGoogleBackupMode && isFieldEnabled(EventDialogField.CALENDAR_TARGET)) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Column(
+                                        Modifier
+                                            .padding(start = 40.dp)
+                                            .selectableGroup()
                                     ) {
-                                        Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault()), style = MaterialTheme.typography.labelSmall)
+                                        Row(
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .selectable(
+                                                    selected = (targetCalendarSystemForEntry == SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL),
+                                                    onClick = { targetCalendarSystemForEntry = SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL },
+                                                    enabled = !useGoogleBackupMode
+                                                )
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = (targetCalendarSystemForEntry == SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL),
+                                                onClick = null,
+                                                enabled = !useGoogleBackupMode
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.settings_default_events_target_calendar_local_device),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                modifier = Modifier.padding(start = 8.dp),
+                                                color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                        Row(
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .selectable(
+                                                    selected = (targetCalendarSystemForEntry == SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY || targetCalendarSystemForEntry?.startsWith("google_calendar_id_") == true),
+                                                    onClick = { targetCalendarSystemForEntry = SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY },
+                                                    enabled = !useGoogleBackupMode
+                                                )
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = (targetCalendarSystemForEntry == SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY || targetCalendarSystemForEntry?.startsWith("google_calendar_id_") == true),
+                                                onClick = null,
+                                                enabled = !useGoogleBackupMode
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.settings_default_events_select_gcal_primary),
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                modifier = Modifier.padding(start = 8.dp),
+                                                color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            TextField(
-                                value = repeatEveryWeeks,
-                                onValueChange = { repeatEveryWeeks = it.filter { char -> char.isDigit() }.take(2) },
-                                label = { Text("Every N weeks (1 = every)") },
-                                modifier = Modifier.fillMaxWidth(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Text("Starts in week of (optional for N-weeks):", style = MaterialTheme.typography.labelSmall)
-                            Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
-                                OutlinedTextField(
-                                    value = selectedDate.format(dateFormatter),
-                                    onValueChange = { },
-                                    label = { Text("Start anchor date") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    readOnly = true,
-                                    enabled = false,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    ),
-                                    trailingIcon = { Icon(Icons.Default.DateRange, "Select Date") }
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(16.dp))
-                    }
 
-                    if (isFieldEnabled(EventDialogField.CALENDAR)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.clickable(enabled = !useGoogleBackupMode) {
-                            if (!useGoogleBackupMode) {
-                                addToCalendar = !addToCalendar
+                                Spacer(Modifier.height(16.dp))
                             }
-                        }
-                    ) {
-                        Checkbox(
-                            checked = addToCalendar,
-                            onCheckedChange = { if (!useGoogleBackupMode) addToCalendar = it },
-                            enabled = !useGoogleBackupMode,
-                        )
-                        Text(
-                            text = "Calendar entry",
-                            color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else LocalContentColor.current
-                        )
-                    }
 
-                    if (
-                        isFieldEnabled(EventDialogField.CALENDAR) &&
-                        addToCalendar &&
-                        !useGoogleBackupMode &&
-                        isFieldEnabled(EventDialogField.CALENDAR_TARGET)
-                    ) {
-                        Spacer(Modifier.height(8.dp))
-                        Column(
-                            Modifier
-                                .padding(start = 40.dp)
-                                .selectableGroup()
-                        ) {
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = (targetCalendarSystemForEntry == SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL),
-                                        onClick = { targetCalendarSystemForEntry = SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL },
-                                        enabled = !useGoogleBackupMode
+                            EventDialogField.NOTIFICATION -> {
+                                Text("Notification options:", style = MaterialTheme.typography.labelMedium)
+                                Spacer(Modifier.height(8.dp))
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.clickable { notifyEnabled = !notifyEnabled }
+                                ) {
+                                    Checkbox(
+                                        checked = notifyEnabled,
+                                        onCheckedChange = { notifyEnabled = it },
                                     )
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = (targetCalendarSystemForEntry == SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL),
-                                    onClick = null,
-                                    enabled = !useGoogleBackupMode
-                                )
-                                Text(
-                                    text = stringResource(R.string.settings_default_events_target_calendar_local_device),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = (targetCalendarSystemForEntry == SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY || targetCalendarSystemForEntry?.startsWith("google_calendar_id_") == true),
-                                        onClick = { targetCalendarSystemForEntry = SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY },
-                                        enabled = !useGoogleBackupMode
+                                    Text("System notification")
+                                }
+                                Spacer(Modifier.height(8.dp))
+
+                                if (isFieldEnabled(EventDialogField.NOTIFICATION_DETAILS)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.clickable(enabled = notifyEnabled) {
+                                            if (notifyEnabled) {
+                                                showDetailsInNotification = !showDetailsInNotification
+                                            }
+                                        }
+                                    ) {
+                                        Checkbox(
+                                            checked = showDetailsInNotification,
+                                            onCheckedChange = { if (notifyEnabled) showDetailsInNotification = it },
+                                            enabled = notifyEnabled,
+                                        )
+                                        Text(
+                                            text = "Show details in notification",
+                                            color = if (notifyEnabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                        )
+                                    }
+                                    Spacer(Modifier.height(12.dp))
+                                }
+                                if (isFieldEnabled(EventDialogField.REMINDER_OPTIONS)) {
+                                    Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.labelMedium)
+                                    Spacer(Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = reminderCountInput,
+                                        onValueChange = { reminderCountInput = it.filter(Char::isDigit) },
+                                        label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        enabled = notifyEnabled,
+                                        modifier = Modifier.fillMaxWidth()
                                     )
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = (targetCalendarSystemForEntry == SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY || targetCalendarSystemForEntry?.startsWith("google_calendar_id_") == true),
-                                    onClick = null,
-                                    enabled = !useGoogleBackupMode
-                                )
-                                Text(
-                                    text = stringResource(R.string.settings_default_events_select_gcal_primary),
-                                    style = MaterialTheme. typography.bodyLarge,
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-                    }
-                    if (isFieldEnabled(EventDialogField.NOTIFICATION)) {
-                    Text("Notification options:", style = MaterialTheme.typography.labelMedium)
-                    Spacer(Modifier.height(8.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.clickable { notifyEnabled = !notifyEnabled }
-                    ) {
-                        Checkbox(
-                            checked = notifyEnabled,
-                            onCheckedChange = { notifyEnabled = it },
-                        )
-                        Text("System notification")
-                    }
-                    Spacer(Modifier.height(8.dp))
-
-                    if (isFieldEnabled(EventDialogField.NOTIFICATION_DETAILS)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.clickable(enabled = notifyEnabled) {
-                                if (notifyEnabled) {
-                                    showDetailsInNotification = !showDetailsInNotification
+                                    Spacer(Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = reminderIntervalInput,
+                                        onValueChange = { reminderIntervalInput = it.filter(Char::isDigit) },
+                                        label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        enabled = notifyEnabled,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(Modifier.height(64.dp))
                                 }
                             }
-                        ) {
-                            Checkbox(
-                                checked = showDetailsInNotification,
-                                onCheckedChange = { if (notifyEnabled) showDetailsInNotification = it },
-                                enabled = notifyEnabled,
-                            )
-                            Text(
-                                text = "Show details in notification",
-                                color = if (notifyEnabled) LocalContentColor.current else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            )
+
+                            EventDialogField.DATE_DETAILS,
+                            EventDialogField.CALENDAR_TARGET,
+                            EventDialogField.NOTIFICATION_DETAILS,
+                            EventDialogField.REMINDER_OPTIONS -> Unit
                         }
-                        Spacer(Modifier.height(12.dp))
-                    }
-                    if (isFieldEnabled(EventDialogField.REMINDER_OPTIONS)) {
-                        Text(stringResource(R.string.settings_default_events_reminder_options_title), style = MaterialTheme.typography.labelMedium)
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = reminderCountInput,
-                            onValueChange = { reminderCountInput = it.filter(Char::isDigit) },
-                            label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            enabled = notifyEnabled,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = reminderIntervalInput,
-                            onValueChange = { reminderIntervalInput = it.filter(Char::isDigit) },
-                            label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            enabled = notifyEnabled,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(64.dp))
-                    }
                     }
                 }
             }
