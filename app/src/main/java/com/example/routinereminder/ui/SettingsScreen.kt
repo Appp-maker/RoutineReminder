@@ -2102,6 +2102,12 @@ private fun DefaultEventsSettingsSection(
     var selectedSubmenu by remember { mutableStateOf(EventDefaultsSubmenu.EVENT_CARD) }
 
     Text(stringResource(R.string.settings_default_events_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 12.dp, top = 8.dp))
+    SettingSwitchItem(
+        text = "Advanced mode",
+        checked = eventCardAdvancedModeEnabled,
+        onCheckedChange = onEventCardAdvancedModeEnabledChange
+    )
+    Spacer(modifier = Modifier.height(12.dp))
     ScrollableTabRow(
         selectedTabIndex = selectedSubmenu.ordinal,
         edgePadding = 0.dp,
