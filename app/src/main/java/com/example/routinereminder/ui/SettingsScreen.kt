@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -68,6 +69,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.routinereminder.R
 import com.example.routinereminder.ui.components.SeriesColorOptions
 import com.example.routinereminder.data.*
+import com.example.routinereminder.util.NotificationDebugUtils
 import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -3356,6 +3358,7 @@ private fun AppSettingsSection(
     var showCreditsDialog by remember { mutableStateOf(false) }
     var showLegalDialog by remember { mutableStateOf(false) }
     var showAppearanceSection by remember { mutableStateOf(true) }
+    var showXiaomiBandHelpDialog by remember { mutableStateOf(false) }
 
     if (showAboutDialog) {
         AlertDialog(
@@ -3390,6 +3393,29 @@ private fun AppSettingsSection(
             text = { Text(stringResource(R.string.settings_app_legal_body)) },
             confirmButton = {
                 TextButton(onClick = { showLegalDialog = false }) {
+                    Text(stringResource(R.string.alert_action_close))
+                }
+            }
+        )
+    }
+
+    if (showXiaomiBandHelpDialog) {
+        AlertDialog(
+            onDismissRequest = { showXiaomiBandHelpDialog = false },
+            title = { Text("Xiaomi Smart Band checklist") },
+            text = {
+                Text(
+                    """
+                    1) Confirm this app shows a phone notification.
+                    2) In Mi Fitness: Device > Notifications and calls > App notifications: enable this app.
+                    3) In Android settings: Notification access for Mi Fitness must be ON.
+                    4) Disable battery restrictions for Mi Fitness and this app.
+                    5) Disable DND/sleep modes that suppress alerts.
+                    """.trimIndent()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showXiaomiBandHelpDialog = false }) {
                     Text(stringResource(R.string.alert_action_close))
                 }
             }
@@ -3541,6 +3567,56 @@ private fun AppSettingsSection(
         }
     }
     Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        text = "Notifications",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+    )
+    OutlinedButton(
+        onClick = {
+            val result = NotificationDebugUtils.sendTestReminderNotification(context)
+            val message = when (result) {
+                NotificationDebugUtils.TestNotificationResult.SENT -> "Test notification sent"
+                NotificationDebugUtils.TestNotificationResult.PERMISSION_MISSING ->
+                    "Please allow notifications for this app first"
+                NotificationDebugUtils.TestNotificationResult.CHANNEL_BLOCKED ->
+                    "Reminder channel is blocked. Reset it or enable it in notification settings."
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text("Send test notification")
+    }
+    OutlinedButton(
+        onClick = {
+            context.startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+        },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text("Open notification settings")
+    }
+    OutlinedButton(
+        onClick = {
+            NotificationDebugUtils.resetReminderChannel(context)
+            Toast.makeText(context, "Reminder channel reset", Toast.LENGTH_SHORT).show()
+        },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text("Reset reminder channel")
+    }
+    OutlinedButton(
+        onClick = { showXiaomiBandHelpDialog = true },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    ) {
+        Text("Xiaomi Smart Band checklist")
+    }
     OutlinedButton(onClick = onBackupClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(stringResource(R.string.settings_app_import_export))
     }
