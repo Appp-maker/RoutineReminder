@@ -3945,12 +3945,6 @@ private fun EventDialogFieldConfigurator(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = rowContentAlpha),
                         modifier = Modifier.weight(1f)
                     )
-                    val parentField = when (option.field) {
-                        EventDialogField.NOTIFICATION_DETAILS,
-                        EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
-                        else -> null
-                    }
-                    val isParentEnabled = parentField?.let { fieldEnabledByType[it] == true } ?: true
                     Switch(
                         checked = option.enabled,
                         onCheckedChange = { enabled ->
