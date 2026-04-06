@@ -3783,7 +3783,10 @@ private fun EventDialogFieldConfigurator(
         }
         EventDialogFieldOption.applyRules(uniqueOptions)
     }
-    val normalizedFields = remember(fields) { normalizeFieldOptions(fields) }
+    // `fields` is backed by a mutableStateList in SettingsScreen, so the list instance stays
+    // stable while contents change. Recompute from current contents each recomposition so
+    // drag-reorder/toggle updates apply immediately.
+    val normalizedFields = normalizeFieldOptions(fields)
     val reorderThreshold = with(LocalDensity.current) { 48.dp.toPx() }
 
     Text(
