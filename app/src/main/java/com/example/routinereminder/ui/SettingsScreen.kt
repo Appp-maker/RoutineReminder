@@ -75,6 +75,8 @@ import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import java.util.*
 import java.time.DayOfWeek
@@ -3928,7 +3930,12 @@ private fun EventDialogFieldConfigurator(
                                                 onDragEnd = {
                                                     val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
                                                     if (currentIndex != -1) {
-                                                        val moveSteps = (totalDragOffset / reorderThreshold).roundToInt()
+                                                        val rawSteps = totalDragOffset / reorderThreshold
+                                                        val moveSteps = when {
+                                                            rawSteps > 0f -> floor(rawSteps).toInt()
+                                                            rawSteps < 0f -> ceil(rawSteps).toInt()
+                                                            else -> 0
+                                                        }
                                                         if (moveSteps != 0) {
                                                             val targetIndex = (currentIndex + moveSteps)
                                                                 .coerceIn(0, visibleFields.lastIndex)
