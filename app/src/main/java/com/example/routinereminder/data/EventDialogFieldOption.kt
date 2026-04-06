@@ -28,11 +28,13 @@ data class EventDialogFieldOption(
 ) {
     companion object {
         private val requiredFields = emptySet<EventDialogField>()
-        private val parentFieldDependencies = mapOf(
+        private val parentByChildField = mapOf(
             EventDialogField.CALENDAR_TARGET to EventDialogField.CALENDAR,
             EventDialogField.NOTIFICATION_DETAILS to EventDialogField.NOTIFICATION,
             EventDialogField.REMINDER_OPTIONS to EventDialogField.NOTIFICATION
         )
+        private val childByParentField = parentByChildField.entries
+            .groupBy(keySelector = { it.value }, valueTransform = { it.key })
 
         fun isRequired(field: EventDialogField): Boolean = field in requiredFields
 
@@ -43,16 +45,27 @@ data class EventDialogFieldOption(
         }
 
         fun enforceDependencies(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
-            val enabledByField = fields.associate { it.field to it.enabled }
-            return fields.map { option ->
-                val requiredParent = parentFieldDependencies[option.field]
-                val parentEnabled = requiredParent?.let { enabledByField[it] == true } ?: true
-                if (!parentEnabled && option.enabled) {
-                    option.copy(enabled = false)
-                } else {
-                    option
+            val enabledByField = fields.associate { it.field to it.enabled }.toMutableMap()
+
+            parentByChildField.forEach { (child, parent) ->
+                if (enabledByField[child] == true) {
+                    enabledByField[parent] = true
                 }
             }
+
+            childByParentField.forEach { (parent, children) ->
+                if (enabledByField[parent] == false) {
+                    children.forEach { child -> enabledByField[child] = false }
+                }
+            }
+
+            return fields.map { option ->
+                option.copy(enabled = enabledByField[option.field] ?: option.enabled)
+            }
+        }
+
+        fun applyRules(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
+            return enforceDependencies(enforceRequired(fields))
         }
 
         fun normalize(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
@@ -75,6 +88,6 @@ data class EventDialogFieldOption(
             EventDialogFieldOption(EventDialogField.REMINDER_OPTIONS, false),
             EventDialogFieldOption(EventDialogField.EVENT_SET, false),
             EventDialogFieldOption(EventDialogField.EVENT_COLOR, false)
-        )
+        ).let(::applyRules)
     }
 }
