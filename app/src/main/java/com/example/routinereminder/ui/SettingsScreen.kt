@@ -3775,6 +3775,14 @@ private fun EventDialogFieldConfigurator(
     parentScrollState: ScrollState
 ) {
     val normalizeFieldOptions: (List<EventDialogFieldOption>) -> List<EventDialogFieldOption> = { options ->
+        val defaultsByField = EventDialogFieldOption.defaults().associateBy { it.field }
+        val uniqueOptions = options.distinctBy { it.field }.toMutableList()
+        EventDialogField.entries.forEach { field ->
+            if (uniqueOptions.none { it.field == field }) {
+                uniqueOptions.add(defaultsByField[field] ?: EventDialogFieldOption(field, true))
+            }
+        }
+        EventDialogFieldOption.applyRules(uniqueOptions)
         EventDialogField.entries.mapNotNull { field ->
             options.firstOrNull { it.field == field }
         }.let(EventDialogFieldOption::applyRules)
