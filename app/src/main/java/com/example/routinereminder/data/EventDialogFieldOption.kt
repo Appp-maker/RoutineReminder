@@ -28,18 +28,13 @@ data class EventDialogFieldOption(
 ) {
     companion object {
         private val requiredFields = emptySet<EventDialogField>()
-        private val parentFieldDependencies = mapOf(
+        private val parentByChildField = mapOf(
             EventDialogField.CALENDAR_TARGET to EventDialogField.CALENDAR,
             EventDialogField.NOTIFICATION_DETAILS to EventDialogField.NOTIFICATION,
             EventDialogField.REMINDER_OPTIONS to EventDialogField.NOTIFICATION
         )
-        private val mergedFieldGroups = listOf(
-            setOf(
-                EventDialogField.NOTIFICATION,
-                EventDialogField.NOTIFICATION_DETAILS,
-                EventDialogField.REMINDER_OPTIONS
-            )
-        )
+        private val childByParentField = parentByChildField.entries
+            .groupBy(keySelector = { it.value }, valueTransform = { it.key })
 
         fun isRequired(field: EventDialogField): Boolean = field in requiredFields
 
@@ -50,30 +45,30 @@ data class EventDialogFieldOption(
         }
 
         fun enforceDependencies(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
-            val enabledByField = fields.associate { it.field to it.enabled }
-            return fields.map { option ->
-                val requiredParent = parentFieldDependencies[option.field]
-                val parentEnabled = requiredParent?.let { enabledByField[it] == true } ?: true
-                if (!parentEnabled && option.enabled) {
-                    option.copy(enabled = false)
-                } else {
-                    option
+            val enabledByField = fields.associate { it.field to it.enabled }.toMutableMap()
+
+            parentByChildField.forEach { (child, parent) ->
+                if (enabledByField[child] == true) {
+                    enabledByField[parent] = true
                 }
+            }
+
+            childByParentField.forEach { (parent, children) ->
+                if (enabledByField[parent] == false) {
+                    children.forEach { child -> enabledByField[child] = false }
+                }
+            }
+
+            // Calendar target is merged with Calendar in settings and should always mirror it.
+            enabledByField[EventDialogField.CALENDAR_TARGET] = enabledByField[EventDialogField.CALENDAR] ?: true
+
+            return fields.map { option ->
+                option.copy(enabled = enabledByField[option.field] ?: option.enabled)
             }
         }
 
-        fun normalize(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
-            val requiredAndDependent = enforceDependencies(enforceRequired(fields))
-            val enabledByField = requiredAndDependent.associate { it.field to it.enabled }
-            return requiredAndDependent.map { option ->
-                val mergedGroup = mergedFieldGroups.firstOrNull { option.field in it }
-                if (mergedGroup == null) {
-                    option
-                } else {
-                    val anchorField = mergedGroup.first()
-                    option.copy(enabled = enabledByField[anchorField] == true)
-                }
-            }
+        fun applyRules(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
+            return enforceDependencies(enforceRequired(fields))
         }
 
         fun defaults(): List<EventDialogFieldOption> = listOf(

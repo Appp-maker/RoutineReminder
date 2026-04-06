@@ -3924,35 +3924,16 @@ private fun EventDialogFieldConfigurator(
                         EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
                         else -> null
                     }
-                    val parentEnabled = parentField?.let { parent ->
-                        fields.firstOrNull { it.field == parent }?.enabled == true
-                    } ?: true
-                    val mergedFieldGroup = when (option.field) {
-                        EventDialogField.NOTIFICATION,
-                        EventDialogField.NOTIFICATION_DETAILS,
-                        EventDialogField.REMINDER_OPTIONS -> setOf(
-                            EventDialogField.NOTIFICATION,
-                            EventDialogField.NOTIFICATION_DETAILS,
-                            EventDialogField.REMINDER_OPTIONS
-                        )
-                        else -> emptySet()
-                    }
+                    val isParentEnabled = parentField?.let { fieldEnabledByType[it] == true } ?: true
+                    val isMergedField = option.field == EventDialogField.CALENDAR_TARGET
                     Switch(
                         checked = option.enabled,
                         onCheckedChange = { enabled ->
                             val updated = fields.toMutableList()
-                            if (mergedFieldGroup.isNotEmpty()) {
-                                updated.indices.forEach { fieldIndex ->
-                                    if (updated[fieldIndex].field in mergedFieldGroup) {
-                                        updated[fieldIndex] = updated[fieldIndex].copy(enabled = enabled)
-                                    }
-                                }
-                            } else {
-                                updated[index] = option.copy(enabled = enabled)
-                            }
-                            onFieldsChange(EventDialogFieldOption.normalize(updated))
+                            updated[index] = option.copy(enabled = enabled)
+                            onFieldsChange(EventDialogFieldOption.applyRules(updated))
                         },
-                        enabled = !isRequiredField && parentEnabled
+                        enabled = !isRequiredField && isParentEnabled && !isMergedField
                     )
                 }
             }
@@ -3975,7 +3956,7 @@ private fun eventDialogFieldLabel(field: EventDialogField): String {
         EventDialogField.REPEAT -> stringResource(R.string.settings_event_data_field_repeat)
         EventDialogField.DATE_DETAILS -> stringResource(R.string.settings_event_data_field_date_details)
         EventDialogField.CALENDAR -> stringResource(R.string.settings_event_data_field_calendar)
-        EventDialogField.CALENDAR_TARGET -> stringResource(R.string.settings_event_data_field_calendar_target)
+        EventDialogField.CALENDAR_TARGET -> "${stringResource(R.string.settings_event_data_field_calendar_target)} (linked)"
         EventDialogField.NOTIFICATION -> stringResource(R.string.settings_event_data_field_notification)
         EventDialogField.NOTIFICATION_DETAILS -> stringResource(R.string.settings_event_data_field_notification_details)
         EventDialogField.REMINDER_OPTIONS -> stringResource(R.string.settings_event_data_field_reminder_options)
