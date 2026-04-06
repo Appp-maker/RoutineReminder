@@ -724,7 +724,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     }
 
     suspend fun saveEventDialogFields(fields: List<EventDialogFieldOption>) {
-        val sanitizedFields = EventDialogFieldOption.enforceRequired(fields)
+        val sanitizedFields = EventDialogFieldOption.applyRules(fields)
         val serialized = sanitizedFields.mapIndexed { index, option ->
             "${index}|${option.field.key}|${option.enabled}"
         }.toSet()
@@ -748,7 +748,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             if (parsedByIndex.isEmpty()) return@map defaults
 
             val parsedMap = parsedByIndex.associateBy { it.field }
-            EventDialogFieldOption.enforceRequired(
+            EventDialogFieldOption.applyRules(
                 defaults.map { default ->
                 parsedMap[default.field] ?: default
                 }.sortedBy { option ->
