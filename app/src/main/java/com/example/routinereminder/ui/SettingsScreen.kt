@@ -72,6 +72,8 @@ import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import java.util.*
 import java.time.DayOfWeek
@@ -3914,9 +3916,8 @@ private fun EventDialogFieldConfigurator(
                                                                         reorderedVisible[visibleInsertIndex++]
                                                                     }
                                                                 }
+                                                                onFieldsChange(normalizeFieldOptions(updated))
                                                             }
-                                                            onFieldsChange(normalizeFieldOptions(updated))
-                                                            draggingOffsetY += threshold
                                                         }
                                                     }
                                                     draggingOffsetY = 0f
