@@ -4000,6 +4000,43 @@ private fun EventDialogFieldConfigurator(
                     }
                 }
             }
+            if (option.field == EventDialogField.NOTIFICATION) {
+                val childNotificationDetails = fields.firstOrNull { it.field == EventDialogField.NOTIFICATION_DETAILS }
+                val childReminderOptions = fields.firstOrNull { it.field == EventDialogField.REMINDER_OPTIONS }
+                listOfNotNull(childNotificationDetails, childReminderOptions).forEach { childOption ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 28.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.SubdirectoryArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = eventDialogFieldLabel(childOption.field),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Switch(
+                                checked = childOption.enabled,
+                                onCheckedChange = { enabled -> updateFieldEnabled(childOption.field, enabled) },
+                                enabled = option.enabled
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
