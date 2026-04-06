@@ -3823,6 +3823,7 @@ private fun EventDialogFieldConfigurator(
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
             var totalDragOffset by remember(option.field) { mutableStateOf(0f) }
+            var autoScrollDragOffset by remember(option.field) { mutableStateOf(0f) }
             var rowHeightPx by remember(option.field) { mutableStateOf(0f) }
             var isDragging by remember(option.field) { mutableStateOf(false) }
             var rowTopInWindowPx by remember(option.field) { mutableStateOf(0f) }
@@ -3852,8 +3853,8 @@ private fun EventDialogFieldConfigurator(
                     if (autoScrollDelta != 0f) {
                         val consumed = parentScrollState.scrollBy(autoScrollDelta)
                         if (consumed != 0f) {
-                            totalDragOffset += consumed
-                            dragOffset = totalDragOffset
+                            autoScrollDragOffset += consumed
+                            dragOffset = totalDragOffset + autoScrollDragOffset
                         }
                     }
 
@@ -3919,11 +3920,12 @@ private fun EventDialogFieldConfigurator(
                                                 onDrag = { change, dragAmount ->
                                                     change.consume()
                                                     totalDragOffset += dragAmount.y
-                                                    dragOffset = totalDragOffset
+                                                    dragOffset = totalDragOffset + autoScrollDragOffset
                                                 },
                                                 onDragCancel = {
                                                     dragOffset = 0f
                                                     totalDragOffset = 0f
+                                                    autoScrollDragOffset = 0f
                                                     isDragging = false
                                                     onDragActiveChange(false)
                                                 },
@@ -3935,7 +3937,7 @@ private fun EventDialogFieldConfigurator(
                                                             rawSteps > 0f -> floor(rawSteps).toInt()
                                                             rawSteps < 0f -> ceil(rawSteps).toInt()
                                                             else -> 0
-                                                        }.coerceIn(-1, 1)
+                                                        }
                                                         if (moveSteps != 0) {
                                                             val targetIndex = (currentIndex + moveSteps)
                                                                 .coerceIn(0, visibleFields.lastIndex)
@@ -3963,6 +3965,7 @@ private fun EventDialogFieldConfigurator(
                                                     }
                                                     dragOffset = 0f
                                                     totalDragOffset = 0f
+                                                    autoScrollDragOffset = 0f
                                                     isDragging = false
                                                     onDragActiveChange(false)
                                                 }
