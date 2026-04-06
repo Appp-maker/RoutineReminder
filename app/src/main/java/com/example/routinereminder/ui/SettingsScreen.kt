@@ -3793,6 +3793,7 @@ private fun EventDialogFieldConfigurator(
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     Spacer(modifier = Modifier.height(8.dp))
+    val fieldEnabledByType = fields.associate { it.field to it.enabled }
     fields.forEachIndexed { index, option ->
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
@@ -3900,7 +3901,7 @@ private fun EventDialogFieldConfigurator(
                                                     val updated = fields.toMutableList()
                                                     val movedItem = updated.removeAt(currentIndex)
                                                     updated.add(targetIndex, movedItem)
-                                                    onFieldsChange(updated)
+                                                    onFieldsChange(EventDialogFieldOption.applyRules(updated))
                                                 }
                                             }
                                         }

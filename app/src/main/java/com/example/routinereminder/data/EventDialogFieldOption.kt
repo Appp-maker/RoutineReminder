@@ -92,6 +92,6 @@ data class EventDialogFieldOption(
             EventDialogFieldOption(EventDialogField.REMINDER_OPTIONS, false),
             EventDialogFieldOption(EventDialogField.EVENT_SET, false),
             EventDialogFieldOption(EventDialogField.EVENT_COLOR, false)
-        )
+        ).let(::applyRules)
     }
 }
