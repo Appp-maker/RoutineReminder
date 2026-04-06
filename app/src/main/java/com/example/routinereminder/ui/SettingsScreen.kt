@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -2381,6 +2382,12 @@ private fun DefaultEventsSettingsSection(
             )
         }
         EventDefaultsSubmenu.DEFAULT_VALUES -> {
+            val enabledDefaultFieldSet = remember(eventDialogFields) {
+                eventDialogFields
+                    .filter { it.enabled }
+                    .map { it.field }
+                    .toSet()
+            }
             val enabledDefaultFieldsInOrder = remember(eventDialogFields) {
                 eventDialogFields
                     .filter { it.enabled }
@@ -2392,14 +2399,9 @@ private fun DefaultEventsSettingsSection(
                             EventDialogField.REPEAT,
                             EventDialogField.CALENDAR,
                             EventDialogField.CALENDAR_TARGET,
-                            EventDialogField.NOTIFICATION,
-                            EventDialogField.NOTIFICATION_DETAILS,
-                            EventDialogField.REMINDER_OPTIONS
+                            EventDialogField.NOTIFICATION
                         )
                     }
-            }
-            val enabledDefaultFieldSet = remember(enabledDefaultFieldsInOrder) {
-                enabledDefaultFieldsInOrder.toSet()
             }
             val timeEnabled = enabledDefaultFieldSet.contains(EventDialogField.TIME)
             val durationEnabled = enabledDefaultFieldSet.contains(EventDialogField.DURATION)
@@ -2560,40 +2562,36 @@ private fun DefaultEventsSettingsSection(
                             enabled = notificationEnabled,
                             onCheckedChange = onSystemNotificationChange
                         )
-                    }
-
-                    EventDialogField.NOTIFICATION_DETAILS -> {
                         SettingSwitchItem(
                             text = stringResource(R.string.settings_default_events_show_details_notification),
                             checked = showDetailsInNotificationChecked,
                             enabled = notificationEnabled && notificationDetailsEnabled && systemNotificationChecked,
                             onCheckedChange = onShowDetailsInNotificationChange
                         )
-                    }
-
-                    EventDialogField.REMINDER_OPTIONS -> {
-                        Text(
-                            stringResource(R.string.settings_default_events_reminder_options_title),
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = reminderCountText,
-                            onValueChange = onReminderCountChange,
-                            label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            enabled = notificationEnabled && reminderOptionsEnabled && systemNotificationChecked,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = reminderIntervalMinutesText,
-                            onValueChange = onReminderIntervalMinutesChange,
-                            label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            enabled = notificationEnabled && reminderOptionsEnabled && systemNotificationChecked,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        if (reminderOptionsEnabled) {
+                            Text(
+                                stringResource(R.string.settings_default_events_reminder_options_title),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = reminderCountText,
+                                onValueChange = onReminderCountChange,
+                                label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                enabled = notificationEnabled && systemNotificationChecked,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = reminderIntervalMinutesText,
+                                onValueChange = onReminderIntervalMinutesChange,
+                                label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                enabled = notificationEnabled && systemNotificationChecked,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
 
                     else -> Unit
@@ -3794,7 +3792,21 @@ private fun EventDialogFieldConfigurator(
     )
     Spacer(modifier = Modifier.height(8.dp))
     val fieldEnabledByType = fields.associate { it.field to it.enabled }
-    val visibleFields = fields.filter { it.field != EventDialogField.CALENDAR_TARGET }
+    val visibleFields = fields.filter {
+        it.field !in setOf(
+            EventDialogField.CALENDAR_TARGET,
+            EventDialogField.NOTIFICATION_DETAILS,
+            EventDialogField.REMINDER_OPTIONS
+        )
+    }
+    val updateFieldEnabled: (EventDialogField, Boolean) -> Unit = { field, enabled ->
+        val updated = fields.toMutableList()
+        val optionIndex = updated.indexOfFirst { it.field == field }
+        if (optionIndex != -1) {
+            updated[optionIndex] = updated[optionIndex].copy(enabled = enabled)
+            onFieldsChange(EventDialogFieldOption.applyRules(updated))
+        }
+    }
     visibleFields.forEach { option ->
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
@@ -3947,16 +3959,46 @@ private fun EventDialogFieldConfigurator(
                     )
                     Switch(
                         checked = option.enabled,
-                        onCheckedChange = { enabled ->
-                            val updated = fields.toMutableList()
-                            val optionIndex = updated.indexOfFirst { it.field == option.field }
-                            if (optionIndex != -1) {
-                                updated[optionIndex] = option.copy(enabled = enabled)
-                                onFieldsChange(EventDialogFieldOption.applyRules(updated))
-                            }
-                        },
+                        onCheckedChange = { enabled -> updateFieldEnabled(option.field, enabled) },
                         enabled = !isRequiredField && isParentEnabled
                     )
+                }
+            }
+            if (option.field == EventDialogField.NOTIFICATION) {
+                val childNotificationDetails = fields.firstOrNull { it.field == EventDialogField.NOTIFICATION_DETAILS }
+                val childReminderOptions = fields.firstOrNull { it.field == EventDialogField.REMINDER_OPTIONS }
+                listOfNotNull(childNotificationDetails, childReminderOptions).forEach { childOption ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 28.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.SubdirectoryArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = eventDialogFieldLabel(childOption.field),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Switch(
+                                checked = childOption.enabled,
+                                onCheckedChange = { enabled -> updateFieldEnabled(childOption.field, enabled) },
+                                enabled = option.enabled
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
