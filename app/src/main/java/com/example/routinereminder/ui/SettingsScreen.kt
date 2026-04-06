@@ -3922,7 +3922,13 @@ private fun EventDialogFieldConfigurator(
                         onCheckedChange = { enabled ->
                             val updated = fields.toMutableList()
                             updated[index] = option.copy(enabled = enabled)
-                            onFieldsChange(updated)
+                            onFieldsChange(
+                                EventDialogFieldOption.applyLinkedFieldRules(
+                                    fields = updated,
+                                    changedField = option.field,
+                                    enabled = enabled
+                                )
+                            )
                         },
                         enabled = !isRequiredField
                     )
