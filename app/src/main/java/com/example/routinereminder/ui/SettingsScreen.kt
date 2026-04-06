@@ -3917,14 +3917,41 @@ private fun EventDialogFieldConfigurator(
                         text = eventDialogFieldLabel(option.field),
                         modifier = Modifier.weight(1f)
                     )
+                    val parentField = when (option.field) {
+                        EventDialogField.CALENDAR_TARGET -> EventDialogField.CALENDAR
+                        EventDialogField.NOTIFICATION_DETAILS,
+                        EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
+                        else -> null
+                    }
+                    val parentEnabled = parentField?.let { parent ->
+                        fields.firstOrNull { it.field == parent }?.enabled == true
+                    } ?: true
+                    val mergedFieldGroup = when (option.field) {
+                        EventDialogField.NOTIFICATION,
+                        EventDialogField.NOTIFICATION_DETAILS,
+                        EventDialogField.REMINDER_OPTIONS -> setOf(
+                            EventDialogField.NOTIFICATION,
+                            EventDialogField.NOTIFICATION_DETAILS,
+                            EventDialogField.REMINDER_OPTIONS
+                        )
+                        else -> emptySet()
+                    }
                     Switch(
                         checked = option.enabled,
                         onCheckedChange = { enabled ->
                             val updated = fields.toMutableList()
-                            updated[index] = option.copy(enabled = enabled)
-                            onFieldsChange(updated)
+                            if (mergedFieldGroup.isNotEmpty()) {
+                                updated.indices.forEach { fieldIndex ->
+                                    if (updated[fieldIndex].field in mergedFieldGroup) {
+                                        updated[fieldIndex] = updated[fieldIndex].copy(enabled = enabled)
+                                    }
+                                }
+                            } else {
+                                updated[index] = option.copy(enabled = enabled)
+                            }
+                            onFieldsChange(EventDialogFieldOption.normalize(updated))
                         },
-                        enabled = !isRequiredField
+                        enabled = !isRequiredField && parentEnabled
                     )
                 }
             }
