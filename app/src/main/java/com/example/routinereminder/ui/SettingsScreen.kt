@@ -3783,6 +3783,9 @@ private fun EventDialogFieldConfigurator(
             }
         }
         EventDialogFieldOption.applyRules(uniqueOptions)
+        EventDialogField.entries.mapNotNull { field ->
+            options.firstOrNull { it.field == field }
+        }.let(EventDialogFieldOption::applyRules)
     }
     LaunchedEffect(fields) {
         val normalized = normalizeFieldOptions(fields)
