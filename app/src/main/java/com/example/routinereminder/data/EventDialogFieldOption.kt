@@ -68,6 +68,10 @@ data class EventDialogFieldOption(
             return enforceDependencies(enforceRequired(fields))
         }
 
+        fun normalize(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
+            return enforceDependencies(enforceRequired(fields))
+        }
+
         fun defaults(): List<EventDialogFieldOption> = listOf(
             EventDialogFieldOption(EventDialogField.TITLE, false),
             EventDialogFieldOption(EventDialogField.NOTES, true),
