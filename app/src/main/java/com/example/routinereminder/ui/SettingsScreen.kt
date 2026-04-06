@@ -14,7 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -3807,7 +3806,6 @@ private fun EventDialogFieldConfigurator(
     val rowHeights = remember { mutableStateMapOf<EventDialogField, Float>() }
     var draggingField by remember { mutableStateOf<EventDialogField?>(null) }
     var draggingOffsetY by remember { mutableFloatStateOf(0f) }
-    val coroutineScope = rememberCoroutineScope()
     val updateFieldEnabled: (EventDialogField, Boolean) -> Unit = { field, enabled ->
         val updated = normalizedFields.toMutableList()
         val optionIndex = updated.indexOfFirst { it.field == field }
@@ -3875,17 +3873,6 @@ private fun EventDialogFieldConfigurator(
                                                     change.consume()
                                                     if (draggingField != option.field) return@detectDragGestures
                                                     draggingOffsetY += dragAmount.y
-
-                                                    val scrollDelta = when {
-                                                        draggingOffsetY > reorderThreshold -> reorderThreshold / 2f
-                                                        draggingOffsetY < -reorderThreshold -> -reorderThreshold / 2f
-                                                        else -> 0f
-                                                    }
-                                                    if (scrollDelta != 0f) {
-                                                        coroutineScope.launch {
-                                                            parentScrollState.scrollBy(scrollDelta)
-                                                        }
-                                                    }
 
                                                     val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
                                                     if (currentIndex == -1) return@detectDragGestures
