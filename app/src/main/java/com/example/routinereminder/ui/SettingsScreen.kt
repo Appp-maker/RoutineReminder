@@ -3831,7 +3831,6 @@ private fun EventDialogFieldConfigurator(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .onSizeChanged { rowHeights[option.field] = it.height.toFloat() }
                     .offset { IntOffset(0, if (isDragging) visualDragOffset.roundToInt() else 0) }
                     .zIndex(if (isDragging) 1f else 0f)
                     .graphicsLayer {
@@ -3847,6 +3846,7 @@ private fun EventDialogFieldConfigurator(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .onSizeChanged { rowHeights[option.field] = it.height.toFloat() }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
