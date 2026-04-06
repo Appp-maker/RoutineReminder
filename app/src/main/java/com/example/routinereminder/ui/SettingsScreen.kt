@@ -3807,6 +3807,7 @@ private fun EventDialogFieldConfigurator(
     val rowHeights = remember { mutableStateMapOf<EventDialogField, Float>() }
     var draggingField by remember { mutableStateOf<EventDialogField?>(null) }
     var draggingOffsetY by remember { mutableFloatStateOf(0f) }
+    val coroutineScope = rememberCoroutineScope()
     val updateFieldEnabled: (EventDialogField, Boolean) -> Unit = { field, enabled ->
         val updated = normalizedFields.toMutableList()
         val optionIndex = updated.indexOfFirst { it.field == field }
@@ -3881,7 +3882,9 @@ private fun EventDialogFieldConfigurator(
                                                         else -> 0f
                                                     }
                                                     if (scrollDelta != 0f) {
-                                                        parentScrollState.scrollBy(scrollDelta)
+                                                        coroutineScope.launch {
+                                                            parentScrollState.scrollBy(scrollDelta)
+                                                        }
                                                     }
 
                                                     val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
