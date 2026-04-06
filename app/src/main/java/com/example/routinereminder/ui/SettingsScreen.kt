@@ -3793,7 +3793,9 @@ private fun EventDialogFieldConfigurator(
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     Spacer(modifier = Modifier.height(8.dp))
-    fields.forEachIndexed { index, option ->
+    val fieldEnabledByType = fields.associate { it.field to it.enabled }
+    val visibleFields = fields.filter { it.field != EventDialogField.CALENDAR_TARGET }
+    visibleFields.forEach { option ->
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
             var totalDragOffset by remember(option.field) { mutableStateOf(0f) }
@@ -3889,18 +3891,27 @@ private fun EventDialogFieldConfigurator(
                                         onDragActiveChange(false)
                                     },
                                     onDragEnd = {
-                                        val currentIndex = fields.indexOfFirst { it.field == option.field }
+                                        val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
                                         if (currentIndex != -1) {
                                             val stepThreshold = if (rowHeightPx > 0f) rowHeightPx else reorderThreshold
                                             val moveSteps = (totalDragOffset / stepThreshold).toInt()
                                             if (moveSteps != 0) {
                                                 val targetIndex = (currentIndex + moveSteps)
-                                                    .coerceIn(0, fields.lastIndex)
+                                                    .coerceIn(0, visibleFields.lastIndex)
                                                 if (targetIndex != currentIndex) {
-                                                    val updated = fields.toMutableList()
-                                                    val movedItem = updated.removeAt(currentIndex)
-                                                    updated.add(targetIndex, movedItem)
-                                                    onFieldsChange(updated)
+                                                    val reorderedVisible = visibleFields.toMutableList()
+                                                    val movedItem = reorderedVisible.removeAt(currentIndex)
+                                                    reorderedVisible.add(targetIndex, movedItem)
+
+                                                    var visibleInsertIndex = 0
+                                                    val updated = fields.map { original ->
+                                                        if (original.field == EventDialogField.CALENDAR_TARGET) {
+                                                            original
+                                                        } else {
+                                                            reorderedVisible[visibleInsertIndex++]
+                                                        }
+                                                    }
+                                                    onFieldsChange(EventDialogFieldOption.applyRules(updated))
                                                 }
                                             }
                                         }
@@ -3917,14 +3928,23 @@ private fun EventDialogFieldConfigurator(
                         text = eventDialogFieldLabel(option.field),
                         modifier = Modifier.weight(1f)
                     )
+                    val parentField = when (option.field) {
+                        EventDialogField.NOTIFICATION_DETAILS,
+                        EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
+                        else -> null
+                    }
+                    val isParentEnabled = parentField?.let { fieldEnabledByType[it] == true } ?: true
                     Switch(
                         checked = option.enabled,
                         onCheckedChange = { enabled ->
                             val updated = fields.toMutableList()
-                            updated[index] = option.copy(enabled = enabled)
-                            onFieldsChange(updated)
+                            val optionIndex = updated.indexOfFirst { it.field == option.field }
+                            if (optionIndex != -1) {
+                                updated[optionIndex] = option.copy(enabled = enabled)
+                                onFieldsChange(EventDialogFieldOption.applyRules(updated))
+                            }
                         },
-                        enabled = !isRequiredField
+                        enabled = !isRequiredField && isParentEnabled
                     )
                 }
             }
