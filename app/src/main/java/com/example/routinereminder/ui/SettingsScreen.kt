@@ -3868,10 +3868,20 @@ private fun EventDialogFieldConfigurator(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val isRequiredField = EventDialogFieldOption.isRequired(option.field)
+                    val parentField = when (option.field) {
+                        EventDialogField.CALENDAR_TARGET -> EventDialogField.CALENDAR
+                        EventDialogField.NOTIFICATION_DETAILS,
+                        EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
+                        else -> null
+                    }
+                    val isParentEnabled = parentField?.let { fieldEnabledByType[it] == true } ?: true
+                    val isMergedField = option.field == EventDialogField.CALENDAR_TARGET
+                    val isChildFieldDisabledByParent = parentField != null && !isParentEnabled
+                    val rowContentAlpha = if (isChildFieldDisabledByParent) 0.38f else 1f
                     Icon(
                         imageVector = Icons.Filled.Menu,
                         contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = rowContentAlpha),
                         modifier = Modifier
                             .pointerInput(option.field, fields) {
                                 detectDragGestures(
@@ -3913,19 +3923,22 @@ private fun EventDialogFieldConfigurator(
                                                     }
                                                     onFieldsChange(EventDialogFieldOption.applyRules(updated))
                                                 }
+                                                dragOffset = 0f
+                                                totalDragOffset = 0f
+                                                isDragging = false
+                                                onDragActiveChange(false)
                                             }
-                                        }
-                                        dragOffset = 0f
-                                        totalDragOffset = 0f
-                                        isDragging = false
-                                        onDragActiveChange(false)
+                                        )
                                     }
-                                )
-                            }
+                                } else {
+                                    Modifier
+                                }
+                            )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = eventDialogFieldLabel(option.field),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = rowContentAlpha),
                         modifier = Modifier.weight(1f)
                     )
                     val parentField = when (option.field) {
@@ -3967,7 +3980,7 @@ private fun eventDialogFieldLabel(field: EventDialogField): String {
         EventDialogField.REPEAT -> stringResource(R.string.settings_event_data_field_repeat)
         EventDialogField.DATE_DETAILS -> stringResource(R.string.settings_event_data_field_date_details)
         EventDialogField.CALENDAR -> stringResource(R.string.settings_event_data_field_calendar)
-        EventDialogField.CALENDAR_TARGET -> stringResource(R.string.settings_event_data_field_calendar_target)
+        EventDialogField.CALENDAR_TARGET -> "${stringResource(R.string.settings_event_data_field_calendar_target)} (linked)"
         EventDialogField.NOTIFICATION -> stringResource(R.string.settings_event_data_field_notification)
         EventDialogField.NOTIFICATION_DETAILS -> stringResource(R.string.settings_event_data_field_notification_details)
         EventDialogField.REMINDER_OPTIONS -> stringResource(R.string.settings_event_data_field_reminder_options)
