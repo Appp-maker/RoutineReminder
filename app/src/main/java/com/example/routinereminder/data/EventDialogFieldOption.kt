@@ -32,6 +32,15 @@ data class EventDialogFieldOption(
             listOf(EventDialogField.REPEAT, EventDialogField.DATE_DETAILS)
         )
 
+        private val parentByChildField: Map<EventDialogField, EventDialogField> = mapOf(
+            EventDialogField.CALENDAR_TARGET to EventDialogField.CALENDAR,
+            EventDialogField.NOTIFICATION_DETAILS to EventDialogField.NOTIFICATION,
+            EventDialogField.REMINDER_OPTIONS to EventDialogField.NOTIFICATION
+        )
+        private val childByParentField: Map<EventDialogField, List<EventDialogField>> =
+            parentByChildField.entries
+                .groupBy({ it.value }, { it.key })
+
         fun isRequired(field: EventDialogField): Boolean = field in requiredFields
 
         fun enforceRequired(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
