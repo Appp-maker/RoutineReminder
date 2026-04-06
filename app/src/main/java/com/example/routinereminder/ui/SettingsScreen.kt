@@ -2381,20 +2381,34 @@ private fun DefaultEventsSettingsSection(
             )
         }
         EventDefaultsSubmenu.DEFAULT_VALUES -> {
-            val enabledDefaultFieldSet = remember(eventDialogFields) {
-                eventDialogFields.filter { it.enabled }.map { it.field }.toSet()
+            val enabledDefaultFieldsInOrder = remember(eventDialogFields) {
+                eventDialogFields
+                    .filter { it.enabled }
+                    .map { it.field }
+                    .filter {
+                        it in setOf(
+                            EventDialogField.TIME,
+                            EventDialogField.DURATION,
+                            EventDialogField.REPEAT,
+                            EventDialogField.CALENDAR,
+                            EventDialogField.CALENDAR_TARGET,
+                            EventDialogField.NOTIFICATION,
+                            EventDialogField.NOTIFICATION_DETAILS,
+                            EventDialogField.REMINDER_OPTIONS
+                        )
+                    }
             }
-            val isDefaultFieldEnabled: (EventDialogField) -> Boolean = { field ->
-                enabledDefaultFieldSet.contains(field)
+            val enabledDefaultFieldSet = remember(enabledDefaultFieldsInOrder) {
+                enabledDefaultFieldsInOrder.toSet()
             }
-            val timeEnabled = isDefaultFieldEnabled(EventDialogField.TIME)
-            val durationEnabled = isDefaultFieldEnabled(EventDialogField.DURATION)
-            val repeatEnabled = isDefaultFieldEnabled(EventDialogField.REPEAT)
-            val calendarEnabled = isDefaultFieldEnabled(EventDialogField.CALENDAR)
-            val calendarTargetEnabled = isDefaultFieldEnabled(EventDialogField.CALENDAR_TARGET)
-            val notificationEnabled = isDefaultFieldEnabled(EventDialogField.NOTIFICATION)
-            val notificationDetailsEnabled = isDefaultFieldEnabled(EventDialogField.NOTIFICATION_DETAILS)
-            val reminderOptionsEnabled = isDefaultFieldEnabled(EventDialogField.REMINDER_OPTIONS)
+            val timeEnabled = enabledDefaultFieldSet.contains(EventDialogField.TIME)
+            val durationEnabled = enabledDefaultFieldSet.contains(EventDialogField.DURATION)
+            val repeatEnabled = enabledDefaultFieldSet.contains(EventDialogField.REPEAT)
+            val calendarEnabled = enabledDefaultFieldSet.contains(EventDialogField.CALENDAR)
+            val calendarTargetEnabled = enabledDefaultFieldSet.contains(EventDialogField.CALENDAR_TARGET)
+            val notificationEnabled = enabledDefaultFieldSet.contains(EventDialogField.NOTIFICATION)
+            val notificationDetailsEnabled = enabledDefaultFieldSet.contains(EventDialogField.NOTIFICATION_DETAILS)
+            val reminderOptionsEnabled = enabledDefaultFieldSet.contains(EventDialogField.REMINDER_OPTIONS)
 
             Text(
                 text = "Event card details",
@@ -2402,176 +2416,192 @@ private fun DefaultEventsSettingsSection(
                 color = MaterialTheme.colorScheme.secondary
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.settings_default_events_start_time),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary.copy(
-                    alpha = if (timeEnabled) 1f else 0.38f
-                )
-            )
-            Column(Modifier.selectableGroup()) {
-                StartTimeOption.entries.forEach { option ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = (option == startTimeOption),
-                                onClick = { onStartTimeOptionChange(option) },
-                                enabled = timeEnabled
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (option == startTimeOption),
-                            onClick = null,
-                            enabled = timeEnabled
-                        )
+            enabledDefaultFieldsInOrder.forEachIndexed { index, field ->
+                when (field) {
+                    EventDialogField.TIME -> {
                         Text(
-                            text = when (option) {
-                                StartTimeOption.CURRENT_TIME -> stringResource(R.string.settings_start_time_option_current_time)
-                                StartTimeOption.SPECIFIC_TIME -> stringResource(R.string.settings_start_time_option_specific_time)
-                                StartTimeOption.NEXT_FULL_HOUR -> stringResource(R.string.settings_start_time_option_next_full_hour)
-                            },
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(start = 8.dp).weight(1f),
-                            color = if (timeEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            stringResource(R.string.settings_default_events_start_time),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
-                        if (option == StartTimeOption.SPECIFIC_TIME && startTimeOption == StartTimeOption.SPECIFIC_TIME) {
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                String.format(Locale.getDefault(), "%02d:%02d", defaultEventHourState, defaultEventMinuteState),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(end = 8.dp),
-                                color = if (timeEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            )
-                            IconButton(
-                                onClick = onSpecificTimeClick,
-                                modifier = Modifier.padding(end = 8.dp),
-                                enabled = timeEnabled
-                            ) {
-                                Icon(Icons.Filled.Edit, stringResource(R.string.settings_default_events_edit_specific_time))
+                        Column(Modifier.selectableGroup()) {
+                            StartTimeOption.entries.forEach { option ->
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .selectable(
+                                            selected = (option == startTimeOption),
+                                            onClick = { onStartTimeOptionChange(option) }
+                                        )
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = (option == startTimeOption),
+                                        onClick = null
+                                    )
+                                    Text(
+                                        text = when (option) {
+                                            StartTimeOption.CURRENT_TIME -> stringResource(R.string.settings_start_time_option_current_time)
+                                            StartTimeOption.SPECIFIC_TIME -> stringResource(R.string.settings_start_time_option_specific_time)
+                                            StartTimeOption.NEXT_FULL_HOUR -> stringResource(R.string.settings_start_time_option_next_full_hour)
+                                        },
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier
+                                            .padding(start = 8.dp)
+                                            .weight(1f)
+                                    )
+                                    if (option == StartTimeOption.SPECIFIC_TIME && startTimeOption == StartTimeOption.SPECIFIC_TIME) {
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            String.format(Locale.getDefault(), "%02d:%02d", defaultEventHourState, defaultEventMinuteState),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            modifier = Modifier.padding(end = 8.dp)
+                                        )
+                                        IconButton(
+                                            onClick = onSpecificTimeClick,
+                                            modifier = Modifier.padding(end = 8.dp)
+                                        ) {
+                                            Icon(Icons.Filled.Edit, stringResource(R.string.settings_default_events_edit_specific_time))
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-            ) {
-                Text(
-                    stringResource(R.string.settings_default_events_duration),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                    color = if (durationEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                )
-                OutlinedTextField(
-                    value = defaultDurationHoursText,
-                    onValueChange = onDefaultDurationHoursChange,
-                    label = { Text(stringResource(R.string.settings_label_hours_short)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = durationEnabled,
-                    modifier = Modifier.width(70.dp)
-                )
-                Text(
-                    ":",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    color = if (durationEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                )
-                OutlinedTextField(
-                    value = defaultDurationMinutesText,
-                    onValueChange = onDefaultDurationMinutesChange,
-                    label = { Text(stringResource(R.string.settings_label_minutes_short)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = durationEnabled,
-                    modifier = Modifier.width(70.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            SettingSwitchItem(
-                text = stringResource(R.string.settings_default_events_one_time_appointment),
-                checked = !isOneTimeChecked,
-                enabled = repeatEnabled,
-                onCheckedChange = { isRepeating -> onIsOneTimeChange(!isRepeating) }
-            )
-            SettingSwitchItem(
-                text = stringResource(R.string.settings_default_events_create_calendar_entry),
-                checked = createCalendarEntryChecked,
-                onCheckedChange = onCreateCalendarEntryChange,
-                enabled = calendarEnabled && !useGoogleBackupModeChecked
-            )
-            if (createCalendarEntryChecked && !useGoogleBackupModeChecked && calendarEnabled && calendarTargetEnabled) {
-                Column(Modifier.padding(start = 16.dp, top = 8.dp).selectableGroup()) {
-                    Text(stringResource(R.string.settings_default_events_target_calendar_new_events), style = MaterialTheme.typography.titleSmall)
-                    val calendarOptionsForNewEvents = mutableListOf<Pair<String, String>>()
-                    calendarOptionsForNewEvents.add(SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL to stringResource(R.string.settings_default_events_target_calendar_local_device))
-                    if (selectedGoogleAccountName != null) {
-                        calendarOptionsForNewEvents.add(SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY to stringResource(R.string.settings_default_events_select_gcal_primary))
-                    }
 
-                    calendarOptionsForNewEvents.forEach { (optionId, optionDisplayName) ->
-                        val isSelected = selectedCalendarIdForNewEvents == optionId
-                        Row(Modifier.fillMaxWidth().selectable(
-                            selected = isSelected,
-                            onClick = { onSelectedCalendarIdForNewEventsChange(optionId) }
-                        ).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(selected = isSelected, onClick = null)
-                            Text(text = optionDisplayName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
+                    EventDialogField.DURATION -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Text(
+                                stringResource(R.string.settings_default_events_duration),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = defaultDurationHoursText,
+                                onValueChange = onDefaultDurationHoursChange,
+                                label = { Text(stringResource(R.string.settings_label_hours_short)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                enabled = durationEnabled,
+                                modifier = Modifier.width(70.dp)
+                            )
+                            Text(
+                                ":",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                            OutlinedTextField(
+                                value = defaultDurationMinutesText,
+                                onValueChange = onDefaultDurationMinutesChange,
+                                label = { Text(stringResource(R.string.settings_label_minutes_short)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                enabled = durationEnabled,
+                                modifier = Modifier.width(70.dp)
+                            )
                         }
                     }
+
+                    EventDialogField.REPEAT -> {
+                        SettingSwitchItem(
+                            text = stringResource(R.string.settings_default_events_one_time_appointment),
+                            checked = !isOneTimeChecked,
+                            enabled = repeatEnabled,
+                            onCheckedChange = { isRepeating -> onIsOneTimeChange(!isRepeating) }
+                        )
+                    }
+
+                    EventDialogField.CALENDAR -> {
+                        SettingSwitchItem(
+                            text = stringResource(R.string.settings_default_events_create_calendar_entry),
+                            checked = createCalendarEntryChecked,
+                            onCheckedChange = onCreateCalendarEntryChange,
+                            enabled = !useGoogleBackupModeChecked
+                        )
+                    }
+
+                    EventDialogField.CALENDAR_TARGET -> {
+                        if (calendarEnabled && createCalendarEntryChecked && !useGoogleBackupModeChecked && calendarTargetEnabled) {
+                            Column(Modifier.padding(start = 16.dp, top = 8.dp).selectableGroup()) {
+                                Text(stringResource(R.string.settings_default_events_target_calendar_new_events), style = MaterialTheme.typography.titleSmall)
+                                val calendarOptionsForNewEvents = mutableListOf<Pair<String, String>>()
+                                calendarOptionsForNewEvents.add(SettingsRepository.IMPORT_TARGET_CALENDAR_LOCAL to stringResource(R.string.settings_default_events_target_calendar_local_device))
+                                if (selectedGoogleAccountName != null) {
+                                    calendarOptionsForNewEvents.add(SettingsRepository.IMPORT_TARGET_SELECTED_GOOGLE_ACCOUNT_PRIMARY to stringResource(R.string.settings_default_events_select_gcal_primary))
+                                }
+
+                                calendarOptionsForNewEvents.forEach { (optionId, optionDisplayName) ->
+                                    val isSelected = selectedCalendarIdForNewEvents == optionId
+                                    Row(Modifier.fillMaxWidth().selectable(
+                                        selected = isSelected,
+                                        onClick = { onSelectedCalendarIdForNewEventsChange(optionId) }
+                                    ).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        RadioButton(selected = isSelected, onClick = null)
+                                        Text(text = optionDisplayName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    EventDialogField.NOTIFICATION -> {
+                        Text(
+                            stringResource(R.string.settings_default_events_notification_options_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        SettingSwitchItem(
+                            text = stringResource(R.string.settings_default_events_system_notification),
+                            checked = systemNotificationChecked,
+                            enabled = notificationEnabled,
+                            onCheckedChange = onSystemNotificationChange
+                        )
+                    }
+
+                    EventDialogField.NOTIFICATION_DETAILS -> {
+                        SettingSwitchItem(
+                            text = stringResource(R.string.settings_default_events_show_details_notification),
+                            checked = showDetailsInNotificationChecked,
+                            enabled = notificationEnabled && notificationDetailsEnabled && systemNotificationChecked,
+                            onCheckedChange = onShowDetailsInNotificationChange
+                        )
+                    }
+
+                    EventDialogField.REMINDER_OPTIONS -> {
+                        Text(
+                            stringResource(R.string.settings_default_events_reminder_options_title),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = reminderCountText,
+                            onValueChange = onReminderCountChange,
+                            label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            enabled = notificationEnabled && reminderOptionsEnabled && systemNotificationChecked,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = reminderIntervalMinutesText,
+                            onValueChange = onReminderIntervalMinutesChange,
+                            label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            enabled = notificationEnabled && reminderOptionsEnabled && systemNotificationChecked,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    else -> Unit
+                }
+                if (index != enabledDefaultFieldsInOrder.lastIndex) {
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                stringResource(R.string.settings_default_events_notification_options_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary.copy(
-                    alpha = if (notificationEnabled) 1f else 0.38f
-                )
-            )
-            SettingSwitchItem(
-                text = stringResource(R.string.settings_default_events_system_notification),
-                checked = systemNotificationChecked,
-                enabled = notificationEnabled,
-                onCheckedChange = onSystemNotificationChange
-            )
-            SettingSwitchItem(
-                text = stringResource(R.string.settings_default_events_show_details_notification),
-                checked = showDetailsInNotificationChecked,
-                enabled = notificationEnabled && notificationDetailsEnabled && systemNotificationChecked,
-                onCheckedChange = onShowDetailsInNotificationChange
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.settings_default_events_reminder_options_title),
-                style = MaterialTheme.typography.titleSmall,
-                color = if (notificationEnabled && reminderOptionsEnabled) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = reminderCountText,
-                onValueChange = onReminderCountChange,
-                label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = notificationEnabled && reminderOptionsEnabled && systemNotificationChecked,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = reminderIntervalMinutesText,
-                onValueChange = onReminderIntervalMinutesChange,
-                label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = notificationEnabled && reminderOptionsEnabled && systemNotificationChecked,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
         EventDefaultsSubmenu.EVENT_SETS -> {
             EventSetsSettingsSection(
