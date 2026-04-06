@@ -67,6 +67,33 @@ data class EventDialogFieldOption(
             }
         }
 
+        fun enforceDependencies(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
+            val enabledByField = fields.associate { it.field to it.enabled }.toMutableMap()
+
+            parentByChildField.forEach { (child, parent) ->
+                if (enabledByField[child] == true) {
+                    enabledByField[parent] = true
+                }
+            }
+
+            childByParentField.forEach { (parent, children) ->
+                if (enabledByField[parent] == false) {
+                    children.forEach { child -> enabledByField[child] = false }
+                }
+            }
+
+            // Calendar target is merged with Calendar in settings and should always mirror it.
+            enabledByField[EventDialogField.CALENDAR_TARGET] = enabledByField[EventDialogField.CALENDAR] ?: true
+
+            return fields.map { option ->
+                option.copy(enabled = enabledByField[option.field] ?: option.enabled)
+            }
+        }
+
+        fun applyRules(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
+            return enforceDependencies(enforceRequired(fields))
+        }
+
         fun defaults(): List<EventDialogFieldOption> = listOf(
             EventDialogFieldOption(EventDialogField.TITLE, false),
             EventDialogFieldOption(EventDialogField.NOTES, true),
@@ -83,6 +110,6 @@ data class EventDialogFieldOption(
             EventDialogFieldOption(EventDialogField.REMINDER_OPTIONS, false),
             EventDialogFieldOption(EventDialogField.EVENT_SET, false),
             EventDialogFieldOption(EventDialogField.EVENT_COLOR, false)
-        )
+        ).let(::applyRules)
     }
 }
