@@ -3795,6 +3795,9 @@ private fun EventDialogFieldConfigurator(
     Spacer(modifier = Modifier.height(8.dp))
     val fieldEnabledByType = fields.associate { it.field to it.enabled }
     fields.forEachIndexed { index, option ->
+        if (option.field == EventDialogField.DATE_DETAILS) {
+            return@forEachIndexed
+        }
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
             var totalDragOffset by remember(option.field) { mutableStateOf(0f) }
@@ -3931,7 +3934,13 @@ private fun EventDialogFieldConfigurator(
                         onCheckedChange = { enabled ->
                             val updated = fields.toMutableList()
                             updated[index] = option.copy(enabled = enabled)
-                            onFieldsChange(EventDialogFieldOption.applyRules(updated))
+                            onFieldsChange(
+                                EventDialogFieldOption.applyLinkedFieldRules(
+                                    fields = updated,
+                                    changedField = option.field,
+                                    enabled = enabled
+                                )
+                            )
                         },
                         enabled = !isRequiredField && isParentEnabled && !isMergedField
                     )
