@@ -28,12 +28,30 @@ data class EventDialogFieldOption(
 ) {
     companion object {
         private val requiredFields = emptySet<EventDialogField>()
+        private val linkedFieldGroups = listOf(
+            setOf(EventDialogField.REPEAT, EventDialogField.DATE_DETAILS)
+        )
 
         fun isRequired(field: EventDialogField): Boolean = field in requiredFields
 
         fun enforceRequired(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
             return fields.map { option ->
                 if (isRequired(option.field)) option.copy(enabled = true) else option
+            }
+        }
+
+        fun applyLinkedFieldRules(
+            fields: List<EventDialogFieldOption>,
+            changedField: EventDialogField,
+            enabled: Boolean
+        ): List<EventDialogFieldOption> {
+            val linkedGroup = linkedFieldGroups.firstOrNull { changedField in it } ?: return fields
+            return fields.map { option ->
+                if (option.field in linkedGroup && !isRequired(option.field)) {
+                    option.copy(enabled = enabled)
+                } else {
+                    option
+                }
             }
         }
 
