@@ -3831,7 +3831,6 @@ private fun EventDialogFieldConfigurator(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .onSizeChanged { rowHeights[option.field] = it.height.toFloat() }
                     .offset { IntOffset(0, if (isDragging) visualDragOffset.roundToInt() else 0) }
                     .zIndex(if (isDragging) 1f else 0f)
                     .graphicsLayer {
@@ -3847,6 +3846,7 @@ private fun EventDialogFieldConfigurator(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .onSizeChanged { rowHeights[option.field] = it.height.toFloat() }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -3906,18 +3906,18 @@ private fun EventDialogFieldConfigurator(
                                                                 val movedItem = reorderedVisible.removeAt(currentIndex)
                                                                 reorderedVisible.add(targetIndex, movedItem)
 
-                                                                var visibleInsertIndex = 0
-                                                                val updated = normalizedFields.map { original ->
-                                                                    if (original.field in setOf(
-                                                                            EventDialogField.CALENDAR_TARGET,
-                                                                            EventDialogField.NOTIFICATION_DETAILS,
-                                                                            EventDialogField.REMINDER_OPTIONS
-                                                                        )
-                                                                    ) {
-                                                                        original
-                                                                    } else {
-                                                                        reorderedVisible[visibleInsertIndex++]
+                                                                val hiddenFields = setOf(
+                                                                    EventDialogField.CALENDAR_TARGET,
+                                                                    EventDialogField.NOTIFICATION_DETAILS,
+                                                                    EventDialogField.REMINDER_OPTIONS
+                                                                )
+                                                                val visiblePositions = normalizedFields
+                                                                    .mapIndexedNotNull { index, item ->
+                                                                        if (item.field in hiddenFields) null else index
                                                                     }
+                                                                val updated = normalizedFields.toMutableList()
+                                                                visiblePositions.forEachIndexed { visibleIndex, originalIndex ->
+                                                                    updated[originalIndex] = reorderedVisible[visibleIndex]
                                                                 }
                                                                 onFieldsChange(normalizeFieldOptions(updated))
                                                             }
