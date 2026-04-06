@@ -3794,10 +3794,8 @@ private fun EventDialogFieldConfigurator(
     )
     Spacer(modifier = Modifier.height(8.dp))
     val fieldEnabledByType = fields.associate { it.field to it.enabled }
-    fields.forEachIndexed { index, option ->
-        if (option.field == EventDialogField.DATE_DETAILS) {
-            return@forEachIndexed
-        }
+    val visibleFields = fields.filter { it.field != EventDialogField.CALENDAR_TARGET }
+    visibleFields.forEach { option ->
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
             var totalDragOffset by remember(option.field) { mutableStateOf(0f) }
@@ -3885,40 +3883,45 @@ private fun EventDialogFieldConfigurator(
                         contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = rowContentAlpha),
                         modifier = Modifier
-                            .then(
-                                if (isParentEnabled) {
-                                    Modifier.pointerInput(option.field, fields) {
-                                        detectDragGestures(
-                                            onDragStart = {
-                                                isDragging = true
-                                                onDragActiveChange(true)
-                                            },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                totalDragOffset += dragAmount.y
-                                                dragOffset = totalDragOffset
-                                            },
-                                            onDragCancel = {
-                                                dragOffset = 0f
-                                                totalDragOffset = 0f
-                                                isDragging = false
-                                                onDragActiveChange(false)
-                                            },
-                                            onDragEnd = {
-                                                val currentIndex = fields.indexOfFirst { it.field == option.field }
-                                                if (currentIndex != -1) {
-                                                    val stepThreshold = if (rowHeightPx > 0f) rowHeightPx else reorderThreshold
-                                                    val moveSteps = (totalDragOffset / stepThreshold).toInt()
-                                                    if (moveSteps != 0) {
-                                                        val targetIndex = (currentIndex + moveSteps)
-                                                            .coerceIn(0, fields.lastIndex)
-                                                        if (targetIndex != currentIndex) {
-                                                            val updated = fields.toMutableList()
-                                                            val movedItem = updated.removeAt(currentIndex)
-                                                            updated.add(targetIndex, movedItem)
-                                                            onFieldsChange(EventDialogFieldOption.applyRules(updated))
+                            .pointerInput(option.field, fields) {
+                                detectDragGestures(
+                                    onDragStart = {
+                                        isDragging = true
+                                        onDragActiveChange(true)
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        totalDragOffset += dragAmount.y
+                                        dragOffset = totalDragOffset
+                                    },
+                                    onDragCancel = {
+                                        dragOffset = 0f
+                                        totalDragOffset = 0f
+                                        isDragging = false
+                                        onDragActiveChange(false)
+                                    },
+                                    onDragEnd = {
+                                        val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
+                                        if (currentIndex != -1) {
+                                            val stepThreshold = if (rowHeightPx > 0f) rowHeightPx else reorderThreshold
+                                            val moveSteps = (totalDragOffset / stepThreshold).toInt()
+                                            if (moveSteps != 0) {
+                                                val targetIndex = (currentIndex + moveSteps)
+                                                    .coerceIn(0, visibleFields.lastIndex)
+                                                if (targetIndex != currentIndex) {
+                                                    val reorderedVisible = visibleFields.toMutableList()
+                                                    val movedItem = reorderedVisible.removeAt(currentIndex)
+                                                    reorderedVisible.add(targetIndex, movedItem)
+
+                                                    var visibleInsertIndex = 0
+                                                    val updated = fields.map { original ->
+                                                        if (original.field == EventDialogField.CALENDAR_TARGET) {
+                                                            original
+                                                        } else {
+                                                            reorderedVisible[visibleInsertIndex++]
                                                         }
                                                     }
+                                                    onFieldsChange(EventDialogFieldOption.applyRules(updated))
                                                 }
                                                 dragOffset = 0f
                                                 totalDragOffset = 0f
@@ -3938,20 +3941,23 @@ private fun EventDialogFieldConfigurator(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = rowContentAlpha),
                         modifier = Modifier.weight(1f)
                     )
+                    val parentField = when (option.field) {
+                        EventDialogField.NOTIFICATION_DETAILS,
+                        EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
+                        else -> null
+                    }
+                    val isParentEnabled = parentField?.let { fieldEnabledByType[it] == true } ?: true
                     Switch(
                         checked = option.enabled,
                         onCheckedChange = { enabled ->
                             val updated = fields.toMutableList()
-                            updated[index] = option.copy(enabled = enabled)
-                            onFieldsChange(
-                                EventDialogFieldOption.applyLinkedFieldRules(
-                                    fields = updated,
-                                    changedField = option.field,
-                                    enabled = enabled
-                                )
-                            )
+                            val optionIndex = updated.indexOfFirst { it.field == option.field }
+                            if (optionIndex != -1) {
+                                updated[optionIndex] = option.copy(enabled = enabled)
+                                onFieldsChange(EventDialogFieldOption.applyRules(updated))
+                            }
                         },
-                        enabled = !isRequiredField && isParentEnabled && !isMergedField
+                        enabled = !isRequiredField && isParentEnabled
                     )
                 }
             }
