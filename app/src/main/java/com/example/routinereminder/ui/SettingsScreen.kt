@@ -3774,6 +3774,17 @@ private fun EventDialogFieldConfigurator(
     onDragActiveChange: (Boolean) -> Unit,
     parentScrollState: ScrollState
 ) {
+    val normalizeFieldOptions: (List<EventDialogFieldOption>) -> List<EventDialogFieldOption> = { options ->
+        EventDialogField.entries.mapNotNull { field ->
+            options.firstOrNull { it.field == field }
+        }.let(EventDialogFieldOption::applyRules)
+    }
+    LaunchedEffect(fields) {
+        val normalized = normalizeFieldOptions(fields)
+        if (normalized != fields) {
+            onFieldsChange(normalized)
+        }
+    }
     val reorderThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
     val density = LocalDensity.current
     val viewportHeightPx = LocalView.current.height.toFloat()
@@ -3804,7 +3815,7 @@ private fun EventDialogFieldConfigurator(
         val optionIndex = updated.indexOfFirst { it.field == field }
         if (optionIndex != -1) {
             updated[optionIndex] = updated[optionIndex].copy(enabled = enabled)
-            onFieldsChange(EventDialogFieldOption.applyRules(updated))
+            onFieldsChange(normalizeFieldOptions(updated))
         }
     }
     visibleFields.forEach { option ->
@@ -3918,8 +3929,12 @@ private fun EventDialogFieldConfigurator(
                                                 onDragEnd = {
                                                     val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
                                                     if (currentIndex != -1) {
-                                                        val stepThreshold = if (rowHeightPx > 0f) rowHeightPx else reorderThreshold
-                                                        val moveSteps = (totalDragOffset / stepThreshold).toInt()
+                                                        val stepThreshold = if (rowHeightPx > 0f) {
+                                                            minOf(rowHeightPx, reorderThreshold * 1.5f)
+                                                        } else {
+                                                            reorderThreshold
+                                                        }
+                                                        val moveSteps = (totalDragOffset / stepThreshold).roundToInt()
                                                         if (moveSteps != 0) {
                                                             val targetIndex = (currentIndex + moveSteps)
                                                                 .coerceIn(0, visibleFields.lastIndex)
@@ -3941,14 +3956,14 @@ private fun EventDialogFieldConfigurator(
                                                                         reorderedVisible[visibleInsertIndex++]
                                                                     }
                                                                 }
-                                                                onFieldsChange(EventDialogFieldOption.applyRules(updated))
+                                                                onFieldsChange(normalizeFieldOptions(updated))
                                                             }
-                                                            dragOffset = 0f
-                                                            totalDragOffset = 0f
-                                                            isDragging = false
-                                                            onDragActiveChange(false)
                                                         }
                                                     }
+                                                    dragOffset = 0f
+                                                    totalDragOffset = 0f
+                                                    isDragging = false
+                                                    onDragActiveChange(false)
                                                 }
                                             )
                                         }
@@ -3998,43 +4013,6 @@ private fun EventDialogFieldConfigurator(
                             }
                         }
                     }
-                }
-            }
-            if (option.field == EventDialogField.NOTIFICATION) {
-                val childNotificationDetails = fields.firstOrNull { it.field == EventDialogField.NOTIFICATION_DETAILS }
-                val childReminderOptions = fields.firstOrNull { it.field == EventDialogField.REMINDER_OPTIONS }
-                listOfNotNull(childNotificationDetails, childReminderOptions).forEach { childOption ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 28.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.SubdirectoryArrowRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = eventDialogFieldLabel(childOption.field),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Switch(
-                                checked = childOption.enabled,
-                                onCheckedChange = { enabled -> updateFieldEnabled(childOption.field, enabled) },
-                                enabled = option.enabled
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
