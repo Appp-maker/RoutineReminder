@@ -3806,6 +3806,7 @@ private fun EventDialogFieldConfigurator(
     val rowHeights = remember { mutableStateMapOf<EventDialogField, Float>() }
     var draggingField by remember { mutableStateOf<EventDialogField?>(null) }
     var draggingOffsetY by remember { mutableFloatStateOf(0f) }
+    var totalDragOffsetY by remember { mutableFloatStateOf(0f) }
     val updateFieldEnabled: (EventDialogField, Boolean) -> Unit = { field, enabled ->
         val updated = normalizedFields.toMutableList()
         val optionIndex = updated.indexOfFirst { it.field == field }
@@ -3862,78 +3863,64 @@ private fun EventDialogFieldConfigurator(
                             modifier = Modifier
                                 .then(
                                     if (!isMergedField) {
-                                        Modifier.pointerInput(option.field, normalizedFields) {
+                                        Modifier.pointerInput(option.field) {
                                             detectDragGestures(
                                                 onDragStart = {
                                                     draggingField = option.field
                                                     draggingOffsetY = 0f
+                                                    totalDragOffsetY = 0f
                                                     onDragActiveChange(true)
                                                 },
                                                 onDrag = { change, dragAmount ->
                                                     change.consume()
                                                     if (draggingField != option.field) return@detectDragGestures
                                                     draggingOffsetY += dragAmount.y
-
-                                                    val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
-                                                    if (currentIndex == -1) return@detectDragGestures
-
-                                                    if (draggingOffsetY > 0f && currentIndex < visibleFields.lastIndex) {
-                                                        val nextField = visibleFields[currentIndex + 1].field
-                                                        val threshold = (rowHeights[nextField] ?: reorderThreshold) / 2f
-                                                        if (draggingOffsetY >= threshold) {
-                                                            val reorderedVisible = visibleFields.toMutableList()
-                                                            val movedItem = reorderedVisible.removeAt(currentIndex)
-                                                            reorderedVisible.add(currentIndex + 1, movedItem)
-
-                                                            var visibleInsertIndex = 0
-                                                            val updated = normalizedFields.map { original ->
-                                                                if (original.field in setOf(
-                                                                        EventDialogField.CALENDAR_TARGET,
-                                                                        EventDialogField.NOTIFICATION_DETAILS,
-                                                                        EventDialogField.REMINDER_OPTIONS
-                                                                    )
-                                                                ) {
-                                                                    original
-                                                                } else {
-                                                                    reorderedVisible[visibleInsertIndex++]
-                                                                }
-                                                            }
-                                                            onFieldsChange(normalizeFieldOptions(updated))
-                                                            draggingOffsetY -= threshold
+                                                    totalDragOffsetY += dragAmount.y
+                                                },
+                                                onDragCancel = {
+                                                    draggingOffsetY = 0f
+                                                    totalDragOffsetY = 0f
+                                                    draggingField = null
+                                                    onDragActiveChange(false)
+                                                },
+                                                onDragEnd = {
+                                                    val draggedField = option.field
+                                                    val currentIndex = visibleFields.indexOfFirst { it.field == draggedField }
+                                                    if (currentIndex != -1) {
+                                                        val rowHeight = (rowHeights[draggedField] ?: reorderThreshold).coerceAtLeast(1f)
+                                                        val moveSteps = when {
+                                                            totalDragOffsetY >= rowHeight / 2f -> floor(totalDragOffsetY / rowHeight).toInt().coerceAtLeast(1)
+                                                            totalDragOffsetY <= -rowHeight / 2f -> ceil(totalDragOffsetY / rowHeight).toInt().coerceAtMost(-1)
+                                                            else -> 0
                                                         }
-                                                    } else if (draggingOffsetY < 0f && currentIndex > 0) {
-                                                        val previousField = visibleFields[currentIndex - 1].field
-                                                        val threshold = (rowHeights[previousField] ?: reorderThreshold) / 2f
-                                                        if (-draggingOffsetY >= threshold) {
-                                                            val reorderedVisible = visibleFields.toMutableList()
-                                                            val movedItem = reorderedVisible.removeAt(currentIndex)
-                                                            reorderedVisible.add(currentIndex - 1, movedItem)
 
-                                                            var visibleInsertIndex = 0
-                                                            val updated = normalizedFields.map { original ->
-                                                                if (original.field in setOf(
-                                                                        EventDialogField.CALENDAR_TARGET,
-                                                                        EventDialogField.NOTIFICATION_DETAILS,
-                                                                        EventDialogField.REMINDER_OPTIONS
-                                                                    )
-                                                                ) {
-                                                                    original
-                                                                } else {
-                                                                    reorderedVisible[visibleInsertIndex++]
+                                                        if (moveSteps != 0) {
+                                                            val targetIndex = (currentIndex + moveSteps).coerceIn(0, visibleFields.lastIndex)
+                                                            if (targetIndex != currentIndex) {
+                                                                val reorderedVisible = visibleFields.toMutableList()
+                                                                val movedItem = reorderedVisible.removeAt(currentIndex)
+                                                                reorderedVisible.add(targetIndex, movedItem)
+
+                                                                var visibleInsertIndex = 0
+                                                                val updated = normalizedFields.map { original ->
+                                                                    if (original.field in setOf(
+                                                                            EventDialogField.CALENDAR_TARGET,
+                                                                            EventDialogField.NOTIFICATION_DETAILS,
+                                                                            EventDialogField.REMINDER_OPTIONS
+                                                                        )
+                                                                    ) {
+                                                                        original
+                                                                    } else {
+                                                                        reorderedVisible[visibleInsertIndex++]
+                                                                    }
                                                                 }
                                                             }
                                                             onFieldsChange(normalizeFieldOptions(updated))
                                                             draggingOffsetY += threshold
                                                         }
                                                     }
-                                                },
-                                                onDragCancel = {
                                                     draggingOffsetY = 0f
-                                                    draggingField = null
-                                                    onDragActiveChange(false)
-                                                },
-                                                onDragEnd = {
-                                                    draggingOffsetY = 0f
+                                                    totalDragOffsetY = 0f
                                                     draggingField = null
                                                     onDragActiveChange(false)
                                                 }
