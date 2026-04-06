@@ -28,13 +28,18 @@ data class EventDialogFieldOption(
 ) {
     companion object {
         private val requiredFields = emptySet<EventDialogField>()
-        private val parentByChildField = mapOf(
+        private val parentFieldDependencies = mapOf(
             EventDialogField.CALENDAR_TARGET to EventDialogField.CALENDAR,
             EventDialogField.NOTIFICATION_DETAILS to EventDialogField.NOTIFICATION,
             EventDialogField.REMINDER_OPTIONS to EventDialogField.NOTIFICATION
         )
-        private val childByParentField = parentByChildField.entries
-            .groupBy(keySelector = { it.value }, valueTransform = { it.key })
+        private val mergedFieldGroups = listOf(
+            setOf(
+                EventDialogField.NOTIFICATION,
+                EventDialogField.NOTIFICATION_DETAILS,
+                EventDialogField.REMINDER_OPTIONS
+            )
+        )
 
         fun isRequired(field: EventDialogField): Boolean = field in requiredFields
 
@@ -45,31 +50,30 @@ data class EventDialogFieldOption(
         }
 
         fun enforceDependencies(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
-            val enabledByField = fields.associate { it.field to it.enabled }.toMutableMap()
-
-            parentByChildField.forEach { (child, parent) ->
-                if (enabledByField[child] == true) {
-                    enabledByField[parent] = true
-                }
-            }
-
-            childByParentField.forEach { (parent, children) ->
-                if (enabledByField[parent] == false) {
-                    children.forEach { child -> enabledByField[child] = false }
-                }
-            }
-
+            val enabledByField = fields.associate { it.field to it.enabled }
             return fields.map { option ->
-                option.copy(enabled = enabledByField[option.field] ?: option.enabled)
+                val requiredParent = parentFieldDependencies[option.field]
+                val parentEnabled = requiredParent?.let { enabledByField[it] == true } ?: true
+                if (!parentEnabled && option.enabled) {
+                    option.copy(enabled = false)
+                } else {
+                    option
+                }
             }
-        }
-
-        fun applyRules(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
-            return enforceDependencies(enforceRequired(fields))
         }
 
         fun normalize(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
-            return enforceDependencies(enforceRequired(fields))
+            val requiredAndDependent = enforceDependencies(enforceRequired(fields))
+            val enabledByField = requiredAndDependent.associate { it.field to it.enabled }
+            return requiredAndDependent.map { option ->
+                val mergedGroup = mergedFieldGroups.firstOrNull { option.field in it }
+                if (mergedGroup == null) {
+                    option
+                } else {
+                    val anchorField = mergedGroup.first()
+                    option.copy(enabled = enabledByField[anchorField] == true)
+                }
+            }
         }
 
         fun defaults(): List<EventDialogFieldOption> = listOf(
