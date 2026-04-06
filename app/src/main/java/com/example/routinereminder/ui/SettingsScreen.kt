@@ -3786,6 +3786,7 @@ private fun EventDialogFieldConfigurator(
         }
         EventDialogFieldOption.applyRules(uniqueOptions)
     }
+    val normalizedFields = remember(fields) { normalizeFieldOptions(fields) }
     val reorderThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
     val density = LocalDensity.current
     val viewportHeightPx = LocalView.current.height.toFloat()
@@ -3803,8 +3804,8 @@ private fun EventDialogFieldConfigurator(
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     Spacer(modifier = Modifier.height(8.dp))
-    val fieldEnabledByType = fields.associate { it.field to it.enabled }
-    val visibleFields = fields.filter {
+    val fieldEnabledByType = normalizedFields.associate { it.field to it.enabled }
+    val visibleFields = normalizedFields.filter {
         it.field !in setOf(
             EventDialogField.CALENDAR_TARGET,
             EventDialogField.NOTIFICATION_DETAILS,
@@ -3812,7 +3813,7 @@ private fun EventDialogFieldConfigurator(
         )
     }
     val updateFieldEnabled: (EventDialogField, Boolean) -> Unit = { field, enabled ->
-        val updated = fields.toMutableList()
+        val updated = normalizedFields.toMutableList()
         val optionIndex = updated.indexOfFirst { it.field == field }
         if (optionIndex != -1) {
             updated[optionIndex] = updated[optionIndex].copy(enabled = enabled)
@@ -3911,7 +3912,7 @@ private fun EventDialogFieldConfigurator(
                             modifier = Modifier
                                 .then(
                                     if (!isMergedField) {
-                                        Modifier.pointerInput(option.field, fields) {
+                                        Modifier.pointerInput(option.field, normalizedFields) {
                                             detectDragGestures(
                                                 onDragStart = {
                                                     isDragging = true
@@ -3947,7 +3948,7 @@ private fun EventDialogFieldConfigurator(
                                                                 reorderedVisible.add(targetIndex, movedItem)
 
                                                                 var visibleInsertIndex = 0
-                                                                val updated = fields.map { original ->
+                                                                val updated = normalizedFields.map { original ->
                                                                     if (original.field in setOf(
                                                                             EventDialogField.CALENDAR_TARGET,
                                                                             EventDialogField.NOTIFICATION_DETAILS,
@@ -3990,8 +3991,8 @@ private fun EventDialogFieldConfigurator(
                     }
 
                     if (option.field == EventDialogField.NOTIFICATION) {
-                        val childNotificationDetails = fields.firstOrNull { it.field == EventDialogField.NOTIFICATION_DETAILS }
-                        val childReminderOptions = fields.firstOrNull { it.field == EventDialogField.REMINDER_OPTIONS }
+                        val childNotificationDetails = normalizedFields.firstOrNull { it.field == EventDialogField.NOTIFICATION_DETAILS }
+                        val childReminderOptions = normalizedFields.firstOrNull { it.field == EventDialogField.REMINDER_OPTIONS }
                         listOfNotNull(childNotificationDetails, childReminderOptions).forEach { childOption ->
                             Row(
                                 modifier = Modifier
