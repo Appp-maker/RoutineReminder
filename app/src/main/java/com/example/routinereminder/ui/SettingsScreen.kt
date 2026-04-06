@@ -3883,52 +3883,56 @@ private fun EventDialogFieldConfigurator(
                         contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = rowContentAlpha),
                         modifier = Modifier
-                            .pointerInput(option.field, fields) {
-                                detectDragGestures(
-                                    onDragStart = {
-                                        isDragging = true
-                                        onDragActiveChange(true)
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        totalDragOffset += dragAmount.y
-                                        dragOffset = totalDragOffset
-                                    },
-                                    onDragCancel = {
-                                        dragOffset = 0f
-                                        totalDragOffset = 0f
-                                        isDragging = false
-                                        onDragActiveChange(false)
-                                    },
-                                    onDragEnd = {
-                                        val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
-                                        if (currentIndex != -1) {
-                                            val stepThreshold = if (rowHeightPx > 0f) rowHeightPx else reorderThreshold
-                                            val moveSteps = (totalDragOffset / stepThreshold).toInt()
-                                            if (moveSteps != 0) {
-                                                val targetIndex = (currentIndex + moveSteps)
-                                                    .coerceIn(0, visibleFields.lastIndex)
-                                                if (targetIndex != currentIndex) {
-                                                    val reorderedVisible = visibleFields.toMutableList()
-                                                    val movedItem = reorderedVisible.removeAt(currentIndex)
-                                                    reorderedVisible.add(targetIndex, movedItem)
-
-                                                    var visibleInsertIndex = 0
-                                                    val updated = fields.map { original ->
-                                                        if (original.field == EventDialogField.CALENDAR_TARGET) {
-                                                            original
-                                                        } else {
-                                                            reorderedVisible[visibleInsertIndex++]
-                                                        }
-                                                    }
-                                                    onFieldsChange(EventDialogFieldOption.applyRules(updated))
-                                                }
+                            .then(
+                                if (!isMergedField) {
+                                    Modifier.pointerInput(option.field, fields) {
+                                        detectDragGestures(
+                                            onDragStart = {
+                                                isDragging = true
+                                                onDragActiveChange(true)
+                                            },
+                                            onDrag = { change, dragAmount ->
+                                                change.consume()
+                                                totalDragOffset += dragAmount.y
+                                                dragOffset = totalDragOffset
+                                            },
+                                            onDragCancel = {
                                                 dragOffset = 0f
                                                 totalDragOffset = 0f
                                                 isDragging = false
                                                 onDragActiveChange(false)
+                                            },
+                                            onDragEnd = {
+                                                val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
+                                                if (currentIndex != -1) {
+                                                    val stepThreshold = if (rowHeightPx > 0f) rowHeightPx else reorderThreshold
+                                                    val moveSteps = (totalDragOffset / stepThreshold).toInt()
+                                                    if (moveSteps != 0) {
+                                                        val targetIndex = (currentIndex + moveSteps)
+                                                            .coerceIn(0, visibleFields.lastIndex)
+                                                        if (targetIndex != currentIndex) {
+                                                            val reorderedVisible = visibleFields.toMutableList()
+                                                            val movedItem = reorderedVisible.removeAt(currentIndex)
+                                                            reorderedVisible.add(targetIndex, movedItem)
+
+                                                            var visibleInsertIndex = 0
+                                                            val updated = fields.map { original ->
+                                                                if (original.field == EventDialogField.CALENDAR_TARGET) {
+                                                                    original
+                                                                } else {
+                                                                    reorderedVisible[visibleInsertIndex++]
+                                                                }
+                                                            }
+                                                            onFieldsChange(EventDialogFieldOption.applyRules(updated))
+                                                        }
+                                                        dragOffset = 0f
+                                                        totalDragOffset = 0f
+                                                        isDragging = false
+                                                        onDragActiveChange(false)
+                                                    }
+                                                }
                                             }
-                                        }
+                                        )
                                     }
                                 } else {
                                     Modifier
