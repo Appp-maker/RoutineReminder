@@ -3935,7 +3935,7 @@ private fun EventDialogFieldConfigurator(
                                                             rawSteps > 0f -> floor(rawSteps).toInt()
                                                             rawSteps < 0f -> ceil(rawSteps).toInt()
                                                             else -> 0
-                                                        }
+                                                        }.coerceIn(-1, 1)
                                                         if (moveSteps != 0) {
                                                             val targetIndex = (currentIndex + moveSteps)
                                                                 .coerceIn(0, visibleFields.lastIndex)
