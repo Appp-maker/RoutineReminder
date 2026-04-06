@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -74,6 +75,8 @@ import com.example.routinereminder.ui.components.SeriesColorPicker
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import java.util.*
 import java.time.DayOfWeek
@@ -2381,6 +2384,12 @@ private fun DefaultEventsSettingsSection(
             )
         }
         EventDefaultsSubmenu.DEFAULT_VALUES -> {
+            val enabledDefaultFieldSet = remember(eventDialogFields) {
+                eventDialogFields
+                    .filter { it.enabled }
+                    .map { it.field }
+                    .toSet()
+            }
             val enabledDefaultFieldsInOrder = remember(eventDialogFields) {
                 eventDialogFields
                     .filter { it.enabled }
@@ -2392,14 +2401,9 @@ private fun DefaultEventsSettingsSection(
                             EventDialogField.REPEAT,
                             EventDialogField.CALENDAR,
                             EventDialogField.CALENDAR_TARGET,
-                            EventDialogField.NOTIFICATION,
-                            EventDialogField.NOTIFICATION_DETAILS,
-                            EventDialogField.REMINDER_OPTIONS
+                            EventDialogField.NOTIFICATION
                         )
                     }
-            }
-            val enabledDefaultFieldSet = remember(enabledDefaultFieldsInOrder) {
-                enabledDefaultFieldsInOrder.toSet()
             }
             val timeEnabled = enabledDefaultFieldSet.contains(EventDialogField.TIME)
             val durationEnabled = enabledDefaultFieldSet.contains(EventDialogField.DURATION)
@@ -2560,40 +2564,36 @@ private fun DefaultEventsSettingsSection(
                             enabled = notificationEnabled,
                             onCheckedChange = onSystemNotificationChange
                         )
-                    }
-
-                    EventDialogField.NOTIFICATION_DETAILS -> {
                         SettingSwitchItem(
                             text = stringResource(R.string.settings_default_events_show_details_notification),
                             checked = showDetailsInNotificationChecked,
                             enabled = notificationEnabled && notificationDetailsEnabled && systemNotificationChecked,
                             onCheckedChange = onShowDetailsInNotificationChange
                         )
-                    }
-
-                    EventDialogField.REMINDER_OPTIONS -> {
-                        Text(
-                            stringResource(R.string.settings_default_events_reminder_options_title),
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = reminderCountText,
-                            onValueChange = onReminderCountChange,
-                            label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            enabled = notificationEnabled && reminderOptionsEnabled && systemNotificationChecked,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = reminderIntervalMinutesText,
-                            onValueChange = onReminderIntervalMinutesChange,
-                            label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            enabled = notificationEnabled && reminderOptionsEnabled && systemNotificationChecked,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        if (reminderOptionsEnabled) {
+                            Text(
+                                stringResource(R.string.settings_default_events_reminder_options_title),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = reminderCountText,
+                                onValueChange = onReminderCountChange,
+                                label = { Text(stringResource(R.string.settings_default_events_reminder_count_label)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                enabled = notificationEnabled && systemNotificationChecked,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = reminderIntervalMinutesText,
+                                onValueChange = onReminderIntervalMinutesChange,
+                                label = { Text(stringResource(R.string.settings_default_events_reminder_interval_label)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                enabled = notificationEnabled && systemNotificationChecked,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
 
                     else -> Unit
@@ -3776,6 +3776,16 @@ private fun EventDialogFieldConfigurator(
     onDragActiveChange: (Boolean) -> Unit,
     parentScrollState: ScrollState
 ) {
+    val normalizeFieldOptions: (List<EventDialogFieldOption>) -> List<EventDialogFieldOption> = { options ->
+        val defaultsByField = EventDialogFieldOption.defaults().associateBy { it.field }
+        val uniqueOptions = options.distinctBy { it.field }.toMutableList()
+        EventDialogField.entries.forEach { field ->
+            if (uniqueOptions.none { it.field == field }) {
+                uniqueOptions.add(defaultsByField[field] ?: EventDialogFieldOption(field, true))
+            }
+        }
+        EventDialogFieldOption.applyRules(uniqueOptions)
+    }
     val reorderThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
     val density = LocalDensity.current
     val viewportHeightPx = LocalView.current.height.toFloat()
@@ -3794,7 +3804,21 @@ private fun EventDialogFieldConfigurator(
     )
     Spacer(modifier = Modifier.height(8.dp))
     val fieldEnabledByType = fields.associate { it.field to it.enabled }
-    val visibleFields = fields.filter { it.field != EventDialogField.CALENDAR_TARGET }
+    val visibleFields = fields.filter {
+        it.field !in setOf(
+            EventDialogField.CALENDAR_TARGET,
+            EventDialogField.NOTIFICATION_DETAILS,
+            EventDialogField.REMINDER_OPTIONS
+        )
+    }
+    val updateFieldEnabled: (EventDialogField, Boolean) -> Unit = { field, enabled ->
+        val updated = fields.toMutableList()
+        val optionIndex = updated.indexOfFirst { it.field == field }
+        if (optionIndex != -1) {
+            updated[optionIndex] = updated[optionIndex].copy(enabled = enabled)
+            onFieldsChange(normalizeFieldOptions(updated))
+        }
+    }
     visibleFields.forEach { option ->
         key(option.field) {
             var dragOffset by remember(option.field) { mutableStateOf(0f) }
@@ -3861,102 +3885,135 @@ private fun EventDialogFieldConfigurator(
                 ),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val isRequiredField = EventDialogFieldOption.isRequired(option.field)
-                    val parentField = when (option.field) {
-                        EventDialogField.CALENDAR_TARGET -> EventDialogField.CALENDAR
-                        EventDialogField.NOTIFICATION_DETAILS,
-                        EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
-                        else -> null
-                    }
-                    val isParentEnabled = parentField?.let { fieldEnabledByType[it] == true } ?: true
-                    val isMergedField = option.field == EventDialogField.CALENDAR_TARGET
-                    val isChildFieldDisabledByParent = parentField != null && !isParentEnabled
-                    val rowContentAlpha = if (isChildFieldDisabledByParent) 0.38f else 1f
-                    Icon(
-                        imageVector = Icons.Filled.Menu,
-                        contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = rowContentAlpha),
+                Column {
+                    Row(
                         modifier = Modifier
-                            .then(
-                                if (!isMergedField) {
-                                    Modifier.pointerInput(option.field, fields) {
-                                        detectDragGestures(
-                                            onDragStart = {
-                                                isDragging = true
-                                                onDragActiveChange(true)
-                                            },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                totalDragOffset += dragAmount.y
-                                                dragOffset = totalDragOffset
-                                            },
-                                            onDragCancel = {
-                                                dragOffset = 0f
-                                                totalDragOffset = 0f
-                                                isDragging = false
-                                                onDragActiveChange(false)
-                                            },
-                                            onDragEnd = {
-                                                val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
-                                                if (currentIndex != -1) {
-                                                    val stepThreshold = if (rowHeightPx > 0f) rowHeightPx else reorderThreshold
-                                                    val moveSteps = (totalDragOffset / stepThreshold).toInt()
-                                                    if (moveSteps != 0) {
-                                                        val targetIndex = (currentIndex + moveSteps)
-                                                            .coerceIn(0, visibleFields.lastIndex)
-                                                        if (targetIndex != currentIndex) {
-                                                            val reorderedVisible = visibleFields.toMutableList()
-                                                            val movedItem = reorderedVisible.removeAt(currentIndex)
-                                                            reorderedVisible.add(targetIndex, movedItem)
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val isRequiredField = EventDialogFieldOption.isRequired(option.field)
+                        val parentField = when (option.field) {
+                            EventDialogField.CALENDAR_TARGET -> EventDialogField.CALENDAR
+                            EventDialogField.NOTIFICATION_DETAILS,
+                            EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
+                            else -> null
+                        }
+                        val isParentEnabled = parentField?.let { fieldEnabledByType[it] == true } ?: true
+                        val isMergedField = option.field == EventDialogField.CALENDAR_TARGET
+                        val isChildFieldDisabledByParent = parentField != null && !isParentEnabled
+                        val rowContentAlpha = if (isChildFieldDisabledByParent) 0.38f else 1f
+                        Icon(
+                            imageVector = Icons.Filled.Menu,
+                            contentDescription = stringResource(R.string.settings_event_data_fields_drag_handle_description),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = rowContentAlpha),
+                            modifier = Modifier
+                                .then(
+                                    if (!isMergedField) {
+                                        Modifier.pointerInput(option.field, fields) {
+                                            detectDragGestures(
+                                                onDragStart = {
+                                                    isDragging = true
+                                                    onDragActiveChange(true)
+                                                },
+                                                onDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    totalDragOffset += dragAmount.y
+                                                    dragOffset = totalDragOffset
+                                                },
+                                                onDragCancel = {
+                                                    dragOffset = 0f
+                                                    totalDragOffset = 0f
+                                                    isDragging = false
+                                                    onDragActiveChange(false)
+                                                },
+                                                onDragEnd = {
+                                                    val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
+                                                    if (currentIndex != -1) {
+                                                        val rawSteps = totalDragOffset / reorderThreshold
+                                                        val moveSteps = when {
+                                                            rawSteps > 0f -> floor(rawSteps).toInt()
+                                                            rawSteps < 0f -> ceil(rawSteps).toInt()
+                                                            else -> 0
+                                                        }.coerceIn(-1, 1)
+                                                        if (moveSteps != 0) {
+                                                            val targetIndex = (currentIndex + moveSteps)
+                                                                .coerceIn(0, visibleFields.lastIndex)
+                                                            if (targetIndex != currentIndex) {
+                                                                val reorderedVisible = visibleFields.toMutableList()
+                                                                val movedItem = reorderedVisible.removeAt(currentIndex)
+                                                                reorderedVisible.add(targetIndex, movedItem)
 
-                                                            var visibleInsertIndex = 0
-                                                            val updated = fields.map { original ->
-                                                                if (original.field == EventDialogField.CALENDAR_TARGET) {
-                                                                    original
-                                                                } else {
-                                                                    reorderedVisible[visibleInsertIndex++]
+                                                                var visibleInsertIndex = 0
+                                                                val updated = fields.map { original ->
+                                                                    if (original.field in setOf(
+                                                                            EventDialogField.CALENDAR_TARGET,
+                                                                            EventDialogField.NOTIFICATION_DETAILS,
+                                                                            EventDialogField.REMINDER_OPTIONS
+                                                                        )
+                                                                    ) {
+                                                                        original
+                                                                    } else {
+                                                                        reorderedVisible[visibleInsertIndex++]
+                                                                    }
                                                                 }
+                                                                onFieldsChange(normalizeFieldOptions(updated))
                                                             }
-                                                            onFieldsChange(EventDialogFieldOption.applyRules(updated))
                                                         }
-                                                        dragOffset = 0f
-                                                        totalDragOffset = 0f
-                                                        isDragging = false
-                                                        onDragActiveChange(false)
                                                     }
+                                                    dragOffset = 0f
+                                                    totalDragOffset = 0f
+                                                    isDragging = false
+                                                    onDragActiveChange(false)
                                                 }
-                                            }
-                                        )
+                                            )
+                                        }
+                                    } else {
+                                        Modifier
                                     }
-                                } else {
-                                    Modifier
-                                }
-                            )
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = eventDialogFieldLabel(option.field),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = rowContentAlpha),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Switch(
-                        checked = option.enabled,
-                        onCheckedChange = { enabled ->
-                            val updated = fields.toMutableList()
-                            val optionIndex = updated.indexOfFirst { it.field == option.field }
-                            if (optionIndex != -1) {
-                                updated[optionIndex] = option.copy(enabled = enabled)
-                                onFieldsChange(EventDialogFieldOption.applyRules(updated))
+                                )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = eventDialogFieldLabel(option.field),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = rowContentAlpha),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = option.enabled,
+                            onCheckedChange = { enabled -> updateFieldEnabled(option.field, enabled) },
+                            enabled = !isRequiredField && isParentEnabled
+                        )
+                    }
+
+                    if (option.field == EventDialogField.NOTIFICATION) {
+                        val childNotificationDetails = fields.firstOrNull { it.field == EventDialogField.NOTIFICATION_DETAILS }
+                        val childReminderOptions = fields.firstOrNull { it.field == EventDialogField.REMINDER_OPTIONS }
+                        listOfNotNull(childNotificationDetails, childReminderOptions).forEach { childOption ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 28.dp, end = 12.dp, bottom = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.SubdirectoryArrowRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = eventDialogFieldLabel(childOption.field),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Switch(
+                                    checked = childOption.enabled,
+                                    onCheckedChange = { enabled -> updateFieldEnabled(childOption.field, enabled) },
+                                    enabled = option.enabled
+                                )
                             }
-                        },
-                        enabled = !isRequiredField && isParentEnabled
-                    )
+                        }
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
