@@ -3783,15 +3783,6 @@ private fun EventDialogFieldConfigurator(
             }
         }
         EventDialogFieldOption.applyRules(uniqueOptions)
-        EventDialogField.entries.mapNotNull { field ->
-            options.firstOrNull { it.field == field }
-        }.let(EventDialogFieldOption::applyRules)
-    }
-    LaunchedEffect(fields) {
-        val normalized = normalizeFieldOptions(fields)
-        if (normalized != fields) {
-            onFieldsChange(normalized)
-        }
     }
     val reorderThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
     val density = LocalDensity.current
@@ -3937,12 +3928,7 @@ private fun EventDialogFieldConfigurator(
                                                 onDragEnd = {
                                                     val currentIndex = visibleFields.indexOfFirst { it.field == option.field }
                                                     if (currentIndex != -1) {
-                                                        val stepThreshold = if (rowHeightPx > 0f) {
-                                                            minOf(rowHeightPx, reorderThreshold * 1.5f)
-                                                        } else {
-                                                            reorderThreshold
-                                                        }
-                                                        val moveSteps = (totalDragOffset / stepThreshold).roundToInt()
+                                                        val moveSteps = (totalDragOffset / reorderThreshold).roundToInt()
                                                         if (moveSteps != 0) {
                                                             val targetIndex = (currentIndex + moveSteps)
                                                                 .coerceIn(0, visibleFields.lastIndex)
