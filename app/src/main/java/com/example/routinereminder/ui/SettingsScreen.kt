@@ -3928,7 +3928,7 @@ private fun EventDialogFieldConfigurator(
                                                 isDragging = false
                                                 onDragActiveChange(false)
                                             }
-                                        )
+                                        }
                                     }
                                 } else {
                                     Modifier
