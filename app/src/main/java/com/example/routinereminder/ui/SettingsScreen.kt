@@ -3917,20 +3917,23 @@ private fun EventDialogFieldConfigurator(
                         text = eventDialogFieldLabel(option.field),
                         modifier = Modifier.weight(1f)
                     )
+                    val parentField = when (option.field) {
+                        EventDialogField.CALENDAR_TARGET -> EventDialogField.CALENDAR
+                        EventDialogField.NOTIFICATION_DETAILS,
+                        EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
+                        else -> null
+                    }
+                    val parentEnabled = parentField?.let { parent ->
+                        fields.firstOrNull { it.field == parent }?.enabled == true
+                    } ?: true
                     Switch(
                         checked = option.enabled,
                         onCheckedChange = { enabled ->
                             val updated = fields.toMutableList()
                             updated[index] = option.copy(enabled = enabled)
-                            onFieldsChange(
-                                EventDialogFieldOption.applyLinkedFieldRules(
-                                    fields = updated,
-                                    changedField = option.field,
-                                    enabled = enabled
-                                )
-                            )
+                            onFieldsChange(EventDialogFieldOption.normalize(updated))
                         },
-                        enabled = !isRequiredField
+                        enabled = !isRequiredField && parentEnabled
                     )
                 }
             }

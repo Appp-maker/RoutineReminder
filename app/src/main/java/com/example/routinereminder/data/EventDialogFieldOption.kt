@@ -28,8 +28,10 @@ data class EventDialogFieldOption(
 ) {
     companion object {
         private val requiredFields = emptySet<EventDialogField>()
-        private val linkedFieldGroups = listOf(
-            setOf(EventDialogField.REPEAT, EventDialogField.DATE_DETAILS)
+        private val parentFieldDependencies = mapOf(
+            EventDialogField.CALENDAR_TARGET to EventDialogField.CALENDAR,
+            EventDialogField.NOTIFICATION_DETAILS to EventDialogField.NOTIFICATION,
+            EventDialogField.REMINDER_OPTIONS to EventDialogField.NOTIFICATION
         )
 
         fun isRequired(field: EventDialogField): Boolean = field in requiredFields
@@ -40,19 +42,21 @@ data class EventDialogFieldOption(
             }
         }
 
-        fun applyLinkedFieldRules(
-            fields: List<EventDialogFieldOption>,
-            changedField: EventDialogField,
-            enabled: Boolean
-        ): List<EventDialogFieldOption> {
-            val linkedGroup = linkedFieldGroups.firstOrNull { changedField in it } ?: return fields
+        fun enforceDependencies(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
+            val enabledByField = fields.associate { it.field to it.enabled }
             return fields.map { option ->
-                if (option.field in linkedGroup && !isRequired(option.field)) {
-                    option.copy(enabled = enabled)
+                val requiredParent = parentFieldDependencies[option.field]
+                val parentEnabled = requiredParent?.let { enabledByField[it] == true } ?: true
+                if (!parentEnabled && option.enabled) {
+                    option.copy(enabled = false)
                 } else {
                     option
                 }
             }
+        }
+
+        fun normalize(fields: List<EventDialogFieldOption>): List<EventDialogFieldOption> {
+            return enforceDependencies(enforceRequired(fields))
         }
 
         fun defaults(): List<EventDialogFieldOption> = listOf(
