@@ -81,8 +81,8 @@
     <string name="settings_default_events_show_details_notification">Show details in notification</string>
     <string name="settings_default_events_event_data_description">All available event data fields are listed here. You can enable or disable which fields are shown in the event creation dialog, and change their order by dragging and dropping them.</string>
     <string name="settings_default_events_reminder_options_title">Reminder timing</string>
-    <string name="settings_default_events_reminder_count_label">Reminders before event</string>
-    <string name="settings_default_events_reminder_interval_label">Minutes between reminders</string>
+    <string name="settings_default_events_reminder_count_label">Number of reminders before event</string>
+    <string name="settings_default_events_reminder_interval_label">Pause between reminders (minutes)</string>
     <string name="settings_events_enabled_title">Enable event sets</string>
     <string name="settings_events_enabled_description">Turn this off to disable event sets. When disabled, all entries with an event set attached are shown.</string>
     <string name="settings_event_appearance_title">Event appearance</string>
