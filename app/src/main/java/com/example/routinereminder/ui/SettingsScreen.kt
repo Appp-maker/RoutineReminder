@@ -3868,7 +3868,7 @@ private fun EventDialogFieldConfigurator(
                             modifier = Modifier
                                 .then(
                                     if (!isMergedField) {
-                                        Modifier.pointerInput(option.field) {
+                                        Modifier.pointerInput(option.field, visibleFields.map { it.field }) {
                                             detectDragGestures(
                                                 onDragStart = {
                                                     draggingField = option.field
