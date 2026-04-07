@@ -3853,7 +3853,7 @@ private fun EventDialogFieldConfigurator(
                         val isRequiredField = EventDialogFieldOption.isRequired(option.field)
                         val parentField = when (option.field) {
                             EventDialogField.CALENDAR_TARGET -> EventDialogField.CALENDAR
-                            EventDialogField.DATE_DETAILS -> EventDialogField.REPEAT
+                            EventDialogField.REPEAT -> EventDialogField.DATE_DETAILS
                             EventDialogField.NOTIFICATION_DETAILS,
                             EventDialogField.REMINDER_OPTIONS -> EventDialogField.NOTIFICATION
                             else -> null
