@@ -29,6 +29,7 @@ data class EventDialogFieldOption(
     companion object {
         private val requiredFields = emptySet<EventDialogField>()
         private val parentByChildField = mapOf(
+            EventDialogField.DATE_DETAILS to EventDialogField.REPEAT,
             EventDialogField.NOTIFICATION_DETAILS to EventDialogField.NOTIFICATION,
             EventDialogField.REMINDER_OPTIONS to EventDialogField.NOTIFICATION
         )
