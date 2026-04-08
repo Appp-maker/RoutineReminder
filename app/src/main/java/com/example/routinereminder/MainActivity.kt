@@ -2089,26 +2089,102 @@ private fun CalendarWeekOverview(
     items: List<ScheduleItem>,
     onDateSelected: (LocalDate) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        WeekdayHeaderRow()
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 140.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        weekDates.forEach { date ->
+            val dayItems = remember(date, items) {
+                items.filter { it.occursOnDate(date) }
+                    .sortedWith(compareBy({ it.hour }, { it.minute }))
+            }
+            WeekTimelineRow(
+                date = date,
+                dayItems = dayItems,
+                onClick = { onDateSelected(date) }
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun WeekTimelineRow(
+    date: LocalDate,
+    dayItems: List<ScheduleItem>,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(
+            modifier = Modifier.width(56.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            weekDates.forEach { date ->
-                val dayItems = remember(date, items) {
-                    items.filter { it.occursOnDate(date) }
-                        .sortedWith(compareBy({ it.hour }, { it.minute }))
-                }
-                CalendarDayCell(
-                    date = date,
-                    isInCurrentMonth = true,
-                    dayItems = dayItems,
-                    onClick = { onDateSelected(date) },
-                    modifier = Modifier.weight(1f)
+            Text(
+                text = date.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault()),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Surface(
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .clickable(onClick = onClick),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                 )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            if (dayItems.isEmpty()) {
+                Text(
+                    text = "No events",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            } else {
+                dayItems.take(3).forEach { item ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onClick),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    ) {
+                        Text(
+                            text = "${String.format("%02d:%02d", item.hour, item.minute)}  ${item.name}",
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+                if (dayItems.size > 3) {
+                    Text(
+                        text = "+${dayItems.size - 3} more",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
         }
     }
