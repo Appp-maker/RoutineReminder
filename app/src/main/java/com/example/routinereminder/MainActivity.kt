@@ -2081,7 +2081,7 @@ private fun RoutineOverviewContent(
                             Spacer(modifier = Modifier.height(4.dp))
                             summary.items.take(2).forEach { item ->
                                 Text(
-                                    text = "${String.format("%02d:%02d", item.hour, item.minute)} • ${item.title}",
+                                    text = "${String.format("%02d:%02d", item.hour, item.minute)} • ${item.name}",
                                     style = MaterialTheme.typography.bodySmall,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
