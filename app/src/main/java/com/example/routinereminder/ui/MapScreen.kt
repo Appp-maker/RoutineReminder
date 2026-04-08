@@ -577,6 +577,7 @@ fun MapScreen(
         val cp = CameraPosition.Builder().target(latLng).zoom(userZoom).build()
         m.animateCamera(CameraUpdateFactory.newCameraPosition(cp))
     }
+    val latestOnLocation by rememberUpdatedState(newValue = ::onLocation)
     var receiver by remember { mutableStateOf<BroadcastReceiver?>(null) }
 
     DisposableEffect(Unit) {
@@ -596,13 +597,13 @@ fun MapScreen(
                     longitude = lng
                     accuracy = 5f
                 }
-                onLocation(loc)
+                latestOnLocation(loc)
             }
         }
 
         receiver = r
         val filter = IntentFilter().apply {
-            addAction("TRACKING_LOCATION")
+            addAction(TrackingService.ACTION_TRACKING_LOCATION)
             addAction(TrackingService.ACTION_PERMISSION_REQUIRED)
         }
         context.registerReceiver(r, filter, Context.RECEIVER_NOT_EXPORTED)
