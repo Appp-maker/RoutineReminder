@@ -143,6 +143,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -1499,6 +1500,17 @@ private sealed class DisplayScheduleItem {
     data object EmptyState : DisplayScheduleItem()
 }
 
+private enum class RoutineOverviewMode {
+    DAY,
+    WEEK,
+    MONTH
+}
+
+private data class OverviewDaySummary(
+    val date: LocalDate,
+    val items: List<ScheduleItem>
+)
+
 private data class EventTimeWindow(
     val start: LocalTime,
     val end: LocalTime
@@ -1782,6 +1794,7 @@ fun MainScreenContent(
     val swipeThresholdPx = with(density) { 50.dp.toPx() }
     var showDatePicker by remember { mutableStateOf(false) }
     var isCompactView by rememberSaveable { mutableStateOf(false) }
+    var overviewMode by rememberSaveable { mutableStateOf(RoutineOverviewMode.DAY) }
 
     Box(
         modifier = Modifier
@@ -1818,6 +1831,13 @@ fun MainScreenContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            RoutineOverviewModeSwitch(
+                selectedMode = overviewMode,
+                onModeSelected = { overviewMode = it }
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             if (routineInsightsEnabled && routineInsights != null) {
                 RoutineInsightsCard(
                     insights = routineInsights,
@@ -1840,39 +1860,51 @@ fun MainScreenContent(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            ScheduleItemListContent(
-                items = items,
-                currentDate = currentDate,
-                doneStates = viewModel.doneItemsForDay.collectAsState().value,
-                eventSetColors = eventSetColors,
-                eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
-                eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
-                eventBackgroundTransparency = eventBackgroundTransparency,
-                eventTitleColorChoice = eventTitleColorChoice,
-                eventTitleCustomColor = eventTitleCustomColor,
-                eventCardDetailSettings = eventCardDetailSettings,
-                pastEventTextColorChoice = pastEventTextColorChoice,
-                pastEventTextCustomColor = pastEventTextCustomColor,
-                pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
-                pastEventDetailTextCustomColor = pastEventDetailTextCustomColor,
-                pastEventBackgroundTreatment = pastEventBackgroundTreatment,
-                pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
-                pastEventBackgroundTransparency = pastEventBackgroundTransparency,
-                routeTimeAddBeforeEvent = routeTimeAddBeforeEvent,
-                routeTimeAddAfterEvent = routeTimeAddAfterEvent,
-                isCompactView = isCompactView,
-                showQuickDoneToggle = routineInsightsEnabled && routineInsights != null,
-                onLongPress = { item ->
-                    selectedItemForAction = item
-                    coroutineScope.launch {
-                        selectedIsDoneToday = viewModel.isDoneForDate(item.id, currentDate.toEpochDay())
-                        showItemActionDialog = true
+            if (overviewMode == RoutineOverviewMode.DAY) {
+                ScheduleItemListContent(
+                    items = items,
+                    currentDate = currentDate,
+                    doneStates = viewModel.doneItemsForDay.collectAsState().value,
+                    eventSetColors = eventSetColors,
+                    eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
+                    eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                    eventBackgroundTransparency = eventBackgroundTransparency,
+                    eventTitleColorChoice = eventTitleColorChoice,
+                    eventTitleCustomColor = eventTitleCustomColor,
+                    eventCardDetailSettings = eventCardDetailSettings,
+                    pastEventTextColorChoice = pastEventTextColorChoice,
+                    pastEventTextCustomColor = pastEventTextCustomColor,
+                    pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
+                    pastEventDetailTextCustomColor = pastEventDetailTextCustomColor,
+                    pastEventBackgroundTreatment = pastEventBackgroundTreatment,
+                    pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
+                    pastEventBackgroundTransparency = pastEventBackgroundTransparency,
+                    routeTimeAddBeforeEvent = routeTimeAddBeforeEvent,
+                    routeTimeAddAfterEvent = routeTimeAddAfterEvent,
+                    isCompactView = isCompactView,
+                    showQuickDoneToggle = routineInsightsEnabled && routineInsights != null,
+                    onLongPress = { item ->
+                        selectedItemForAction = item
+                        coroutineScope.launch {
+                            selectedIsDoneToday = viewModel.isDoneForDate(item.id, currentDate.toEpochDay())
+                            showItemActionDialog = true
+                        }
+                    },
+                    onMarkDone = { item -> onMarkDone(item) },
+                    onUndoDone = { item -> onUndoDone(item) },
+                    viewModel = viewModel
+                )
+            } else {
+                RoutineOverviewContent(
+                    mode = overviewMode,
+                    currentDate = currentDate,
+                    items = items,
+                    onDateSelected = { selectedOverviewDate ->
+                        onDateSelected(selectedOverviewDate)
+                        overviewMode = RoutineOverviewMode.DAY
                     }
-                },
-                onMarkDone = { item -> onMarkDone(item) },
-                onUndoDone = { item -> onUndoDone(item) },
-                viewModel = viewModel
-            )
+                )
+            }
 
             Spacer(modifier = Modifier.height(72.dp))
         }
@@ -1953,6 +1985,112 @@ fun MainScreenContent(
             }
         ) {
             DatePicker(state = datePickerState)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RoutineOverviewModeSwitch(
+    selectedMode: RoutineOverviewMode,
+    onModeSelected: (RoutineOverviewMode) -> Unit
+) {
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        RoutineOverviewMode.entries.forEachIndexed { index, mode ->
+            SegmentedButton(
+                selected = selectedMode == mode,
+                onClick = { onModeSelected(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = RoutineOverviewMode.entries.size),
+                label = {
+                    Text(
+                        text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
+                        color = if (selectedMode == mode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoutineOverviewContent(
+    mode: RoutineOverviewMode,
+    currentDate: LocalDate,
+    items: List<ScheduleItem>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val dayFormatter = remember { DateTimeFormatter.ofPattern("EEE, MMM d") }
+    val summaries = remember(mode, currentDate, items) {
+        val daysInOverview = when (mode) {
+            RoutineOverviewMode.DAY -> listOf(currentDate)
+            RoutineOverviewMode.WEEK -> (0L..6L).map { currentDate.plusDays(it) }
+            RoutineOverviewMode.MONTH -> {
+                val month = YearMonth.from(currentDate)
+                (1..month.lengthOfMonth()).map(month::atDay)
+            }
+        }
+        daysInOverview.map { date ->
+            OverviewDaySummary(
+                date = date,
+                items = items.filter { item -> item.occursOnDate(date) }
+                    .sortedWith(compareBy({ it.hour }, { it.minute }))
+            )
+        }
+    }
+    val titleText = when (mode) {
+        RoutineOverviewMode.DAY -> "Day overview"
+        RoutineOverviewMode.WEEK -> "Next 7 days"
+        RoutineOverviewMode.MONTH -> "Month overview"
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = titleText,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = 72.dp)
+        ) {
+            items(summaries, key = { summary -> summary.date.toEpochDay() }) { summary ->
+                OutlinedCard(
+                    onClick = { onDateSelected(summary.date) },
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = summary.date.format(dayFormatter),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        val secondaryText = if (summary.items.isEmpty()) {
+                            "No events"
+                        } else {
+                            "${summary.items.size} event${if (summary.items.size == 1) "" else "s"}"
+                        }
+                        Text(
+                            text = secondaryText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        if (summary.items.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            summary.items.take(2).forEach { item ->
+                                Text(
+                                    text = "${String.format("%02d:%02d", item.hour, item.minute)} • ${item.title}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
