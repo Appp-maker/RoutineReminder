@@ -88,6 +88,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -2211,7 +2212,7 @@ private fun CalendarDayCell(
             } else {
                 dayItems.take(3).forEach { item ->
                     Text(
-                        text = "${String.format("%02d:%02d", item.hour, item.minute)} ${item.title}",
+                        text = "${String.format("%02d:%02d", item.hour, item.minute)} ${item.name}",
                         style = MaterialTheme.typography.labelSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
