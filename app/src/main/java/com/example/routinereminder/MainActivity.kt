@@ -1506,11 +1506,6 @@ private enum class RoutineOverviewMode {
     MONTH
 }
 
-private data class OverviewDaySummary(
-    val date: LocalDate,
-    val items: List<ScheduleItem>
-)
-
 private data class EventTimeWindow(
     val start: LocalTime,
     val end: LocalTime
@@ -2019,76 +2014,215 @@ private fun RoutineOverviewContent(
     items: List<ScheduleItem>,
     onDateSelected: (LocalDate) -> Unit
 ) {
-    val dayFormatter = remember { DateTimeFormatter.ofPattern("EEE, MMM d") }
-    val summaries = remember(mode, currentDate, items) {
-        val daysInOverview = when (mode) {
-            RoutineOverviewMode.DAY -> listOf(currentDate)
-            RoutineOverviewMode.WEEK -> (0L..6L).map { currentDate.plusDays(it) }
-            RoutineOverviewMode.MONTH -> {
-                val month = YearMonth.from(currentDate)
-                (1..month.lengthOfMonth()).map(month::atDay)
+    when (mode) {
+        RoutineOverviewMode.DAY -> Unit
+        RoutineOverviewMode.WEEK -> {
+            val weekStart = remember(currentDate) {
+                currentDate.minusDays((currentDate.dayOfWeek.value - 1).toLong())
             }
+            val weekDates = remember(weekStart) { (0L..6L).map { weekStart.plusDays(it) } }
+            CalendarOverviewHeader(
+                title = "Week overview",
+                subtitle = "${weekStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${weekStart.plusDays(6).format(DateTimeFormatter.ofPattern("MMM d"))}"
+            )
+            CalendarWeekOverview(
+                weekDates = weekDates,
+                items = items,
+                onDateSelected = onDateSelected
+            )
         }
-        daysInOverview.map { date ->
-            OverviewDaySummary(
-                date = date,
-                items = items.filter { item -> item.occursOnDate(date) }
-                    .sortedWith(compareBy({ it.hour }, { it.minute }))
+
+        RoutineOverviewMode.MONTH -> {
+            val month = remember(currentDate) { YearMonth.from(currentDate) }
+            val monthTitle = remember(month) { month.format(DateTimeFormatter.ofPattern("MMMM yyyy")) }
+            val leadingOffset = remember(month) {
+                month.atDay(1).dayOfWeek.value - 1
+            }
+            val totalCells = remember(month, leadingOffset) {
+                val raw = leadingOffset + month.lengthOfMonth()
+                if (raw % 7 == 0) raw else raw + (7 - raw % 7)
+            }
+            val cells = remember(month, leadingOffset, totalCells) {
+                val firstVisibleDate = month.atDay(1).minusDays(leadingOffset.toLong())
+                (0 until totalCells).map { index ->
+                    val date = firstVisibleDate.plusDays(index.toLong())
+                    date to (date.month == month.month)
+                }
+            }
+
+            CalendarOverviewHeader(
+                title = "Month overview",
+                subtitle = monthTitle
+            )
+            CalendarMonthOverview(
+                monthCells = cells,
+                items = items,
+                onDateSelected = onDateSelected
             )
         }
     }
-    val titleText = when (mode) {
-        RoutineOverviewMode.DAY -> "Day overview"
-        RoutineOverviewMode.WEEK -> "Next 7 days"
-        RoutineOverviewMode.MONTH -> "Month overview"
-    }
+}
 
-    Column(modifier = Modifier.fillMaxSize()) {
+@Composable
+private fun CalendarOverviewHeader(
+    title: String,
+    subtitle: String
+) {
+    Column(modifier = Modifier.padding(bottom = 8.dp)) {
         Text(
-            text = titleText,
+            text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp)
+            color = MaterialTheme.colorScheme.primary
         )
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(bottom = 72.dp)
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary
+        )
+    }
+}
+
+@Composable
+private fun CalendarWeekOverview(
+    weekDates: List<LocalDate>,
+    items: List<ScheduleItem>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        WeekdayHeaderRow()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 140.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            items(summaries, key = { summary -> summary.date.toEpochDay() }) { summary ->
-                OutlinedCard(
-                    onClick = { onDateSelected(summary.date) },
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = summary.date.format(dayFormatter),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        val secondaryText = if (summary.items.isEmpty()) {
-                            "No events"
-                        } else {
-                            "${summary.items.size} event${if (summary.items.size == 1) "" else "s"}"
-                        }
-                        Text(
-                            text = secondaryText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                        if (summary.items.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            summary.items.take(2).forEach { item ->
-                                Text(
-                                    text = "${String.format("%02d:%02d", item.hour, item.minute)} • ${item.name}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
+            weekDates.forEach { date ->
+                val dayItems = remember(date, items) {
+                    items.filter { it.occursOnDate(date) }
+                        .sortedWith(compareBy({ it.hour }, { it.minute }))
+                }
+                CalendarDayCell(
+                    date = date,
+                    isInCurrentMonth = true,
+                    dayItems = dayItems,
+                    onClick = { onDateSelected(date) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarMonthOverview(
+    monthCells: List<Pair<LocalDate, Boolean>>,
+    items: List<ScheduleItem>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val rows = remember(monthCells) { monthCells.chunked(7) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        WeekdayHeaderRow()
+        rows.forEach { weekRow ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 108.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                weekRow.forEach { (date, inCurrentMonth) ->
+                    val dayItems = remember(date, items) {
+                        items.filter { it.occursOnDate(date) }
+                            .sortedWith(compareBy({ it.hour }, { it.minute }))
                     }
+                    CalendarDayCell(
+                        date = date,
+                        isInCurrentMonth = inCurrentMonth,
+                        dayItems = dayItems,
+                        onClick = { onDateSelected(date) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(72.dp))
+    }
+}
+
+@Composable
+private fun WeekdayHeaderRow() {
+    val labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        labels.forEach { label ->
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarDayCell(
+    date: LocalDate,
+    isInCurrentMonth: Boolean,
+    dayItems: List<ScheduleItem>,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(modifier = Modifier.padding(6.dp)) {
+            Text(
+                text = date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                color = when {
+                    isInCurrentMonth -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            if (dayItems.isEmpty()) {
+                Text(
+                    text = "No events",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            } else {
+                dayItems.take(3).forEach { item ->
+                    Text(
+                        text = "${String.format("%02d:%02d", item.hour, item.minute)} ${item.title}",
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (dayItems.size > 3) {
+                    Text(
+                        text = "+${dayItems.size - 3} more",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
                 }
             }
         }
