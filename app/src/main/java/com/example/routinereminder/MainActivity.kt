@@ -143,6 +143,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -1499,6 +1500,12 @@ private sealed class DisplayScheduleItem {
     data object EmptyState : DisplayScheduleItem()
 }
 
+private enum class RoutineOverviewMode {
+    DAY,
+    WEEK,
+    MONTH
+}
+
 private data class EventTimeWindow(
     val start: LocalTime,
     val end: LocalTime
@@ -1782,6 +1789,7 @@ fun MainScreenContent(
     val swipeThresholdPx = with(density) { 50.dp.toPx() }
     var showDatePicker by remember { mutableStateOf(false) }
     var isCompactView by rememberSaveable { mutableStateOf(false) }
+    var overviewMode by rememberSaveable { mutableStateOf(RoutineOverviewMode.DAY) }
 
     Box(
         modifier = Modifier
@@ -1818,6 +1826,13 @@ fun MainScreenContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            RoutineOverviewModeSwitch(
+                selectedMode = overviewMode,
+                onModeSelected = { overviewMode = it }
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             if (routineInsightsEnabled && routineInsights != null) {
                 RoutineInsightsCard(
                     insights = routineInsights,
@@ -1840,39 +1855,51 @@ fun MainScreenContent(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            ScheduleItemListContent(
-                items = items,
-                currentDate = currentDate,
-                doneStates = viewModel.doneItemsForDay.collectAsState().value,
-                eventSetColors = eventSetColors,
-                eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
-                eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
-                eventBackgroundTransparency = eventBackgroundTransparency,
-                eventTitleColorChoice = eventTitleColorChoice,
-                eventTitleCustomColor = eventTitleCustomColor,
-                eventCardDetailSettings = eventCardDetailSettings,
-                pastEventTextColorChoice = pastEventTextColorChoice,
-                pastEventTextCustomColor = pastEventTextCustomColor,
-                pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
-                pastEventDetailTextCustomColor = pastEventDetailTextCustomColor,
-                pastEventBackgroundTreatment = pastEventBackgroundTreatment,
-                pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
-                pastEventBackgroundTransparency = pastEventBackgroundTransparency,
-                routeTimeAddBeforeEvent = routeTimeAddBeforeEvent,
-                routeTimeAddAfterEvent = routeTimeAddAfterEvent,
-                isCompactView = isCompactView,
-                showQuickDoneToggle = routineInsightsEnabled && routineInsights != null,
-                onLongPress = { item ->
-                    selectedItemForAction = item
-                    coroutineScope.launch {
-                        selectedIsDoneToday = viewModel.isDoneForDate(item.id, currentDate.toEpochDay())
-                        showItemActionDialog = true
+            if (overviewMode == RoutineOverviewMode.DAY) {
+                ScheduleItemListContent(
+                    items = items,
+                    currentDate = currentDate,
+                    doneStates = viewModel.doneItemsForDay.collectAsState().value,
+                    eventSetColors = eventSetColors,
+                    eventIndicatorDisplayCondition = eventIndicatorDisplayCondition,
+                    eventBackgroundDisplayCondition = eventBackgroundDisplayCondition,
+                    eventBackgroundTransparency = eventBackgroundTransparency,
+                    eventTitleColorChoice = eventTitleColorChoice,
+                    eventTitleCustomColor = eventTitleCustomColor,
+                    eventCardDetailSettings = eventCardDetailSettings,
+                    pastEventTextColorChoice = pastEventTextColorChoice,
+                    pastEventTextCustomColor = pastEventTextCustomColor,
+                    pastEventDetailTextColorChoice = pastEventDetailTextColorChoice,
+                    pastEventDetailTextCustomColor = pastEventDetailTextCustomColor,
+                    pastEventBackgroundTreatment = pastEventBackgroundTreatment,
+                    pastEventBackgroundCustomColor = pastEventBackgroundCustomColor,
+                    pastEventBackgroundTransparency = pastEventBackgroundTransparency,
+                    routeTimeAddBeforeEvent = routeTimeAddBeforeEvent,
+                    routeTimeAddAfterEvent = routeTimeAddAfterEvent,
+                    isCompactView = isCompactView,
+                    showQuickDoneToggle = routineInsightsEnabled && routineInsights != null,
+                    onLongPress = { item ->
+                        selectedItemForAction = item
+                        coroutineScope.launch {
+                            selectedIsDoneToday = viewModel.isDoneForDate(item.id, currentDate.toEpochDay())
+                            showItemActionDialog = true
+                        }
+                    },
+                    onMarkDone = { item -> onMarkDone(item) },
+                    onUndoDone = { item -> onUndoDone(item) },
+                    viewModel = viewModel
+                )
+            } else {
+                RoutineOverviewContent(
+                    mode = overviewMode,
+                    currentDate = currentDate,
+                    items = items,
+                    onDateSelected = { selectedOverviewDate ->
+                        onDateSelected(selectedOverviewDate)
+                        overviewMode = RoutineOverviewMode.DAY
                     }
-                },
-                onMarkDone = { item -> onMarkDone(item) },
-                onUndoDone = { item -> onUndoDone(item) },
-                viewModel = viewModel
-            )
+                )
+            }
 
             Spacer(modifier = Modifier.height(72.dp))
         }
@@ -1953,6 +1980,251 @@ fun MainScreenContent(
             }
         ) {
             DatePicker(state = datePickerState)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RoutineOverviewModeSwitch(
+    selectedMode: RoutineOverviewMode,
+    onModeSelected: (RoutineOverviewMode) -> Unit
+) {
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        RoutineOverviewMode.entries.forEachIndexed { index, mode ->
+            SegmentedButton(
+                selected = selectedMode == mode,
+                onClick = { onModeSelected(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = RoutineOverviewMode.entries.size),
+                label = {
+                    Text(
+                        text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
+                        color = if (selectedMode == mode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoutineOverviewContent(
+    mode: RoutineOverviewMode,
+    currentDate: LocalDate,
+    items: List<ScheduleItem>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    when (mode) {
+        RoutineOverviewMode.DAY -> Unit
+        RoutineOverviewMode.WEEK -> {
+            val weekStart = remember(currentDate) {
+                currentDate.minusDays((currentDate.dayOfWeek.value - 1).toLong())
+            }
+            val weekDates = remember(weekStart) { (0L..6L).map { weekStart.plusDays(it) } }
+            CalendarOverviewHeader(
+                title = "Week overview",
+                subtitle = "${weekStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${weekStart.plusDays(6).format(DateTimeFormatter.ofPattern("MMM d"))}"
+            )
+            CalendarWeekOverview(
+                weekDates = weekDates,
+                items = items,
+                onDateSelected = onDateSelected
+            )
+        }
+
+        RoutineOverviewMode.MONTH -> {
+            val month = remember(currentDate) { YearMonth.from(currentDate) }
+            val monthTitle = remember(month) { month.format(DateTimeFormatter.ofPattern("MMMM yyyy")) }
+            val leadingOffset = remember(month) {
+                month.atDay(1).dayOfWeek.value - 1
+            }
+            val totalCells = remember(month, leadingOffset) {
+                val raw = leadingOffset + month.lengthOfMonth()
+                if (raw % 7 == 0) raw else raw + (7 - raw % 7)
+            }
+            val cells = remember(month, leadingOffset, totalCells) {
+                val firstVisibleDate = month.atDay(1).minusDays(leadingOffset.toLong())
+                (0 until totalCells).map { index ->
+                    val date = firstVisibleDate.plusDays(index.toLong())
+                    date to (date.month == month.month)
+                }
+            }
+
+            CalendarOverviewHeader(
+                title = "Month overview",
+                subtitle = monthTitle
+            )
+            CalendarMonthOverview(
+                monthCells = cells,
+                items = items,
+                onDateSelected = onDateSelected
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarOverviewHeader(
+    title: String,
+    subtitle: String
+) {
+    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary
+        )
+    }
+}
+
+@Composable
+private fun CalendarWeekOverview(
+    weekDates: List<LocalDate>,
+    items: List<ScheduleItem>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        WeekdayHeaderRow()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 140.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            weekDates.forEach { date ->
+                val dayItems = remember(date, items) {
+                    items.filter { it.occursOnDate(date) }
+                        .sortedWith(compareBy({ it.hour }, { it.minute }))
+                }
+                CalendarDayCell(
+                    date = date,
+                    isInCurrentMonth = true,
+                    dayItems = dayItems,
+                    onClick = { onDateSelected(date) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarMonthOverview(
+    monthCells: List<Pair<LocalDate, Boolean>>,
+    items: List<ScheduleItem>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val rows = remember(monthCells) { monthCells.chunked(7) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        WeekdayHeaderRow()
+        rows.forEach { weekRow ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 108.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                weekRow.forEach { (date, inCurrentMonth) ->
+                    val dayItems = remember(date, items) {
+                        items.filter { it.occursOnDate(date) }
+                            .sortedWith(compareBy({ it.hour }, { it.minute }))
+                    }
+                    CalendarDayCell(
+                        date = date,
+                        isInCurrentMonth = inCurrentMonth,
+                        dayItems = dayItems,
+                        onClick = { onDateSelected(date) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(72.dp))
+    }
+}
+
+@Composable
+private fun WeekdayHeaderRow() {
+    val labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        labels.forEach { label ->
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarDayCell(
+    date: LocalDate,
+    isInCurrentMonth: Boolean,
+    dayItems: List<ScheduleItem>,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(modifier = Modifier.padding(6.dp)) {
+            Text(
+                text = date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                color = when {
+                    isInCurrentMonth -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            if (dayItems.isEmpty()) {
+                Text(
+                    text = "No events",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            } else {
+                dayItems.take(3).forEach { item ->
+                    Text(
+                        text = "${String.format("%02d:%02d", item.hour, item.minute)} ${item.title}",
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (dayItems.size > 3) {
+                    Text(
+                        text = "+${dayItems.size - 3} more",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
         }
     }
 }
