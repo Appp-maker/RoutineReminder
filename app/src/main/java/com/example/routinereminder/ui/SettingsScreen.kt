@@ -3810,6 +3810,7 @@ private fun EventDialogFieldConfigurator(
     }
     val rowHeights = remember { mutableStateMapOf<EventDialogField, Float>() }
     var draggingField by remember { mutableStateOf<EventDialogField?>(null) }
+    var expandedPreviewField by remember { mutableStateOf<EventDialogField?>(null) }
     var draggingOffsetY by remember { mutableFloatStateOf(0f) }
     var totalDragOffsetY by remember { mutableFloatStateOf(0f) }
     val updateFieldEnabled: (EventDialogField, Boolean) -> Unit = { field, enabled ->
@@ -3847,6 +3848,9 @@ private fun EventDialogFieldConfigurator(
                         modifier = Modifier
                             .fillMaxWidth()
                             .onSizeChanged { rowHeights[option.field] = it.height.toFloat() }
+                            .clickable {
+                                expandedPreviewField = if (expandedPreviewField == option.field) null else option.field
+                            }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -3949,6 +3953,15 @@ private fun EventDialogFieldConfigurator(
                         )
                     }
 
+                    if (expandedPreviewField == option.field) {
+                        Text(
+                            text = eventDialogFieldPreview(option.field),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 44.dp, end = 12.dp, bottom = 10.dp)
+                        )
+                    }
+
                     if (option.field == EventDialogField.NOTIFICATION) {
                         val childNotificationDetails = normalizedFields.firstOrNull { it.field == EventDialogField.NOTIFICATION_DETAILS }
                         val childReminderOptions = normalizedFields.firstOrNull { it.field == EventDialogField.REMINDER_OPTIONS }
@@ -3981,6 +3994,27 @@ private fun EventDialogFieldConfigurator(
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+@Composable
+private fun eventDialogFieldPreview(field: EventDialogField): String {
+    return when (field) {
+        EventDialogField.TITLE -> stringResource(R.string.settings_event_data_field_preview_title)
+        EventDialogField.NOTES -> stringResource(R.string.settings_event_data_field_preview_notes)
+        EventDialogField.START -> stringResource(R.string.settings_event_data_field_preview_start)
+        EventDialogField.DESTINATION -> stringResource(R.string.settings_event_data_field_preview_destination)
+        EventDialogField.TIME -> stringResource(R.string.settings_event_data_field_preview_time)
+        EventDialogField.DURATION -> stringResource(R.string.settings_event_data_field_preview_duration)
+        EventDialogField.EVENT_SET -> stringResource(R.string.settings_event_data_field_preview_event_set)
+        EventDialogField.EVENT_COLOR -> stringResource(R.string.settings_event_data_field_preview_event_color)
+        EventDialogField.REPEAT -> stringResource(R.string.settings_event_data_field_preview_repeat)
+        EventDialogField.DATE_DETAILS -> stringResource(R.string.settings_event_data_field_preview_date_details)
+        EventDialogField.CALENDAR -> stringResource(R.string.settings_event_data_field_preview_calendar)
+        EventDialogField.CALENDAR_TARGET -> stringResource(R.string.settings_event_data_field_preview_calendar_target)
+        EventDialogField.NOTIFICATION -> stringResource(R.string.settings_event_data_field_preview_notification)
+        EventDialogField.NOTIFICATION_DETAILS -> stringResource(R.string.settings_event_data_field_preview_notification_details)
+        EventDialogField.REMINDER_OPTIONS -> stringResource(R.string.settings_event_data_field_preview_reminder_options)
     }
 }
 
