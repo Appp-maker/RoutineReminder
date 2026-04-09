@@ -2319,18 +2319,18 @@ private fun CalendarDayCell(
                     overflow = TextOverflow.Ellipsis
                 )
             } else {
-                dayItems.take(3).forEach { item ->
+                dayItems.take(4).forEach { item ->
                     Text(
-                        text = "${String.format("%02d:%02d", item.hour, item.minute)} ${item.name}",
+                        text = item.name,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                if (dayItems.size > 3) {
+                if (dayItems.size > 4) {
                     Text(
-                        text = "+${dayItems.size - 3} more",
+                        text = "+${dayItems.size - 4} more",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.secondary.copy(alpha = contentAlpha)
                     )
