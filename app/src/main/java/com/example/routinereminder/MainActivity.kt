@@ -2005,21 +2005,19 @@ private fun RoutineOverviewModeSwitch(
                 onClick = { onModeSelected(mode) },
                 modifier = Modifier.defaultMinSize(minWidth = 58.dp, minHeight = 34.dp),
                 shape = SegmentedButtonDefaults.itemShape(index = index, count = RoutineOverviewMode.entries.size),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                icon = {},
-                label = {
-                    Text(
-                        text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        color = if (selectedMode == mode) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        }
-                    )
-                }
-            )
+                icon = {}
+            ) {
+                Text(
+                    text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    color = if (selectedMode == mode) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
         }
     }
 }

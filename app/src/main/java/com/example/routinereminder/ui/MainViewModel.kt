@@ -65,6 +65,7 @@ data class CalendarInfo(val id: String, val displayName: String, val accountName
 
 private data class ScheduleFilterState(
     val itemsForDate: List<ScheduleItem>,
+    val allItems: List<ScheduleItem>,
     val availableSetIds: Set<Int>,
     val effectiveActiveSetIds: Set<Int>,
     val eventSetsEnabled: Boolean
@@ -1389,10 +1390,11 @@ class MainViewModel @Inject constructor(
                 _activeSetIds,
                 _eventSetsEnabled
             ) { entities: List<com.example.routinereminder.data.entities.Schedule>, date: LocalDate, activeSetIds: Set<Int>, eventSetsEnabled: Boolean ->
-                val itemsForDate = entities
+                val allItems = entities
                     .map { it.toItem() }
-                    .filter { item -> item.occursOnDate(date) }
                     .distinctBy { item -> item.id }
+                val itemsForDate = allItems
+                    .filter { item -> item.occursOnDate(date) }
                 val availableSetIds = itemsForDate.mapNotNull { it.setId }.toSet()
                 val effectiveActiveSetIds = if (eventSetsEnabled) {
                     activeSetIds.intersect(availableSetIds)
@@ -1402,11 +1404,12 @@ class MainViewModel @Inject constructor(
 
                 ScheduleFilterState(
                     itemsForDate = itemsForDate,
+                    allItems = allItems,
                     availableSetIds = availableSetIds,
                     effectiveActiveSetIds = effectiveActiveSetIds,
                     eventSetsEnabled = eventSetsEnabled
                 )
-            }.collectLatest { (itemsForDate, availableSetIds, effectiveActiveSetIds, eventSetsEnabled) ->
+            }.collectLatest { (itemsForDate, allItems, availableSetIds, effectiveActiveSetIds, eventSetsEnabled) ->
                 if (_availableSetIds.value != availableSetIds) {
                     _availableSetIds.value = availableSetIds
                 }
@@ -1425,9 +1428,7 @@ class MainViewModel @Inject constructor(
                         compareBy<ScheduleItem> { it.durationMinutes }
                             .thenBy { item -> item.hour * 60 + item.minute }
                     )
-                val allFiltered = entities
-                    .map { it.toItem() }
-                    .distinctBy { item -> item.id }
+                val allFiltered = allItems
                     .filter { item -> item.setId == null || item.setId in effectiveActiveSetIds }
 
                 withContext(Dispatchers.Main) {
