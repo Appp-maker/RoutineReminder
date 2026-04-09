@@ -434,6 +434,7 @@ fun MainAppUI(
         var showDeleteCalendarConfirmDialog by remember { mutableStateOf(false) }
         var itemForCalendarDeleteConfirmation by remember { mutableStateOf<ScheduleItem?>(null) }
         val scheduleItems by viewModel.scheduleItems.collectAsState()
+        val allScheduleItems by viewModel.allScheduleItems.collectAsState()
         val selectedDate by viewModel.selectedDate.collectAsState()
         val defaultEventSettings by viewModel.defaultEventSettings.collectAsState()
         val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
@@ -590,6 +591,7 @@ fun MainAppUI(
                         composable(Screen.RoutineReminder.route) {
                             MainScreenContent(
                                 items = scheduleItems,
+                                overviewItems = allScheduleItems,
                                 currentDate = selectedDate,
                                 eventSetNames = eventSetNames,
                                 eventSetColors = eventSetColors,
@@ -1744,6 +1746,7 @@ private fun EventSetToggleRow(
 @Composable
 fun MainScreenContent(
     items: List<ScheduleItem>,
+    overviewItems: List<ScheduleItem>,
     currentDate: LocalDate,
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
@@ -1894,7 +1897,7 @@ fun MainScreenContent(
                 RoutineOverviewContent(
                     mode = overviewMode,
                     currentDate = currentDate,
-                    items = items,
+                    items = overviewItems,
                     onDateSelected = { selectedOverviewDate ->
                         onDateSelected(selectedOverviewDate)
                         overviewMode = RoutineOverviewMode.DAY
