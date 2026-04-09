@@ -209,6 +209,8 @@
     <string name="event_category_special">Special</string>
     <string name="event_category_birthday">Birthday</string>
     <string name="event_category_other">Other</string>
+    <string name="category_filter_all">All categories</string>
+    <string name="category_filter_selected_count">%1$d categories</string>
     <string name="event_color_label">Event color</string>
     <string name="event_set_color_predefined_helper">Predefined in set (change in settings)</string>
     <string name="event_set_none">No set</string>
