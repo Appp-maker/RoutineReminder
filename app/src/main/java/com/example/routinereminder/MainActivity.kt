@@ -2319,18 +2319,22 @@ private fun CalendarDayCell(
                     overflow = TextOverflow.Ellipsis
                 )
             } else {
-                dayItems.take(4).forEach { item ->
+                val visibleItems = dayItems.take(3)
+                visibleItems.forEach { item ->
                     Text(
                         text = item.name,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            lineHeight = 12.sp
+                        ),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                if (dayItems.size > 4) {
+                if (dayItems.size > visibleItems.size) {
                     Text(
-                        text = "+${dayItems.size - 4} more",
+                        text = "+${dayItems.size - visibleItems.size} more",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.secondary.copy(alpha = contentAlpha)
                     )
