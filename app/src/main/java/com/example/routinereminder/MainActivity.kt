@@ -2246,6 +2246,19 @@ private fun WeekTimelineRow(
     dayItems: List<ScheduleItem>,
     onClick: () -> Unit
 ) {
+    val isToday = remember(date) { date == LocalDate.now() }
+    val activeNowItem = remember(isToday, dayItems) {
+        if (!isToday) {
+            null
+        } else {
+            val now = LocalTime.now()
+            dayItems.firstOrNull { item ->
+                val start = LocalTime.of(item.hour, item.minute)
+                val end = start.plusMinutes(item.durationMinutes.toLong())
+                !now.isBefore(start) && now.isBefore(end)
+            }
+        }
+    }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -2283,6 +2296,9 @@ private fun WeekTimelineRow(
                 .padding(top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            if (isToday) {
+                WeekNowIndicatorLine(currentItem = activeNowItem)
+            }
             if (dayItems.isEmpty()) {
                 Text(
                     text = "No events",
@@ -2291,22 +2307,10 @@ private fun WeekTimelineRow(
                 )
             } else {
                 dayItems.take(3).forEach { item ->
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onClick),
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                    ) {
-                        Text(
-                            text = "${String.format("%02d:%02d", item.hour, item.minute)}  ${item.name}",
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-                        )
-                    }
+                    WeekTimelineEventItem(
+                        item = item,
+                        onClick = onClick
+                    )
                 }
                 if (dayItems.size > 3) {
                     Text(
@@ -2316,6 +2320,82 @@ private fun WeekTimelineRow(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun WeekTimelineEventItem(
+    item: ScheduleItem,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    ) {
+        Text(
+            text = "${String.format("%02d:%02d", item.hour, item.minute)}  ${item.name}",
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun WeekNowIndicatorLine(currentItem: ScheduleItem?) {
+    val lineColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Now",
+            style = MaterialTheme.typography.labelSmall,
+            color = lineColor
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(lineColor)
+        )
+    }
+    currentItem?.let { item ->
+        val start = LocalTime.of(item.hour, item.minute)
+        val end = start.plusMinutes(item.durationMinutes.toLong())
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = start.format(DateTimeFormatter.ofPattern("HH:mm")),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = end.format(DateTimeFormatter.ofPattern("HH:mm")),
+                style = MaterialTheme.typography.titleMedium
+            )
         }
     }
 }
