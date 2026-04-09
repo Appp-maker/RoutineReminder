@@ -41,4 +41,15 @@ class Converters {
         val type = object : TypeToken<FoodProduct>() {}.type
         return json?.let { gson.fromJson(it, type) }
     }
+
+    @TypeConverter
+    fun fromEventCategory(category: EventCategory?): String? = category?.name
+
+    @TypeConverter
+    fun toEventCategory(value: String?): EventCategory =
+        value
+            ?.let {
+                runCatching { EventCategory.valueOf(it) }.getOrNull()
+            }
+            ?: EventCategory.NONE
 }

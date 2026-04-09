@@ -123,6 +123,17 @@ val MIGRATION_16_17 = object : Migration(16, 17) {
     }
 }
 
+val MIGRATION_17_18 = object : Migration(17, 18) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            """
+            ALTER TABLE schedule
+            ADD COLUMN category TEXT NOT NULL DEFAULT 'NONE'
+            """.trimIndent()
+        )
+    }
+}
+
 @Database(
     entities = [
         Meal::class,
@@ -139,7 +150,7 @@ val MIGRATION_16_17 = object : Migration(16, 17) {
         RecipeIngredient::class
 
     ],
-    version = 17,
+    version = 18,
     exportSchema = false
 )
 @TypeConverters(Converters::class, DayOfWeekSetConverter::class, LocalDateConverter::class)

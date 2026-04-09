@@ -26,6 +26,7 @@ data class ScheduleItem(
     val origin: String = "APP_CREATED",
     val targetCalendarSystem: String? = null,
     val colorArgb: Int = NO_EVENT_FOOD_COLOR_ARGB,
+    val category: EventCategory = EventCategory.NONE,
     val setId: Int? = null,
     val location: String? = null,
     val routeStart: String? = null,
