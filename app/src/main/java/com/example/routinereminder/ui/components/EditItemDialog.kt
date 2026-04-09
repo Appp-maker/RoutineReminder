@@ -37,6 +37,7 @@ import com.example.routinereminder.R
 import com.example.routinereminder.data.DefaultEventSettings
 import com.example.routinereminder.data.EventDialogField
 import com.example.routinereminder.data.EventDialogFieldOption
+import com.example.routinereminder.data.EventCategory
 import com.example.routinereminder.data.EventPredictionService
 import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.ScheduleItem
@@ -150,6 +151,8 @@ fun EditItemDialog(
     }
     var selectedSetId by remember(initialItem) { mutableStateOf(initialItem?.setId) }
     var setMenuExpanded by remember { mutableStateOf(false) }
+    var selectedCategory by remember(initialItem) { mutableStateOf(initialItem?.category ?: EventCategory.NONE) }
+    var categoryMenuExpanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -250,6 +253,7 @@ fun EditItemDialog(
                 reminderCount = reminderCount,
                 reminderIntervalMinutes = reminderIntervalMinutes,
                 colorArgb = selectedColorArgb,
+                category = selectedCategory,
                 setId = selectedSetId
             )
         } else {
@@ -289,6 +293,7 @@ fun EditItemDialog(
                 reminderCount = reminderCount,
                 reminderIntervalMinutes = reminderIntervalMinutes,
                 colorArgb = selectedColorArgb,
+                category = selectedCategory,
                 setId = selectedSetId
             )
         }
@@ -429,6 +434,55 @@ fun EditItemDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true
                                 )
+                                Spacer(Modifier.height(8.dp))
+
+                                ExposedDropdownMenuBox(
+                                    expanded = categoryMenuExpanded,
+                                    onExpandedChange = { categoryMenuExpanded = !categoryMenuExpanded }
+                                ) {
+                                    OutlinedTextField(
+                                        value = stringResource(
+                                            when (selectedCategory) {
+                                                EventCategory.NONE -> R.string.event_category_none
+                                                EventCategory.IMPORTANT -> R.string.event_category_important
+                                                EventCategory.REGULAR -> R.string.event_category_regular
+                                                EventCategory.SPECIAL -> R.string.event_category_special
+                                            }
+                                        ),
+                                        onValueChange = {},
+                                        readOnly = true,
+                                        label = { Text(stringResource(R.string.event_category_label)) },
+                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .menuAnchor()
+                                    )
+                                    ExposedDropdownMenu(
+                                        expanded = categoryMenuExpanded,
+                                        onDismissRequest = { categoryMenuExpanded = false }
+                                    ) {
+                                        EventCategory.values().forEach { category ->
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        stringResource(
+                                                            when (category) {
+                                                                EventCategory.NONE -> R.string.event_category_none
+                                                                EventCategory.IMPORTANT -> R.string.event_category_important
+                                                                EventCategory.REGULAR -> R.string.event_category_regular
+                                                                EventCategory.SPECIAL -> R.string.event_category_special
+                                                            }
+                                                        )
+                                                    )
+                                                },
+                                                onClick = {
+                                                    selectedCategory = category
+                                                    categoryMenuExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
                                 Spacer(Modifier.height(8.dp))
                             }
 

@@ -202,6 +202,11 @@
     <string name="settings_event_sets_defaults_hint">Choose up to %1$d sets that are active by default for each weekday.</string>
     <string name="settings_event_sets_limit_reached">You can select up to %1$d sets per day.</string>
     <string name="event_set_label">Event set</string>
+    <string name="event_category_label">Category</string>
+    <string name="event_category_none">No category</string>
+    <string name="event_category_important">Important</string>
+    <string name="event_category_regular">Regular</string>
+    <string name="event_category_special">Special</string>
     <string name="event_color_label">Event color</string>
     <string name="event_set_color_predefined_helper">Predefined in set (change in settings)</string>
     <string name="event_set_none">No set</string>

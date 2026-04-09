@@ -7,6 +7,7 @@ import androidx.room.TypeConverters
 import androidx.room.ColumnInfo
 import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB
 import com.example.routinereminder.data.NO_EVENT_FOOD_COLOR_ARGB_SQL
+import com.example.routinereminder.data.EventCategory
 import java.time.DayOfWeek
 
 @Entity(
@@ -39,6 +40,8 @@ data class Schedule(
     val targetCalendarSystem: String? = null,
     @ColumnInfo(defaultValue = NO_EVENT_FOOD_COLOR_ARGB_SQL)
     val colorArgb: Int = NO_EVENT_FOOD_COLOR_ARGB,
+    @ColumnInfo(defaultValue = "NONE")
+    val category: EventCategory = EventCategory.NONE,
     val setId: Int? = null,
     val location: String? = null,
     val routeStart: String? = null,
