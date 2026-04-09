@@ -114,6 +114,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.routinereminder.data.DefaultEventSettings
+import com.example.routinereminder.data.EventCategory
 import com.example.routinereminder.data.EventPredictionService
 import com.example.routinereminder.data.ScheduleItem
 
@@ -2092,6 +2093,10 @@ private fun RoutineOverviewContent(
         RoutineOverviewMode.MONTH -> {
             val month = remember(currentDate) { YearMonth.from(currentDate) }
             val monthTitle = remember(month) { month.format(DateTimeFormatter.ofPattern("MMMM yyyy")) }
+            var categoryFilterExpanded by remember { mutableStateOf(false) }
+            var selectedCategories by remember {
+                mutableStateOf(EventCategory.entries.toSet())
+            }
             val leadingOffset = remember(month) {
                 month.atDay(1).dayOfWeek.value - 1
             }
@@ -2109,11 +2114,57 @@ private fun RoutineOverviewContent(
 
             CalendarOverviewHeader(
                 title = "Month overview",
-                subtitle = monthTitle
+                subtitle = monthTitle,
+                trailingContent = {
+                    Box {
+                        OutlinedButton(
+                            onClick = { categoryFilterExpanded = true }
+                        ) {
+                            Text(
+                                text = if (selectedCategories.size == EventCategory.entries.size) {
+                                    stringResource(R.string.category_filter_all)
+                                } else {
+                                    stringResource(
+                                        R.string.category_filter_selected_count,
+                                        selectedCategories.size
+                                    )
+                                }
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = categoryFilterExpanded,
+                            onDismissRequest = { categoryFilterExpanded = false }
+                        ) {
+                            EventCategory.entries.forEach { category ->
+                                val isSelected = selectedCategories.contains(category)
+                                DropdownMenuItem(
+                                    text = { Text(text = eventCategoryLabel(category)) },
+                                    leadingIcon = {
+                                        Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = null
+                                        )
+                                    },
+                                    onClick = {
+                                        if (isSelected && selectedCategories.size == 1) return@DropdownMenuItem
+                                        selectedCategories = if (isSelected) {
+                                            selectedCategories - category
+                                        } else {
+                                            selectedCategories + category
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             )
+            val filteredItems = remember(items, selectedCategories) {
+                items.filter { selectedCategories.contains(it.category) }
+            }
             CalendarMonthOverview(
                 monthCells = cells,
-                items = items,
+                items = filteredItems,
                 onDateSelected = onDateSelected
             )
         }
@@ -2123,19 +2174,41 @@ private fun RoutineOverviewContent(
 @Composable
 private fun CalendarOverviewHeader(
     title: String,
-    subtitle: String
+    subtitle: String,
+    trailingContent: (@Composable RowScope.() -> Unit)? = null
 ) {
-    Column(modifier = Modifier.padding(bottom = 8.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary
-        )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        }
+        trailingContent?.invoke(this)
+    }
+}
+
+@Composable
+private fun eventCategoryLabel(category: EventCategory): String {
+    return when (category) {
+        EventCategory.NONE -> stringResource(R.string.event_category_none)
+        EventCategory.IMPORTANT -> stringResource(R.string.event_category_important)
+        EventCategory.REGULAR -> stringResource(R.string.event_category_regular)
+        EventCategory.SPECIAL -> stringResource(R.string.event_category_special)
+        EventCategory.BIRTHDAY -> stringResource(R.string.event_category_birthday)
+        EventCategory.OTHER -> stringResource(R.string.event_category_other)
     }
 }
 
