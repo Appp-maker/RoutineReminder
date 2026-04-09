@@ -988,6 +988,7 @@ fun DateDisplayHeader(
     modifier: Modifier = Modifier
 ) {
     val formatter = DateTimeFormatter.ofPattern("EEE, MMM d, yyyy")
+    val centerLabel = remember(currentDate) { currentDate.format(formatter) }
 
     Row(
         modifier = modifier
