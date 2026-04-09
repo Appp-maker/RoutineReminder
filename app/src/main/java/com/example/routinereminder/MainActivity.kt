@@ -1571,23 +1571,28 @@ private fun UnifiedDateHeader(
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onPrevious, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous")
-        }
-
-        OutlinedButton(
-            onClick = onOverviewModeToggle,
-            modifier = Modifier
-                .height(32.dp)
-                .defaultMinSize(minWidth = 64.dp),
-            shape = RoundedCornerShape(50),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = selectedOverviewMode.label,
-                style = MaterialTheme.typography.labelMedium,
-                maxLines = 1
-            )
+            OutlinedButton(
+                onClick = onOverviewModeToggle,
+                modifier = Modifier
+                    .height(32.dp)
+                    .defaultMinSize(minWidth = 64.dp),
+                shape = RoundedCornerShape(50),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = selectedOverviewMode.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1
+                )
+            }
+
+            IconButton(onClick = onPrevious, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous")
+            }
         }
 
         Spacer(modifier = Modifier.width(8.dp))
