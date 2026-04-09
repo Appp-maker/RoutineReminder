@@ -97,6 +97,7 @@ fun CalorieTrackerScreen(
     val swipeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
     var showBundlePicker by remember { mutableStateOf(false) }
     var showAllFoods by rememberSaveable { mutableStateOf(false) }
+    var continueWithoutProfile by rememberSaveable { mutableStateOf(false) }
     val bundles by viewModel.foodBundles.collectAsState()
     val pendingBundleId by viewModel.pendingBundlePreview.collectAsState()
     val bundleForPortion by produceState<com.example.routinereminder.data.entities.FoodBundle?>(
@@ -510,8 +511,11 @@ fun CalorieTrackerScreen(
 //            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {   // OPEN Column content correctly
 
-            if (!isProfileComplete) {
-                MissingProfileScreen(navController)
+            if (!isProfileComplete && !continueWithoutProfile) {
+                MissingProfileScreen(
+                    navController = navController,
+                    onContinueWithoutProfile = { continueWithoutProfile = true }
+                )
                 return@Column
             }
 
@@ -550,7 +554,7 @@ fun CalorieTrackerScreen(
                             CircularNutrientIndicator(
                                 label = "Calories",
                                 currentValue = totals.calories,
-                                targetValue = targets.calories,
+                                targetValue = targets.calories.takeIf { it > 0 },
                                 modifier = Modifier.size(160.dp)   // a bit smaller to save space
                             )
                         }
@@ -623,7 +627,11 @@ fun CalorieTrackerScreen(
                     // 3) Nutrient bars directly under that row
 
                     Spacer(modifier = Modifier.height(4.dp))
-                    NutrientRow(totals, targets)
+                    NutrientRow(
+                        totals = totals,
+                        targets = targets,
+                        showGoals = targets.calories > 0
+                    )
 
                 }
                 // --- spacing before meal section ---
@@ -1185,7 +1193,8 @@ fun ExpandableRecipeRow(
 @Composable
 private fun NutrientRow(
     totals: CalorieTrackerViewModel.DailyTotals,
-    targets: CalorieTrackerViewModel.DailyTargets
+    targets: CalorieTrackerViewModel.DailyTargets,
+    showGoals: Boolean
 ) {
     Column {
         Row(
@@ -1195,19 +1204,19 @@ private fun NutrientRow(
             NutrientProgress(
                 name = "Carbs",
                 value = totals.carbsG,
-                target = targets.carbsG,
+                target = targets.carbsG.takeIf { showGoals && it > 0 },
                 modifier = Modifier.weight(1f)
             )
             NutrientProgress(
                 name = "Protein",
                 value = totals.proteinG,
-                target = targets.proteinG,
+                target = targets.proteinG.takeIf { showGoals && it > 0 },
                 modifier = Modifier.weight(1f)
             )
             NutrientProgress(
                 name = "Fat",
                 value = totals.fatG,
-                target = targets.fatG,
+                target = targets.fatG.takeIf { showGoals && it > 0 },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -1219,20 +1228,20 @@ private fun NutrientRow(
             NutrientProgress(
                 name = "Fiber",
                 value = totals.fiberG,
-                target = targets.fiberG,
+                target = targets.fiberG.takeIf { showGoals && it > 0 },
                 modifier = Modifier.weight(1f)
             )
             NutrientProgress(
                 name = "Sugar",
                 value = totals.addedSugarsG,
-                target = targets.addedSugarsG,
+                target = targets.addedSugarsG.takeIf { showGoals && it > 0 },
                 modifier = Modifier.weight(1f),
                 lowerIsBetter = true
             )
             NutrientProgress(
                 name = "Sodium",
                 value = totals.sodiumMg,
-                target = targets.sodiumMg,
+                target = targets.sodiumMg.takeIf { showGoals && it > 0 },
                 modifier = Modifier.weight(1f),
                 lowerIsBetter = true
             )
@@ -1271,17 +1280,21 @@ fun DateHeader(
 fun NutrientProgress(
     name: String,
     value: Double,
-    target: Double,
+    target: Double?,
     modifier: Modifier = Modifier,
     lowerIsBetter: Boolean = false
 ) {
-    val progress = if (target > 0) (value / target).toFloat() else 0f
+    val progress = target?.let { (value / it).toFloat() } ?: 0f
     val labelColor = MaterialTheme.colorScheme.onSurface
     val valueColor = MaterialTheme.colorScheme.onSurfaceVariant
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val color = when {
-        lowerIsBetter -> if (progress > 1f) AppPalette.Danger else AppPalette.Success
-        else -> if (progress <= 1f) AppPalette.Success else AppPalette.Danger
+    val color = if (target == null) {
+        MaterialTheme.colorScheme.secondary
+    } else {
+        when {
+            lowerIsBetter -> if (progress > 1f) AppPalette.Danger else AppPalette.Success
+            else -> if (progress <= 1f) AppPalette.Success else AppPalette.Danger
+        }
     }
 
     Column(
@@ -1290,17 +1303,28 @@ fun NutrientProgress(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(name, color = labelColor)
-        LinearProgressIndicator(
-            progress = { progress.coerceIn(0f, 1f) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 2.dp)
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = color,
-            trackColor = trackColor
-        )
-        Text("${value.toInt()} / ${target.toInt()}", color = valueColor, fontSize = 11.sp)
+        if (target != null) {
+            LinearProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = color,
+                trackColor = trackColor
+            )
+            Text("${value.toInt()} / ${target.toInt()}", color = valueColor, fontSize = 11.sp)
+        } else {
+            Text(
+                text = when (name) {
+                    "Sodium" -> "${value.toInt()} mg"
+                    else -> "${value.toInt()} g"
+                },
+                color = color,
+                fontSize = 11.sp
+            )
+        }
     }
 }
 
@@ -1346,14 +1370,14 @@ fun LoggedFoodsList(
 fun CircularNutrientIndicator(
     label: String,
     currentValue: Double,
-    targetValue: Double,
+    targetValue: Double?,
     modifier: Modifier = Modifier.size(100.dp)
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         val strokeWidth = 12.dp
         val sweepAngle = 315f
         val startAngle = -225f
-        val progress = (currentValue / targetValue).coerceAtMost(1.5).toFloat()
+        val progress = targetValue?.let { (currentValue / it).coerceAtMost(1.5).toFloat() } ?: 0f
         val indicatorTrackColor = MaterialTheme.colorScheme.surfaceVariant
         val indicatorProgressColor = MaterialTheme.colorScheme.secondary
         val primaryTextColor = MaterialTheme.colorScheme.onSurface
@@ -1367,37 +1391,48 @@ fun CircularNutrientIndicator(
                 useCenter = false,
                 style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Butt)
             )
-            drawArc(
-                color = indicatorProgressColor,
-                startAngle = startAngle,
-                sweepAngle = sweepAngle * progress,
-                useCenter = false,
-                style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Butt)
-            )
+            if (targetValue != null) {
+                drawArc(
+                    color = indicatorProgressColor,
+                    startAngle = startAngle,
+                    sweepAngle = sweepAngle * progress,
+                    useCenter = false,
+                    style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Butt)
+                )
+            }
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(currentValue.toInt().toString(), color = primaryTextColor, fontSize = 26.sp)
-            Text("/ ${targetValue.toInt()}", color = secondaryTextColor, fontSize = 12.sp)
+            targetValue?.let {
+                Text("/ ${it.toInt()}", color = secondaryTextColor, fontSize = 12.sp)
+            }
             Text(label, color = primaryTextColor, fontSize = 13.sp)
         }
     }
 }
 
 @Composable
-private fun MissingProfileScreen(navController: NavController) {
+private fun MissingProfileScreen(
+    navController: NavController,
+    onContinueWithoutProfile: () -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "Please complete your profile in settings to use the calorie tracker.",
+            "Complete your profile in settings to enable calorie and nutrition goals.",
             color = AppPalette.TextInverse
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = { navController.navigate("settings/calories") }) {
             Text("Go to Settings")
+        }
+        Spacer(Modifier.height(12.dp))
+        TextButton(onClick = onContinueWithoutProfile) {
+            Text("Continue without profile")
         }
 
     }
