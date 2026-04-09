@@ -4,6 +4,7 @@ enum class EventCategory {
     NONE,
     IMPORTANT,
     REGULAR,
-    SPECIAL
+    SPECIAL,
+    BIRTHDAY,
+    OTHER
 }
-

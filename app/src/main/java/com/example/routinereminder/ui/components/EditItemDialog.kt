@@ -447,6 +447,8 @@ fun EditItemDialog(
                                                 EventCategory.IMPORTANT -> R.string.event_category_important
                                                 EventCategory.REGULAR -> R.string.event_category_regular
                                                 EventCategory.SPECIAL -> R.string.event_category_special
+                                                EventCategory.BIRTHDAY -> R.string.event_category_birthday
+                                                EventCategory.OTHER -> R.string.event_category_other
                                             }
                                         ),
                                         onValueChange = {},
@@ -471,6 +473,8 @@ fun EditItemDialog(
                                                                 EventCategory.IMPORTANT -> R.string.event_category_important
                                                                 EventCategory.REGULAR -> R.string.event_category_regular
                                                                 EventCategory.SPECIAL -> R.string.event_category_special
+                                                                EventCategory.BIRTHDAY -> R.string.event_category_birthday
+                                                                EventCategory.OTHER -> R.string.event_category_other
                                                             }
                                                         )
                                                     )
