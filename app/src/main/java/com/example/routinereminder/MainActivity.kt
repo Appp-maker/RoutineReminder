@@ -2255,6 +2255,19 @@ private fun WeekTimelineRow(
     dayItems: List<ScheduleItem>,
     onClick: () -> Unit
 ) {
+    val isToday = remember(date) { date == LocalDate.now() }
+    val activeNowItem = remember(isToday, dayItems) {
+        if (!isToday) {
+            null
+        } else {
+            val now = LocalTime.now()
+            dayItems.firstOrNull { item ->
+                val start = LocalTime.of(item.hour, item.minute)
+                val end = start.plusMinutes(item.durationMinutes.toLong())
+                !now.isBefore(start) && now.isBefore(end)
+            }
+        }
+    }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -2292,6 +2305,9 @@ private fun WeekTimelineRow(
                 .padding(top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            if (isToday) {
+                WeekNowIndicatorLine(currentItem = activeNowItem)
+            }
             if (dayItems.isEmpty()) {
                 Text(
                     text = "No events",
@@ -2299,10 +2315,9 @@ private fun WeekTimelineRow(
                     color = MaterialTheme.colorScheme.secondary
                 )
             } else {
-                dayItems.take(3).forEachIndexed { index, item ->
+                dayItems.take(3).forEach { item ->
                     WeekTimelineEventItem(
                         item = item,
-                        index = index,
                         onClick = onClick
                     )
                 }
@@ -2321,55 +2336,74 @@ private fun WeekTimelineRow(
 @Composable
 private fun WeekTimelineEventItem(
     item: ScheduleItem,
-    index: Int,
     onClick: () -> Unit
 ) {
-    val timelineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
-    val verticalNudge = if (index % 2 == 0) (-3).dp else 3.dp
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    ) {
+        Text(
+            text = "${String.format("%02d:%02d", item.hour, item.minute)}  ${item.name}",
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun WeekNowIndicatorLine(currentItem: ScheduleItem?) {
+    val lineColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Text(
+            text = "Now",
+            style = MaterialTheme.typography.labelSmall,
+            color = lineColor
+        )
+        Spacer(modifier = Modifier.width(8.dp))
         Box(
             modifier = Modifier
-                .width(24.dp)
-                .height(20.dp)
-                .offset(y = verticalNudge)
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .size(8.dp)
-                    .background(
-                        color = timelineColor,
-                        shape = CircleShape
-                    )
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 8.dp)
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(timelineColor.copy(alpha = 0.65f))
-            )
-        }
-
-        Surface(
-            modifier = Modifier
                 .weight(1f)
-                .clickable(onClick = onClick),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                .height(1.dp)
+                .background(lineColor)
+        )
+    }
+    currentItem?.let { item ->
+        val start = LocalTime.of(item.hour, item.minute)
+        val end = start.plusMinutes(item.durationMinutes.toLong())
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "${String.format("%02d:%02d", item.hour, item.minute)}  ${item.name}",
-                style = MaterialTheme.typography.labelMedium,
+                text = start.format(DateTimeFormatter.ofPattern("HH:mm")),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = end.format(DateTimeFormatter.ofPattern("HH:mm")),
+                style = MaterialTheme.typography.titleMedium
             )
         }
     }
