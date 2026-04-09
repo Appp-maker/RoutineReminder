@@ -1560,7 +1560,8 @@ private fun UnifiedDateHeader(
             RoutineOverviewMode.WEEK -> {
                 val weekFields = WeekFields.of(Locale.getDefault())
                 val weekNumber = currentDate.get(weekFields.weekOfWeekBasedYear())
-                "Week $weekNumber"
+                val weekYear = currentDate.get(weekFields.weekBasedYear())
+                "Week $weekNumber, $weekYear"
             }
             RoutineOverviewMode.MONTH -> currentDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
         }
