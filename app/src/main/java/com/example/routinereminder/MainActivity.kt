@@ -2299,9 +2299,10 @@ private fun WeekTimelineRow(
                     color = MaterialTheme.colorScheme.secondary
                 )
             } else {
-                dayItems.take(3).forEach { item ->
+                dayItems.take(3).forEachIndexed { index, item ->
                     WeekTimelineEventItem(
                         item = item,
+                        index = index,
                         onClick = onClick
                     )
                 }
@@ -2320,21 +2321,25 @@ private fun WeekTimelineRow(
 @Composable
 private fun WeekTimelineEventItem(
     item: ScheduleItem,
+    index: Int,
     onClick: () -> Unit
 ) {
     val timelineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+    val verticalNudge = if (index % 2 == 0) (-3).dp else 3.dp
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.width(12.dp)
+        Box(
+            modifier = Modifier
+                .width(24.dp)
+                .height(20.dp)
+                .offset(y = verticalNudge)
         ) {
             Box(
                 modifier = Modifier
+                    .align(Alignment.CenterStart)
                     .size(8.dp)
                     .background(
                         color = timelineColor,
@@ -2343,8 +2348,10 @@ private fun WeekTimelineEventItem(
             )
             Box(
                 modifier = Modifier
-                    .width(1.dp)
-                    .height(22.dp)
+                    .align(Alignment.CenterStart)
+                    .padding(start = 8.dp)
+                    .fillMaxWidth()
+                    .height(1.dp)
                     .background(timelineColor.copy(alpha = 0.65f))
             )
         }
