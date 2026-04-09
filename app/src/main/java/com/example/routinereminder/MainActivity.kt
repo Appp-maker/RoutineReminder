@@ -1509,6 +1509,18 @@ private enum class RoutineOverviewMode {
     MONTH
 }
 
+private val RoutineOverviewMode.label: String
+    get() = when (this) {
+        RoutineOverviewMode.DAY -> "Day"
+        RoutineOverviewMode.WEEK -> "Week"
+        RoutineOverviewMode.MONTH -> "Month"
+    }
+
+private fun RoutineOverviewMode.next(): RoutineOverviewMode {
+    val allModes = RoutineOverviewMode.entries
+    return allModes[(ordinal + 1) % allModes.size]
+}
+
 private data class EventTimeWindow(
     val start: LocalTime,
     val end: LocalTime
@@ -1530,6 +1542,8 @@ private fun ScheduleItem.effectiveTimeWindow(
 @Composable
 fun UnifiedDateHeader(
     currentDate: LocalDate,
+    selectedOverviewMode: RoutineOverviewMode,
+    onOverviewModeToggle: () -> Unit,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onDateTextClick: () -> Unit,
@@ -1547,6 +1561,23 @@ fun UnifiedDateHeader(
         IconButton(onClick = onPreviousDay, modifier = Modifier.size(48.dp)) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Day")
         }
+
+        OutlinedButton(
+            onClick = onOverviewModeToggle,
+            modifier = Modifier
+                .height(32.dp)
+                .defaultMinSize(minWidth = 64.dp),
+            shape = RoundedCornerShape(50),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = selectedOverviewMode.label,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
 
         Text(
             text = currentDate.format(formatter),
@@ -1821,18 +1852,15 @@ fun MainScreenContent(
         ) {
             UnifiedDateHeader(
                 currentDate = currentDate,
+                selectedOverviewMode = overviewMode,
+                onOverviewModeToggle = {
+                    overviewMode = overviewMode.next()
+                },
                 onPreviousDay = onPreviousDay,
                 onNextDay = onNextDay,
                 onDateTextClick = { showDatePicker = true },
                 onSettingsClick = { navController.navigate("settings/routine") },
                 modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            RoutineOverviewModeSwitch(
-                selectedMode = overviewMode,
-                onModeSelected = { overviewMode = it }
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -1984,40 +2012,6 @@ fun MainScreenContent(
             }
         ) {
             DatePicker(state = datePickerState)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun RoutineOverviewModeSwitch(
-    selectedMode: RoutineOverviewMode,
-    onModeSelected: (RoutineOverviewMode) -> Unit
-) {
-    SingleChoiceSegmentedButtonRow(
-        modifier = Modifier
-            .wrapContentWidth()
-            .heightIn(min = 34.dp)
-    ) {
-        RoutineOverviewMode.entries.forEachIndexed { index, mode ->
-            SegmentedButton(
-                selected = selectedMode == mode,
-                onClick = { onModeSelected(mode) },
-                modifier = Modifier.defaultMinSize(minWidth = 58.dp, minHeight = 34.dp),
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = RoutineOverviewMode.entries.size),
-                icon = {}
-            ) {
-                Text(
-                    text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    color = if (selectedMode == mode) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
-                )
-            }
         }
     }
 }
