@@ -207,6 +207,8 @@
     <string name="event_category_important">Important</string>
     <string name="event_category_regular">Regular</string>
     <string name="event_category_special">Special</string>
+    <string name="event_category_birthday">Birthday</string>
+    <string name="event_category_other">Other</string>
     <string name="event_color_label">Event color</string>
     <string name="event_set_color_predefined_helper">Predefined in set (change in settings)</string>
     <string name="event_set_none">No set</string>
