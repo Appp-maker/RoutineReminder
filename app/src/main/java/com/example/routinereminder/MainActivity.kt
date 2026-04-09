@@ -145,6 +145,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.YearMonth
+import java.time.temporal.WeekFields
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -999,7 +1000,7 @@ fun DateDisplayHeader(
         }
 
         Text(
-            text = currentDate.format(formatter),
+            text = centerLabel,
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier
                 .weight(1f)
@@ -1544,13 +1545,24 @@ private fun UnifiedDateHeader(
     currentDate: LocalDate,
     selectedOverviewMode: RoutineOverviewMode,
     onOverviewModeToggle: () -> Unit,
-    onPreviousDay: () -> Unit,
-    onNextDay: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
     onDateTextClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val formatter = DateTimeFormatter.ofPattern("EEE, MMM d, yyyy")
+    val centerLabel = remember(currentDate, selectedOverviewMode) {
+        when (selectedOverviewMode) {
+            RoutineOverviewMode.DAY -> currentDate.format(formatter)
+            RoutineOverviewMode.WEEK -> {
+                val weekFields = WeekFields.of(Locale.getDefault())
+                val weekNumber = currentDate.get(weekFields.weekOfWeekBasedYear())
+                "Week $weekNumber"
+            }
+            RoutineOverviewMode.MONTH -> currentDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+        }
+    }
 
     Row(
         modifier = modifier
@@ -1558,8 +1570,8 @@ private fun UnifiedDateHeader(
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onPreviousDay, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Day")
+        IconButton(onClick = onPrevious, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous")
         }
 
         OutlinedButton(
@@ -1580,7 +1592,7 @@ private fun UnifiedDateHeader(
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-            text = currentDate.format(formatter),
+            text = centerLabel,
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier
                 .weight(1f)
@@ -1589,8 +1601,8 @@ private fun UnifiedDateHeader(
             maxLines = 1
         )
 
-        IconButton(onClick = onNextDay, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Day")
+        IconButton(onClick = onNext, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next")
         }
 
         SettingsIconButton(onClick = onSettingsClick)
@@ -1838,8 +1850,20 @@ fun MainScreenContent(
                     },
                     onDragEnd = {
                         when {
-                            totalHorizontalDrag > swipeThresholdPx -> onPreviousDay()
-                            totalHorizontalDrag < -swipeThresholdPx -> onNextDay()
+                            totalHorizontalDrag > swipeThresholdPx -> {
+                                when (overviewMode) {
+                                    RoutineOverviewMode.DAY -> onPreviousDay()
+                                    RoutineOverviewMode.WEEK -> onDateSelected(currentDate.minusWeeks(1))
+                                    RoutineOverviewMode.MONTH -> onDateSelected(currentDate.minusMonths(1))
+                                }
+                            }
+                            totalHorizontalDrag < -swipeThresholdPx -> {
+                                when (overviewMode) {
+                                    RoutineOverviewMode.DAY -> onNextDay()
+                                    RoutineOverviewMode.WEEK -> onDateSelected(currentDate.plusWeeks(1))
+                                    RoutineOverviewMode.MONTH -> onDateSelected(currentDate.plusMonths(1))
+                                }
+                            }
                         }
                     }
                 )
@@ -1856,8 +1880,20 @@ fun MainScreenContent(
                 onOverviewModeToggle = {
                     overviewMode = overviewMode.next()
                 },
-                onPreviousDay = onPreviousDay,
-                onNextDay = onNextDay,
+                onPrevious = {
+                    when (overviewMode) {
+                        RoutineOverviewMode.DAY -> onPreviousDay()
+                        RoutineOverviewMode.WEEK -> onDateSelected(currentDate.minusWeeks(1))
+                        RoutineOverviewMode.MONTH -> onDateSelected(currentDate.minusMonths(1))
+                    }
+                },
+                onNext = {
+                    when (overviewMode) {
+                        RoutineOverviewMode.DAY -> onNextDay()
+                        RoutineOverviewMode.WEEK -> onDateSelected(currentDate.plusWeeks(1))
+                        RoutineOverviewMode.MONTH -> onDateSelected(currentDate.plusMonths(1))
+                    }
+                },
                 onDateTextClick = { showDatePicker = true },
                 onSettingsClick = { navController.navigate("settings/routine") },
                 modifier = Modifier.fillMaxWidth()
