@@ -87,6 +87,8 @@ class MainViewModel @Inject constructor(
 
     private val _scheduleItems = MutableStateFlow<List<ScheduleItem>>(emptyList())
     val scheduleItems: StateFlow<List<ScheduleItem>> = _scheduleItems.asStateFlow()
+    private val _allScheduleItems = MutableStateFlow<List<ScheduleItem>>(emptyList())
+    val allScheduleItems: StateFlow<List<ScheduleItem>> = _allScheduleItems.asStateFlow()
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
@@ -1423,9 +1425,14 @@ class MainViewModel @Inject constructor(
                         compareBy<ScheduleItem> { it.durationMinutes }
                             .thenBy { item -> item.hour * 60 + item.minute }
                     )
+                val allFiltered = entities
+                    .map { it.toItem() }
+                    .distinctBy { item -> item.id }
+                    .filter { item -> item.setId == null || item.setId in effectiveActiveSetIds }
 
                 withContext(Dispatchers.Main) {
                     _scheduleItems.value = filtered
+                    _allScheduleItems.value = allFiltered
                 }
                 refreshRoutineInsights()
             }
