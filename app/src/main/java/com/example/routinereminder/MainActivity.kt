@@ -70,6 +70,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
@@ -2362,16 +2363,28 @@ private fun CalendarDayCell(
             } else {
                 val visibleItems = dayItems.take(3)
                 visibleItems.forEach { item ->
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            lineHeight = 12.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.secondary.copy(alpha = contentAlpha))
+                        )
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 10.sp,
+                                lineHeight = 12.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 if (dayItems.size > visibleItems.size) {
                     Text(
