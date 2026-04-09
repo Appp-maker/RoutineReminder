@@ -364,6 +364,7 @@
     <string name="workout_session_total_timer">Total %1$s</string>
     <string name="workout_session_sets_label">Sets</string>
     <string name="workout_session_sets_value">%1$d/%2$d</string>
+    <string name="workout_session_exercise_position">Exercise %1$d/%2$d</string>
     <string name="workout_session_reps_title">Reps</string>
     <string name="workout_session_value_placeholder">—</string>
     <string name="workout_session_description_unavailable">No description available.</string>
