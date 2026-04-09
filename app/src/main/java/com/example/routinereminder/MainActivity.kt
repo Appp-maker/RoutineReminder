@@ -2197,6 +2197,7 @@ private fun CalendarMonthOverview(
     onDateSelected: (LocalDate) -> Unit
 ) {
     val rows = remember(monthCells) { monthCells.chunked(7) }
+    val today = remember { LocalDate.now() }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -2219,6 +2220,7 @@ private fun CalendarMonthOverview(
                     CalendarDayCell(
                         date = date,
                         isInCurrentMonth = inCurrentMonth,
+                        today = today,
                         dayItems = dayItems,
                         onClick = { onDateSelected(date) },
                         modifier = Modifier.weight(1f)
@@ -2255,33 +2257,50 @@ private fun WeekdayHeaderRow() {
 private fun CalendarDayCell(
     date: LocalDate,
     isInCurrentMonth: Boolean,
+    today: LocalDate,
     dayItems: List<ScheduleItem>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isToday = date == today
+    val isPast = date.isBefore(today)
+    val containerColor = when {
+        isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+        isPast -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        else -> MaterialTheme.colorScheme.surface
+    }
+    val borderColor = when {
+        isToday -> MaterialTheme.colorScheme.primary
+        isPast -> MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+        else -> MaterialTheme.colorScheme.outlineVariant
+    }
+    val dayNumberColor = when {
+        isToday -> MaterialTheme.colorScheme.primary
+        isInCurrentMonth && isPast -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        isInCurrentMonth -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+    }
+    val contentAlpha = if (isPast && !isToday) 0.65f else 1f
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        color = MaterialTheme.colorScheme.surface
+        border = BorderStroke(if (isToday) 1.5.dp else 1.dp, borderColor),
+        color = containerColor
     ) {
         Column(modifier = Modifier.padding(6.dp)) {
             Text(
                 text = date.dayOfMonth.toString(),
                 style = MaterialTheme.typography.labelLarge,
-                color = when {
-                    isInCurrentMonth -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
-                }
+                color = dayNumberColor
             )
             Spacer(modifier = Modifier.height(4.dp))
             if (dayItems.isEmpty()) {
                 Text(
                     text = "No events",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = contentAlpha),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -2290,6 +2309,7 @@ private fun CalendarDayCell(
                     Text(
                         text = "${String.format("%02d:%02d", item.hour, item.minute)} ${item.name}",
                         style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -2298,7 +2318,7 @@ private fun CalendarDayCell(
                     Text(
                         text = "+${dayItems.size - 3} more",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = contentAlpha)
                     )
                 }
             }
