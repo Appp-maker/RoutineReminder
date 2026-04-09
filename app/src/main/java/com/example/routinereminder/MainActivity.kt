@@ -1838,6 +1838,11 @@ fun MainScreenContent(
     var showDatePicker by remember { mutableStateOf(false) }
     var isCompactView by rememberSaveable { mutableStateOf(false) }
     var overviewMode by rememberSaveable { mutableStateOf(RoutineOverviewMode.DAY) }
+    val latestCurrentDate by rememberUpdatedState(currentDate)
+    val latestOverviewMode by rememberUpdatedState(overviewMode)
+    val latestOnPreviousDay by rememberUpdatedState(onPreviousDay)
+    val latestOnNextDay by rememberUpdatedState(onNextDay)
+    val latestOnDateSelected by rememberUpdatedState(onDateSelected)
 
     Box(
         modifier = Modifier
@@ -1852,17 +1857,17 @@ fun MainScreenContent(
                     onDragEnd = {
                         when {
                             totalHorizontalDrag > swipeThresholdPx -> {
-                                when (overviewMode) {
-                                    RoutineOverviewMode.DAY -> onPreviousDay()
-                                    RoutineOverviewMode.WEEK -> onDateSelected(currentDate.minusWeeks(1))
-                                    RoutineOverviewMode.MONTH -> onDateSelected(currentDate.minusMonths(1))
+                                when (latestOverviewMode) {
+                                    RoutineOverviewMode.DAY -> latestOnPreviousDay()
+                                    RoutineOverviewMode.WEEK -> latestOnDateSelected(latestCurrentDate.minusWeeks(1))
+                                    RoutineOverviewMode.MONTH -> latestOnDateSelected(latestCurrentDate.minusMonths(1))
                                 }
                             }
                             totalHorizontalDrag < -swipeThresholdPx -> {
-                                when (overviewMode) {
-                                    RoutineOverviewMode.DAY -> onNextDay()
-                                    RoutineOverviewMode.WEEK -> onDateSelected(currentDate.plusWeeks(1))
-                                    RoutineOverviewMode.MONTH -> onDateSelected(currentDate.plusMonths(1))
+                                when (latestOverviewMode) {
+                                    RoutineOverviewMode.DAY -> latestOnNextDay()
+                                    RoutineOverviewMode.WEEK -> latestOnDateSelected(latestCurrentDate.plusWeeks(1))
+                                    RoutineOverviewMode.MONTH -> latestOnDateSelected(latestCurrentDate.plusMonths(1))
                                 }
                             }
                         }
