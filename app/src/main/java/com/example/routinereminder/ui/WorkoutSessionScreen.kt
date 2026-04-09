@@ -325,6 +325,15 @@ fun WorkoutSessionScreen(
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
+                            text = stringResource(
+                                R.string.workout_session_exercise_position,
+                                currentExerciseIndex + 1,
+                                plan.exercises.size
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
                             text = exercise.name,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.SemiBold
