@@ -1540,7 +1540,7 @@ private fun ScheduleItem.effectiveTimeWindow(
 }
 
 @Composable
-fun UnifiedDateHeader(
+private fun UnifiedDateHeader(
     currentDate: LocalDate,
     selectedOverviewMode: RoutineOverviewMode,
     onOverviewModeToggle: () -> Unit,
