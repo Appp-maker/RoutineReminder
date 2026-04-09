@@ -1055,6 +1055,7 @@ private fun ScheduleItemListContent(
     val distinctItems = remember(items) { items.distinctBy { it.id } }
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
+    val dayKey = remember(currentDate) { currentDate.toEpochDay() }
     val today = remember(currentDate) { LocalDate.now() }
     val showNowIndicator = currentDate == today
     val nowIndicatorIndex = remember(distinctItems, currentDate) {
@@ -1108,6 +1109,7 @@ private fun ScheduleItemListContent(
         }
     }
 
+    var wasShowingNowIndicator by remember { mutableStateOf(showNowIndicator) }
     LaunchedEffect(showNowIndicator, nowIndicatorIndex, displayItems.size, isCompactView) {
         if (showNowIndicator && nowIndicatorIndex >= 0) {
             if (isCompactView) {
@@ -1115,7 +1117,14 @@ private fun ScheduleItemListContent(
             } else {
                 listState.scrollToItem(nowIndicatorIndex)
             }
+        } else if (wasShowingNowIndicator) {
+            if (isCompactView) {
+                gridState.scrollToItem(0)
+            } else {
+                listState.scrollToItem(0)
+            }
         }
+        wasShowingNowIndicator = showNowIndicator
     }
 
     if (isCompactView) {
@@ -1131,9 +1140,9 @@ private fun ScheduleItemListContent(
                 count = displayItems.size,
                 key = { index: Int ->
                     when (val displayItem = displayItems[index]) {
-                        is DisplayScheduleItem.Event -> displayItem.item.id
-                        DisplayScheduleItem.NowIndicator -> "now-indicator"
-                        DisplayScheduleItem.EmptyState -> "empty-state"
+                        is DisplayScheduleItem.Event -> "$dayKey-${displayItem.item.id}"
+                        DisplayScheduleItem.NowIndicator -> "now-indicator-$dayKey"
+                        DisplayScheduleItem.EmptyState -> "empty-state-$dayKey"
                     }
                 },
                 span = { index ->
@@ -1200,9 +1209,9 @@ private fun ScheduleItemListContent(
                 items = displayItems,
                 key = { displayItem: DisplayScheduleItem ->
                     when (displayItem) {
-                        is DisplayScheduleItem.Event -> displayItem.item.id
-                        DisplayScheduleItem.NowIndicator -> "now-indicator"
-                        DisplayScheduleItem.EmptyState -> "empty-state"
+                        is DisplayScheduleItem.Event -> "$dayKey-${displayItem.item.id}"
+                        DisplayScheduleItem.NowIndicator -> "now-indicator-$dayKey"
+                        DisplayScheduleItem.EmptyState -> "empty-state-$dayKey"
                     }
                 }
             ) { displayItem: DisplayScheduleItem ->
