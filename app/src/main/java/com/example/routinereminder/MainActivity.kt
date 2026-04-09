@@ -2290,23 +2290,12 @@ private fun WeekTimelineRow(
                     color = MaterialTheme.colorScheme.secondary
                 )
             } else {
-                dayItems.take(3).forEach { item ->
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onClick),
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                    ) {
-                        Text(
-                            text = "${String.format("%02d:%02d", item.hour, item.minute)}  ${item.name}",
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-                        )
-                    }
+                dayItems.take(3).forEachIndexed { index, item ->
+                    WeekTimelineEventItem(
+                        item = item,
+                        index = index,
+                        onClick = onClick
+                    )
                 }
                 if (dayItems.size > 3) {
                     Text(
@@ -2316,6 +2305,63 @@ private fun WeekTimelineRow(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun WeekTimelineEventItem(
+    item: ScheduleItem,
+    index: Int,
+    onClick: () -> Unit
+) {
+    val timelineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+    val verticalNudge = if (index % 2 == 0) (-3).dp else 3.dp
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(24.dp)
+                .height(20.dp)
+                .offset(y = verticalNudge)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(8.dp)
+                    .background(
+                        color = timelineColor,
+                        shape = CircleShape
+                    )
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 8.dp)
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(timelineColor.copy(alpha = 0.65f))
+            )
+        }
+
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onClick),
+            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        ) {
+            Text(
+                text = "${String.format("%02d:%02d", item.hour, item.minute)}  ${item.name}",
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+            )
         }
     }
 }
