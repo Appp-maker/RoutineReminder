@@ -1994,16 +1994,29 @@ private fun RoutineOverviewModeSwitch(
     selectedMode: RoutineOverviewMode,
     onModeSelected: (RoutineOverviewMode) -> Unit
 ) {
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier
+            .wrapContentWidth()
+            .heightIn(min = 34.dp)
+    ) {
         RoutineOverviewMode.entries.forEachIndexed { index, mode ->
             SegmentedButton(
                 selected = selectedMode == mode,
                 onClick = { onModeSelected(mode) },
+                modifier = Modifier.defaultMinSize(minWidth = 58.dp, minHeight = 34.dp),
                 shape = SegmentedButtonDefaults.itemShape(index = index, count = RoutineOverviewMode.entries.size),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                icon = {},
                 label = {
                     Text(
                         text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
-                        color = if (selectedMode == mode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        color = if (selectedMode == mode) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
                     )
                 }
             )
