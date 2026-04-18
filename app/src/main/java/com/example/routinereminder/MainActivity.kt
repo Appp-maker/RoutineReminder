@@ -2082,6 +2082,14 @@ private fun RoutineOverviewContent(
     items: List<ScheduleItem>,
     onDateSelected: (LocalDate) -> Unit
 ) {
+    var categoryFilterExpanded by remember { mutableStateOf(false) }
+    var selectedCategories by remember {
+        mutableStateOf(EventCategory.entries.toSet())
+    }
+    val filteredItems = remember(items, selectedCategories) {
+        items.filter { selectedCategories.contains(it.category) }
+    }
+
     when (mode) {
         RoutineOverviewMode.DAY -> Unit
         RoutineOverviewMode.WEEK -> {
@@ -2091,11 +2099,20 @@ private fun RoutineOverviewContent(
             val weekDates = remember(weekStart) { (0L..6L).map { weekStart.plusDays(it) } }
             CalendarOverviewHeader(
                 title = "Week overview",
-                subtitle = "${weekStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${weekStart.plusDays(6).format(DateTimeFormatter.ofPattern("MMM d"))}"
+                subtitle = "${weekStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${weekStart.plusDays(6).format(DateTimeFormatter.ofPattern("MMM d"))}",
+                trailingContent = {
+                    CategoryFilterDropdown(
+                        selectedCategories = selectedCategories,
+                        expanded = categoryFilterExpanded,
+                        onOpen = { categoryFilterExpanded = true },
+                        onDismiss = { categoryFilterExpanded = false },
+                        onSelectionChange = { updated -> selectedCategories = updated }
+                    )
+                }
             )
             CalendarWeekOverview(
                 weekDates = weekDates,
-                items = items,
+                items = filteredItems,
                 onDateSelected = onDateSelected
             )
         }
@@ -2103,10 +2120,6 @@ private fun RoutineOverviewContent(
         RoutineOverviewMode.MONTH -> {
             val month = remember(currentDate) { YearMonth.from(currentDate) }
             val monthTitle = remember(month) { month.format(DateTimeFormatter.ofPattern("MMMM yyyy")) }
-            var categoryFilterExpanded by remember { mutableStateOf(false) }
-            var selectedCategories by remember {
-                mutableStateOf(EventCategory.entries.toSet())
-            }
             val leadingOffset = remember(month) {
                 month.atDay(1).dayOfWeek.value - 1
             }
@@ -2126,57 +2139,71 @@ private fun RoutineOverviewContent(
                 title = "Month overview",
                 subtitle = monthTitle,
                 trailingContent = {
-                    Box {
-                        OutlinedButton(
-                            onClick = { categoryFilterExpanded = true }
-                        ) {
-                            Text(
-                                text = if (selectedCategories.size == EventCategory.entries.size) {
-                                    stringResource(R.string.category_filter_all)
-                                } else {
-                                    stringResource(
-                                        R.string.category_filter_selected_count,
-                                        selectedCategories.size
-                                    )
-                                }
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = categoryFilterExpanded,
-                            onDismissRequest = { categoryFilterExpanded = false }
-                        ) {
-                            EventCategory.entries.forEach { category ->
-                                val isSelected = selectedCategories.contains(category)
-                                DropdownMenuItem(
-                                    text = { Text(text = eventCategoryLabel(category)) },
-                                    leadingIcon = {
-                                        Checkbox(
-                                            checked = isSelected,
-                                            onCheckedChange = null
-                                        )
-                                    },
-                                    onClick = {
-                                        if (isSelected && selectedCategories.size == 1) return@DropdownMenuItem
-                                        selectedCategories = if (isSelected) {
-                                            selectedCategories - category
-                                        } else {
-                                            selectedCategories + category
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
+                    CategoryFilterDropdown(
+                        selectedCategories = selectedCategories,
+                        expanded = categoryFilterExpanded,
+                        onOpen = { categoryFilterExpanded = true },
+                        onDismiss = { categoryFilterExpanded = false },
+                        onSelectionChange = { updated -> selectedCategories = updated }
+                    )
                 }
             )
-            val filteredItems = remember(items, selectedCategories) {
-                items.filter { selectedCategories.contains(it.category) }
-            }
             CalendarMonthOverview(
                 monthCells = cells,
                 items = filteredItems,
                 onDateSelected = onDateSelected
             )
+        }
+    }
+}
+
+@Composable
+private fun CategoryFilterDropdown(
+    selectedCategories: Set<EventCategory>,
+    expanded: Boolean,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
+    onSelectionChange: (Set<EventCategory>) -> Unit
+) {
+    Box {
+        OutlinedButton(onClick = onOpen) {
+            Text(
+                text = if (selectedCategories.size == EventCategory.entries.size) {
+                    stringResource(R.string.category_filter_all)
+                } else {
+                    stringResource(
+                        R.string.category_filter_selected_count,
+                        selectedCategories.size
+                    )
+                }
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = onDismiss
+        ) {
+            EventCategory.entries.forEach { category ->
+                val isSelected = selectedCategories.contains(category)
+                DropdownMenuItem(
+                    text = { Text(text = eventCategoryLabel(category)) },
+                    leadingIcon = {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = null
+                        )
+                    },
+                    onClick = {
+                        if (isSelected && selectedCategories.size == 1) return@DropdownMenuItem
+                        onSelectionChange(
+                            if (isSelected) {
+                                selectedCategories - category
+                            } else {
+                                selectedCategories + category
+                            }
+                        )
+                    }
+                )
+            }
         }
     }
 }
