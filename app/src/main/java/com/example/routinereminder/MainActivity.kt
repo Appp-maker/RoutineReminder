@@ -86,7 +86,6 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -1856,6 +1855,8 @@ fun MainScreenContent(
     var showDatePicker by remember { mutableStateOf(false) }
     var isCompactView by rememberSaveable { mutableStateOf(false) }
     var overviewMode by rememberSaveable { mutableStateOf(RoutineOverviewMode.DAY) }
+    val weeklySelectedOverviewCategories by viewModel.weeklyOverviewCategoryFilter.collectAsState()
+    val monthlySelectedOverviewCategories by viewModel.monthlyOverviewCategoryFilter.collectAsState()
     val latestCurrentDate by rememberUpdatedState(currentDate)
     val latestOverviewMode by rememberUpdatedState(overviewMode)
     val latestOnPreviousDay by rememberUpdatedState(onPreviousDay)
@@ -1986,6 +1987,10 @@ fun MainScreenContent(
                     mode = overviewMode,
                     currentDate = currentDate,
                     items = overviewItems,
+                    weeklySelectedCategories = weeklySelectedOverviewCategories,
+                    monthlySelectedCategories = monthlySelectedOverviewCategories,
+                    onWeeklySelectionChange = { updated -> viewModel.saveWeeklyOverviewCategoryFilter(updated) },
+                    onMonthlySelectionChange = { updated -> viewModel.saveMonthlyOverviewCategoryFilter(updated) },
                     onDateSelected = { selectedOverviewDate ->
                         onDateSelected(selectedOverviewDate)
                         overviewMode = RoutineOverviewMode.DAY
@@ -2081,16 +2086,14 @@ private fun RoutineOverviewContent(
     mode: RoutineOverviewMode,
     currentDate: LocalDate,
     items: List<ScheduleItem>,
+    weeklySelectedCategories: Set<EventCategory>,
+    monthlySelectedCategories: Set<EventCategory>,
+    onWeeklySelectionChange: (Set<EventCategory>) -> Unit,
+    onMonthlySelectionChange: (Set<EventCategory>) -> Unit,
     onDateSelected: (LocalDate) -> Unit
 ) {
     var weekCategoryFilterExpanded by remember { mutableStateOf(false) }
     var monthCategoryFilterExpanded by remember { mutableStateOf(false) }
-    var weeklySelectedCategories by rememberSaveable(stateSaver = eventCategorySetSaver()) {
-        mutableStateOf(EventCategory.entries.toSet())
-    }
-    var monthlySelectedCategories by rememberSaveable(stateSaver = eventCategorySetSaver()) {
-        mutableStateOf(EventCategory.entries.toSet())
-    }
     val weeklyFilteredItems = remember(items, weeklySelectedCategories) {
         items.filter { weeklySelectedCategories.contains(it.category) }
     }
@@ -2114,7 +2117,7 @@ private fun RoutineOverviewContent(
                         expanded = weekCategoryFilterExpanded,
                         onOpen = { weekCategoryFilterExpanded = true },
                         onDismiss = { weekCategoryFilterExpanded = false },
-                        onSelectionChange = { updated -> weeklySelectedCategories = updated }
+                        onSelectionChange = onWeeklySelectionChange
                     )
                 }
             )
@@ -2152,7 +2155,7 @@ private fun RoutineOverviewContent(
                         expanded = monthCategoryFilterExpanded,
                         onOpen = { monthCategoryFilterExpanded = true },
                         onDismiss = { monthCategoryFilterExpanded = false },
-                        onSelectionChange = { updated -> monthlySelectedCategories = updated }
+                        onSelectionChange = onMonthlySelectionChange
                     )
                 }
             )
@@ -2164,15 +2167,6 @@ private fun RoutineOverviewContent(
         }
     }
 }
-
-private fun eventCategorySetSaver(): Saver<Set<EventCategory>, List<String>> = Saver(
-    save = { selected -> selected.map(EventCategory::name) },
-    restore = { saved ->
-        saved.mapNotNull { name ->
-            EventCategory.entries.firstOrNull { category -> category.name == name }
-        }.toSet().ifEmpty { EventCategory.entries.toSet() }
-    }
-)
 
 @Composable
 private fun CategoryFilterDropdown(

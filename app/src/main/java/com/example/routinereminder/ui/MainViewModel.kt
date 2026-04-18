@@ -8,6 +8,7 @@ import androidx.work.WorkManager
 import com.example.routinereminder.data.AppDatabase
 import com.example.routinereminder.data.DefaultEventSettings
 import com.example.routinereminder.data.EventPredictionService
+import com.example.routinereminder.data.EventCategory
 import com.example.routinereminder.data.Gender
 import com.example.routinereminder.data.RunSessionRepository
 import com.example.routinereminder.data.ScheduleItem
@@ -164,6 +165,12 @@ class MainViewModel @Inject constructor(
 
     private val _routineInsights = MutableStateFlow<RoutineInsights?>(null)
     val routineInsights: StateFlow<RoutineInsights?> = _routineInsights.asStateFlow()
+    private val _weeklyOverviewCategoryFilter = MutableStateFlow(EventCategory.entries.toSet())
+    val weeklyOverviewCategoryFilter: StateFlow<Set<EventCategory>> =
+        _weeklyOverviewCategoryFilter.asStateFlow()
+    private val _monthlyOverviewCategoryFilter = MutableStateFlow(EventCategory.entries.toSet())
+    val monthlyOverviewCategoryFilter: StateFlow<Set<EventCategory>> =
+        _monthlyOverviewCategoryFilter.asStateFlow()
 
     private val _driveBackupUri = MutableStateFlow<String?>(null)
     val driveBackupUri: StateFlow<String?> = _driveBackupUri.asStateFlow()
@@ -419,6 +426,16 @@ class MainViewModel @Inject constructor(
             settingsRepository.getRoutineInsightsEnabled().collectLatest { enabled ->
                 _routineInsightsEnabled.value = enabled
                 refreshRoutineInsights()
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getWeeklyOverviewCategoryFilter().collectLatest { categories ->
+                _weeklyOverviewCategoryFilter.value = categories
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getMonthlyOverviewCategoryFilter().collectLatest { categories ->
+                _monthlyOverviewCategoryFilter.value = categories
             }
         }
         viewModelScope.launch {
@@ -703,6 +720,18 @@ class MainViewModel @Inject constructor(
     fun saveFoodConsumedTrackingEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.saveFoodConsumedTrackingEnabled(enabled)
+        }
+    }
+
+    fun saveWeeklyOverviewCategoryFilter(categories: Set<EventCategory>) {
+        viewModelScope.launch {
+            settingsRepository.saveWeeklyOverviewCategoryFilter(categories)
+        }
+    }
+
+    fun saveMonthlyOverviewCategoryFilter(categories: Set<EventCategory>) {
+        viewModelScope.launch {
+            settingsRepository.saveMonthlyOverviewCategoryFilter(categories)
         }
     }
 
