@@ -2284,9 +2284,9 @@ private fun WeekTimelineRow(
     val visibleEntries = remember(isToday, dayItems, nowIndicatorIndex) {
         val visibleEvents = dayItems.take(3)
         if (!isToday) {
-            visibleEvents.map { WeekTimelineEntry.Event(it) }
+            visibleEvents.map<ScheduleItem, WeekTimelineEntry> { WeekTimelineEntry.Event(it) }
         } else {
-            buildList {
+            buildList<WeekTimelineEntry> {
                 val insertionIndex = nowIndicatorIndex.coerceIn(0, visibleEvents.size)
                 visibleEvents.forEachIndexed { index, item ->
                     if (index == insertionIndex) {
