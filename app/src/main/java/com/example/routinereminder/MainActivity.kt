@@ -2264,7 +2264,7 @@ private fun WeekTimelineRow(
             val firstRelevantIndex = dayItems.indexOfFirst { item ->
                 val start = LocalTime.of(item.hour, item.minute)
                 val end = start.plusMinutes(item.durationMinutes.toLong())
-                now.isBefore(end)
+                !now.isAfter(end)
             }
             if (firstRelevantIndex >= 0) firstRelevantIndex else dayItems.size
         }
@@ -2277,7 +2277,7 @@ private fun WeekTimelineRow(
             dayItems.firstOrNull { item ->
                 val start = LocalTime.of(item.hour, item.minute)
                 val end = start.plusMinutes(item.durationMinutes.toLong())
-                !now.isBefore(start) && now.isBefore(end)
+                !now.isBefore(start) && !now.isAfter(end)
             }
         }
     }
@@ -2380,6 +2380,9 @@ private fun WeekTimelineEventItem(
     item: ScheduleItem,
     onClick: () -> Unit
 ) {
+    val start = LocalTime.of(item.hour, item.minute)
+    val end = start.plusMinutes(item.durationMinutes.toLong())
+    val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -2388,13 +2391,30 @@ private fun WeekTimelineEventItem(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     ) {
-        Text(
-            text = "${String.format("%02d:%02d", item.hour, item.minute)}  ${item.name}",
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = start.format(timeFormatter),
+                style = MaterialTheme.typography.labelMedium
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = end.format(timeFormatter),
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
     }
 }
 
