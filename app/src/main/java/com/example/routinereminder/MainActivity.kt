@@ -2256,6 +2256,19 @@ private fun WeekTimelineRow(
     onClick: () -> Unit
 ) {
     val isToday = remember(date) { date == LocalDate.now() }
+    val nowIndicatorIndex = remember(isToday, dayItems) {
+        if (!isToday) {
+            -1
+        } else {
+            val now = LocalTime.now()
+            val firstRelevantIndex = dayItems.indexOfFirst { item ->
+                val start = LocalTime.of(item.hour, item.minute)
+                val end = start.plusMinutes(item.durationMinutes.toLong())
+                now.isBefore(end)
+            }
+            if (firstRelevantIndex >= 0) firstRelevantIndex else dayItems.size
+        }
+    }
     val activeNowItem = remember(isToday, dayItems) {
         if (!isToday) {
             null
@@ -2265,6 +2278,25 @@ private fun WeekTimelineRow(
                 val start = LocalTime.of(item.hour, item.minute)
                 val end = start.plusMinutes(item.durationMinutes.toLong())
                 !now.isBefore(start) && now.isBefore(end)
+            }
+        }
+    }
+    val visibleEntries = remember(isToday, dayItems, nowIndicatorIndex) {
+        val visibleEvents = dayItems.take(3)
+        if (!isToday) {
+            visibleEvents.map { WeekTimelineEntry.Event(it) }
+        } else {
+            buildList {
+                val insertionIndex = nowIndicatorIndex.coerceIn(0, visibleEvents.size)
+                visibleEvents.forEachIndexed { index, item ->
+                    if (index == insertionIndex) {
+                        add(WeekTimelineEntry.NowIndicator)
+                    }
+                    add(WeekTimelineEntry.Event(item))
+                }
+                if (insertionIndex == visibleEvents.size) {
+                    add(WeekTimelineEntry.NowIndicator)
+                }
             }
         }
     }
@@ -2305,9 +2337,6 @@ private fun WeekTimelineRow(
                 .padding(top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            if (isToday) {
-                WeekNowIndicatorLine(currentItem = activeNowItem)
-            }
             if (dayItems.isEmpty()) {
                 Text(
                     text = "No events",
@@ -2315,11 +2344,19 @@ private fun WeekTimelineRow(
                     color = MaterialTheme.colorScheme.secondary
                 )
             } else {
-                dayItems.take(3).forEach { item ->
-                    WeekTimelineEventItem(
-                        item = item,
-                        onClick = onClick
-                    )
+                visibleEntries.forEach { entry ->
+                    when (entry) {
+                        is WeekTimelineEntry.Event -> {
+                            WeekTimelineEventItem(
+                                item = entry.item,
+                                onClick = onClick
+                            )
+                        }
+
+                        WeekTimelineEntry.NowIndicator -> {
+                            WeekNowIndicatorLine(currentItem = activeNowItem)
+                        }
+                    }
                 }
                 if (dayItems.size > 3) {
                     Text(
@@ -2331,6 +2368,11 @@ private fun WeekTimelineRow(
             }
         }
     }
+}
+
+private sealed interface WeekTimelineEntry {
+    data class Event(val item: ScheduleItem) : WeekTimelineEntry
+    data object NowIndicator : WeekTimelineEntry
 }
 
 @Composable
