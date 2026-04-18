@@ -86,6 +86,7 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -2084,10 +2085,10 @@ private fun RoutineOverviewContent(
 ) {
     var weekCategoryFilterExpanded by remember { mutableStateOf(false) }
     var monthCategoryFilterExpanded by remember { mutableStateOf(false) }
-    var weeklySelectedCategories by remember {
+    var weeklySelectedCategories by rememberSaveable(stateSaver = eventCategorySetSaver()) {
         mutableStateOf(EventCategory.entries.toSet())
     }
-    var monthlySelectedCategories by remember {
+    var monthlySelectedCategories by rememberSaveable(stateSaver = eventCategorySetSaver()) {
         mutableStateOf(EventCategory.entries.toSet())
     }
     val weeklyFilteredItems = remember(items, weeklySelectedCategories) {
@@ -2163,6 +2164,15 @@ private fun RoutineOverviewContent(
         }
     }
 }
+
+private fun eventCategorySetSaver(): Saver<Set<EventCategory>, List<String>> = Saver(
+    save = { selected -> selected.map(EventCategory::name) },
+    restore = { saved ->
+        saved.mapNotNull { name ->
+            EventCategory.entries.firstOrNull { category -> category.name == name }
+        }.toSet().ifEmpty { EventCategory.entries.toSet() }
+    }
+)
 
 @Composable
 private fun CategoryFilterDropdown(
