@@ -2082,12 +2082,19 @@ private fun RoutineOverviewContent(
     items: List<ScheduleItem>,
     onDateSelected: (LocalDate) -> Unit
 ) {
-    var categoryFilterExpanded by remember { mutableStateOf(false) }
-    var selectedCategories by remember {
+    var weekCategoryFilterExpanded by remember { mutableStateOf(false) }
+    var monthCategoryFilterExpanded by remember { mutableStateOf(false) }
+    var weeklySelectedCategories by remember {
         mutableStateOf(EventCategory.entries.toSet())
     }
-    val filteredItems = remember(items, selectedCategories) {
-        items.filter { selectedCategories.contains(it.category) }
+    var monthlySelectedCategories by remember {
+        mutableStateOf(EventCategory.entries.toSet())
+    }
+    val weeklyFilteredItems = remember(items, weeklySelectedCategories) {
+        items.filter { weeklySelectedCategories.contains(it.category) }
+    }
+    val monthlyFilteredItems = remember(items, monthlySelectedCategories) {
+        items.filter { monthlySelectedCategories.contains(it.category) }
     }
 
     when (mode) {
@@ -2102,17 +2109,17 @@ private fun RoutineOverviewContent(
                 subtitle = "${weekStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${weekStart.plusDays(6).format(DateTimeFormatter.ofPattern("MMM d"))}",
                 trailingContent = {
                     CategoryFilterDropdown(
-                        selectedCategories = selectedCategories,
-                        expanded = categoryFilterExpanded,
-                        onOpen = { categoryFilterExpanded = true },
-                        onDismiss = { categoryFilterExpanded = false },
-                        onSelectionChange = { updated -> selectedCategories = updated }
+                        selectedCategories = weeklySelectedCategories,
+                        expanded = weekCategoryFilterExpanded,
+                        onOpen = { weekCategoryFilterExpanded = true },
+                        onDismiss = { weekCategoryFilterExpanded = false },
+                        onSelectionChange = { updated -> weeklySelectedCategories = updated }
                     )
                 }
             )
             CalendarWeekOverview(
                 weekDates = weekDates,
-                items = filteredItems,
+                items = weeklyFilteredItems,
                 onDateSelected = onDateSelected
             )
         }
@@ -2140,17 +2147,17 @@ private fun RoutineOverviewContent(
                 subtitle = monthTitle,
                 trailingContent = {
                     CategoryFilterDropdown(
-                        selectedCategories = selectedCategories,
-                        expanded = categoryFilterExpanded,
-                        onOpen = { categoryFilterExpanded = true },
-                        onDismiss = { categoryFilterExpanded = false },
-                        onSelectionChange = { updated -> selectedCategories = updated }
+                        selectedCategories = monthlySelectedCategories,
+                        expanded = monthCategoryFilterExpanded,
+                        onOpen = { monthCategoryFilterExpanded = true },
+                        onDismiss = { monthCategoryFilterExpanded = false },
+                        onSelectionChange = { updated -> monthlySelectedCategories = updated }
                     )
                 }
             )
             CalendarMonthOverview(
                 monthCells = cells,
-                items = filteredItems,
+                items = monthlyFilteredItems,
                 onDateSelected = onDateSelected
             )
         }
@@ -2296,18 +2303,6 @@ private fun WeekTimelineRow(
             if (firstRelevantIndex >= 0) firstRelevantIndex else dayItems.size
         }
     }
-    val activeNowItem = remember(isToday, dayItems) {
-        if (!isToday) {
-            null
-        } else {
-            val now = LocalTime.now()
-            dayItems.firstOrNull { item ->
-                val start = LocalTime.of(item.hour, item.minute)
-                val end = start.plusMinutes(item.durationMinutes.toLong())
-                !now.isBefore(start) && !now.isAfter(end)
-            }
-        }
-    }
     val visibleEntries = remember(isToday, dayItems, nowIndicatorIndex) {
         val visibleEvents = dayItems.take(3)
         if (!isToday) {
@@ -2381,7 +2376,7 @@ private fun WeekTimelineRow(
                         }
 
                         WeekTimelineEntry.NowIndicator -> {
-                            WeekNowIndicatorLine(currentItem = activeNowItem)
+                            WeekNowIndicatorLine()
                         }
                     }
                 }
@@ -2446,7 +2441,7 @@ private fun WeekTimelineEventItem(
 }
 
 @Composable
-private fun WeekNowIndicatorLine(currentItem: ScheduleItem?) {
+private fun WeekNowIndicatorLine() {
     val lineColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
     Row(
         modifier = Modifier
@@ -2466,35 +2461,6 @@ private fun WeekNowIndicatorLine(currentItem: ScheduleItem?) {
                 .height(1.dp)
                 .background(lineColor)
         )
-    }
-    currentItem?.let { item ->
-        val start = LocalTime.of(item.hour, item.minute)
-        val end = start.plusMinutes(item.durationMinutes.toLong())
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = start.format(DateTimeFormatter.ofPattern("HH:mm")),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = end.format(DateTimeFormatter.ofPattern("HH:mm")),
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
     }
 }
 
