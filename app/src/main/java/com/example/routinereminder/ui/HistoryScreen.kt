@@ -94,6 +94,8 @@ fun HistoryScreen(navController: NavController) {
 
 @Composable
 private fun AnalyticsSummary(sessions: List<SessionStats>) {
+    var selectedSummaryFilter by rememberSaveable { mutableStateOf(AnalyticsFilter.Weekly) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -115,17 +117,42 @@ private fun AnalyticsSummary(sessions: List<SessionStats>) {
             val weeklySummaries = buildWeeklySummaries(sessions, maxWeeks = 4)
             val monthlySummaries = buildMonthlySummaries(sessions, maxMonths = 6)
 
-            SummarySection(
-                title = "Weekly (last ${weeklySummaries.size} weeks)",
-                summaries = weeklySummaries
-            )
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                AnalyticsFilter.entries.forEachIndexed { index, filter ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = AnalyticsFilter.entries.size
+                        ),
+                        onClick = { selectedSummaryFilter = filter },
+                        selected = selectedSummaryFilter == filter
+                    ) {
+                        Text(text = filter.label)
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
-            SummarySection(
-                title = "Monthly (last ${monthlySummaries.size} months)",
-                summaries = monthlySummaries
-            )
+
+            when (selectedSummaryFilter) {
+                AnalyticsFilter.Weekly -> SummarySection(
+                    title = "Weekly (last ${weeklySummaries.size} weeks)",
+                    summaries = weeklySummaries
+                )
+
+                AnalyticsFilter.Monthly -> SummarySection(
+                    title = "Monthly (last ${monthlySummaries.size} months)",
+                    summaries = monthlySummaries
+                )
+            }
         }
     }
+}
+
+private enum class AnalyticsFilter(val label: String) {
+    Weekly("Weekly"),
+    Monthly("Monthly")
 }
 
 @Composable
