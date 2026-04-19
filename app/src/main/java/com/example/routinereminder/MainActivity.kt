@@ -86,7 +86,6 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -1856,12 +1855,8 @@ fun MainScreenContent(
     var showDatePicker by remember { mutableStateOf(false) }
     var isCompactView by rememberSaveable { mutableStateOf(false) }
     var overviewMode by rememberSaveable { mutableStateOf(RoutineOverviewMode.DAY) }
-    var weeklySelectedOverviewCategories by rememberSaveable(stateSaver = eventCategorySetSaver()) {
-        mutableStateOf(EventCategory.entries.toSet())
-    }
-    var monthlySelectedOverviewCategories by rememberSaveable(stateSaver = eventCategorySetSaver()) {
-        mutableStateOf(EventCategory.entries.toSet())
-    }
+    val weeklySelectedOverviewCategories by viewModel.weeklyOverviewCategoryFilter.collectAsState()
+    val monthlySelectedOverviewCategories by viewModel.monthlyOverviewCategoryFilter.collectAsState()
     val latestCurrentDate by rememberUpdatedState(currentDate)
     val latestOverviewMode by rememberUpdatedState(overviewMode)
     val latestOnPreviousDay by rememberUpdatedState(onPreviousDay)
@@ -1994,8 +1989,8 @@ fun MainScreenContent(
                     items = overviewItems,
                     weeklySelectedCategories = weeklySelectedOverviewCategories,
                     monthlySelectedCategories = monthlySelectedOverviewCategories,
-                    onWeeklySelectionChange = { updated -> weeklySelectedOverviewCategories = updated },
-                    onMonthlySelectionChange = { updated -> monthlySelectedOverviewCategories = updated },
+                    onWeeklySelectionChange = { updated -> viewModel.saveWeeklyOverviewCategoryFilter(updated) },
+                    onMonthlySelectionChange = { updated -> viewModel.saveMonthlyOverviewCategoryFilter(updated) },
                     onDateSelected = { selectedOverviewDate ->
                         onDateSelected(selectedOverviewDate)
                         overviewMode = RoutineOverviewMode.DAY
@@ -2172,15 +2167,6 @@ private fun RoutineOverviewContent(
         }
     }
 }
-
-private fun eventCategorySetSaver(): Saver<Set<EventCategory>, List<String>> = Saver(
-    save = { selected -> selected.map(EventCategory::name) },
-    restore = { saved ->
-        saved.mapNotNull { name ->
-            EventCategory.entries.firstOrNull { category -> category.name == name }
-        }.toSet().ifEmpty { EventCategory.entries.toSet() }
-    }
-)
 
 @Composable
 private fun CategoryFilterDropdown(

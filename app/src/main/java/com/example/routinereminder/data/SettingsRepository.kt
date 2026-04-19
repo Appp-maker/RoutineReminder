@@ -89,6 +89,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     val PAST_EVENT_BACKGROUND_CUSTOM_COLOR = intPreferencesKey("past_event_background_custom_color")
     val PAST_EVENT_BACKGROUND_TRANSPARENCY = stringPreferencesKey("past_event_background_transparency")
     val ROUTINE_INSIGHTS_ENABLED = booleanPreferencesKey("routine_insights_enabled")
+    val WEEKLY_OVERVIEW_CATEGORY_FILTER = stringSetPreferencesKey("weekly_overview_category_filter")
+    val MONTHLY_OVERVIEW_CATEGORY_FILTER = stringSetPreferencesKey("monthly_overview_category_filter")
     val EXAMPLE_DATA_SEEDED = booleanPreferencesKey("example_data_seeded")
     val DRIVE_BACKUP_URI = stringPreferencesKey("drive_backup_uri")
     val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
@@ -633,6 +635,42 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     fun getExampleDataSeeded(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[EXAMPLE_DATA_SEEDED] ?: false
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveWeeklyOverviewCategoryFilter(categories: Set<EventCategory>) {
+        dataStore.edit { preferences ->
+            preferences[WEEKLY_OVERVIEW_CATEGORY_FILTER] = categories.map { it.name }.toSet()
+        }
+    }
+
+    fun getWeeklyOverviewCategoryFilter(): Flow<Set<EventCategory>> {
+        return dataStore.data.map { preferences ->
+            preferences[WEEKLY_OVERVIEW_CATEGORY_FILTER]
+                ?.mapNotNull { storedName ->
+                    EventCategory.entries.firstOrNull { category -> category.name == storedName }
+                }
+                ?.toSet()
+                ?.ifEmpty { EventCategory.entries.toSet() }
+                ?: EventCategory.entries.toSet()
+        }.distinctUntilChanged()
+    }
+
+    suspend fun saveMonthlyOverviewCategoryFilter(categories: Set<EventCategory>) {
+        dataStore.edit { preferences ->
+            preferences[MONTHLY_OVERVIEW_CATEGORY_FILTER] = categories.map { it.name }.toSet()
+        }
+    }
+
+    fun getMonthlyOverviewCategoryFilter(): Flow<Set<EventCategory>> {
+        return dataStore.data.map { preferences ->
+            preferences[MONTHLY_OVERVIEW_CATEGORY_FILTER]
+                ?.mapNotNull { storedName ->
+                    EventCategory.entries.firstOrNull { category -> category.name == storedName }
+                }
+                ?.toSet()
+                ?.ifEmpty { EventCategory.entries.toSet() }
+                ?: EventCategory.entries.toSet()
         }.distinctUntilChanged()
     }
 
