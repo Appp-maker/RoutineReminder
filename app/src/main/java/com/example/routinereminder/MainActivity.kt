@@ -71,7 +71,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
@@ -2562,6 +2561,7 @@ private fun CalendarDayCell(
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
     }
     val contentAlpha = if (isPast && !isToday) 0.65f else 1f
+    val hasMultipleEvents = dayItems.size > 1
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
@@ -2571,11 +2571,30 @@ private fun CalendarDayCell(
         color = containerColor
     ) {
         Column(modifier = Modifier.padding(6.dp)) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.labelLarge,
-                color = dayNumberColor
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = dayNumberColor
+                )
+                if (hasMultipleEvents) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = contentAlpha),
+                        shape = RoundedCornerShape(999.dp)
+                    ) {
+                        Text(
+                            text = "${dayItems.size} events",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             if (dayItems.isEmpty()) {
                 Text(
@@ -2588,28 +2607,20 @@ private fun CalendarDayCell(
             } else {
                 val visibleItems = dayItems.take(3)
                 visibleItems.forEachIndexed { index, item ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(4.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.secondary.copy(alpha = contentAlpha))
-                        )
-                        Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 10.sp,
-                                lineHeight = 12.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            lineHeight = 12.sp
+                        ),
+                        color = if (hasMultipleEvents) {
+                            MaterialTheme.colorScheme.secondary.copy(alpha = contentAlpha)
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
+                        },
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     if (index < visibleItems.lastIndex) {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 3.dp),
