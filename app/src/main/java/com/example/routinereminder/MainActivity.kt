@@ -2589,12 +2589,15 @@ private fun CalendarDayCell(
                         ) {
                             Text(
                                 text = "${dayItems.size} events",
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 9.sp,
+                                    lineHeight = 10.sp
+                                ),
                                 color = Color.White,
                                 maxLines = 1,
                                 softWrap = false,
-                                overflow = TextOverflow.Clip,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                             )
                         }
                     }
@@ -2610,7 +2613,7 @@ private fun CalendarDayCell(
                     overflow = TextOverflow.Ellipsis
                 )
             } else {
-                val visibleItems = dayItems.take(3)
+                val visibleItems = dayItems.take(2)
                 visibleItems.forEachIndexed { index, item ->
                     Text(
                         text = item.name,
