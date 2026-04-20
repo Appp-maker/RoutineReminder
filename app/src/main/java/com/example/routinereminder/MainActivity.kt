@@ -2576,22 +2576,27 @@ private fun CalendarDayCell(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = date.dayOfMonth.toString(),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = dayNumberColor
-                )
-                if (hasMultipleEvents) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = contentAlpha),
-                        shape = RoundedCornerShape(999.dp)
-                    ) {
-                        Text(
-                            text = "${dayItems.size} events",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        text = date.dayOfMonth.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = dayNumberColor
+                    )
+                    if (hasMultipleEvents) {
+                        Surface(
+                            color = Color(0xFF4CAF50).copy(alpha = contentAlpha),
+                            shape = RoundedCornerShape(999.dp)
+                        ) {
+                            Text(
+                                text = "${dayItems.size} events",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Clip,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }
