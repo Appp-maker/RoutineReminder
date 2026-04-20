@@ -27,7 +27,7 @@ data class EventDialogFieldOption(
     val enabled: Boolean
 ) {
     companion object {
-        private val requiredFields = emptySet<EventDialogField>()
+        private val requiredFields = setOf(EventDialogField.TITLE)
         private val parentByChildField = mapOf(
             EventDialogField.REPEAT to EventDialogField.DATE_DETAILS,
             EventDialogField.NOTIFICATION_DETAILS to EventDialogField.NOTIFICATION,
@@ -72,7 +72,7 @@ data class EventDialogFieldOption(
         }
 
         fun defaults(): List<EventDialogFieldOption> = listOf(
-            EventDialogFieldOption(EventDialogField.TITLE, false),
+            EventDialogFieldOption(EventDialogField.TITLE, true),
             EventDialogFieldOption(EventDialogField.NOTES, true),
             EventDialogFieldOption(EventDialogField.TIME, false),
             EventDialogFieldOption(EventDialogField.DURATION, true),
