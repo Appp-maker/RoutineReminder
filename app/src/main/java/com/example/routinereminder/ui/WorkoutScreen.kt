@@ -121,6 +121,7 @@ fun WorkoutScreen(
     val uiState by viewModel.uiState.collectAsState()
     val defaultEventSettings by mainViewModel.defaultEventSettings.collectAsState()
     val useGoogleBackupMode by mainViewModel.useGoogleBackupMode.collectAsState()
+    val selectedGoogleAccountName by mainViewModel.selectedGoogleAccountName.collectAsState()
     val eventSetNames by mainViewModel.eventSetNames.collectAsState()
     val eventSetColors by mainViewModel.eventSetColors.collectAsState()
     val recentCustomEventColors by mainViewModel.recentCustomEventColors.collectAsState()
@@ -622,6 +623,7 @@ fun WorkoutScreen(
             initialItem = draftItem,
             defaultEventSettings = defaultEventSettings,
             useGoogleBackupMode = useGoogleBackupMode,
+            hasConnectedGoogleAccount = !selectedGoogleAccountName.isNullOrBlank(),
             routeTravelMode = EventPredictionService.TravelMode.fromStoredValue(mapRouteTransportMode),
             eventSetNames = eventSetNames,
             eventSetColors = eventSetColors,

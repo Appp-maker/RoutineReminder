@@ -442,6 +442,7 @@ fun MainAppUI(
         val selectedDate by viewModel.selectedDate.collectAsState()
         val defaultEventSettings by viewModel.defaultEventSettings.collectAsState()
         val useGoogleBackupMode by viewModel.useGoogleBackupMode.collectAsState()
+        val selectedGoogleAccountName by viewModel.selectedGoogleAccountName.collectAsState()
         val eventSetNames by viewModel.eventSetNames.collectAsState()
         val eventSetColors by viewModel.eventSetColors.collectAsState()
         val eventIndicatorDisplayCondition by viewModel.eventIndicatorDisplayCondition.collectAsState()
@@ -835,6 +836,7 @@ fun MainAppUI(
                             initialItem = itemToEdit,
                             defaultEventSettings = defaultEventSettings,
                             useGoogleBackupMode = useGoogleBackupMode,
+                            hasConnectedGoogleAccount = !selectedGoogleAccountName.isNullOrBlank(),
                             routeTravelMode = EventPredictionService.TravelMode.fromStoredValue(mapRouteTransportMode),
                             eventSetNames = eventSetNames,
                             eventSetColors = eventSetColors,
