@@ -2590,14 +2590,14 @@ private fun CalendarDayCell(
                             Text(
                                 text = "${dayItems.size} events",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 9.sp,
-                                    lineHeight = 10.sp
+                                    fontSize = 8.sp,
+                                    lineHeight = 9.sp
                                 ),
                                 color = Color.White,
                                 maxLines = 1,
                                 softWrap = false,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                             )
                         }
                     }
@@ -2636,13 +2636,6 @@ private fun CalendarDayCell(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f * contentAlpha)
                         )
                     }
-                }
-                if (dayItems.size > visibleItems.size) {
-                    Text(
-                        text = "+${dayItems.size - visibleItems.size} more",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = contentAlpha)
-                    )
                 }
             }
         }
