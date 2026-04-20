@@ -2587,7 +2587,7 @@ private fun CalendarDayCell(
                 )
             } else {
                 val visibleItems = dayItems.take(3)
-                visibleItems.forEach { item ->
+                visibleItems.forEachIndexed { index, item ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -2606,8 +2606,15 @@ private fun CalendarDayCell(
                                 lineHeight = 12.sp
                             ),
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    if (index < visibleItems.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 3.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f * contentAlpha)
                         )
                     }
                 }
