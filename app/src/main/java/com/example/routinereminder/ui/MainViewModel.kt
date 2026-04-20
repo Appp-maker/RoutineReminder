@@ -1454,8 +1454,8 @@ class MainViewModel @Inject constructor(
                 val filtered = itemsForDate
                     .filter { item -> item.setId == null || item.setId in effectiveActiveSetIds }
                     .sortedWith(
-                        compareBy<ScheduleItem> { it.durationMinutes }
-                            .thenBy { item -> item.hour * 60 + item.minute }
+                        compareBy<ScheduleItem> { item -> item.hour * 60 + item.minute }
+                            .thenBy { it.durationMinutes }
                     )
                 val allFiltered = allItems
                     .filter { item -> item.setId == null || item.setId in effectiveActiveSetIds }
