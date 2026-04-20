@@ -68,6 +68,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -2161,7 +2162,7 @@ private fun RoutineOverviewContent(
             )
             CalendarMonthOverview(
                 monthCells = cells,
-                items = monthlyFilteredItems,
+                scheduleItems = monthlyFilteredItems,
                 onDateSelected = onDateSelected
             )
         }
@@ -2471,42 +2472,42 @@ private fun WeekNowIndicatorLine() {
 @Composable
 private fun CalendarMonthOverview(
     monthCells: List<Pair<LocalDate, Boolean>>,
-    items: List<ScheduleItem>,
+    scheduleItems: List<ScheduleItem>,
     onDateSelected: (LocalDate) -> Unit
 ) {
-    val rows = remember(monthCells) { monthCells.chunked(7) }
     val today = remember { LocalDate.now() }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(7),
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        userScrollEnabled = true
     ) {
-        WeekdayHeaderRow()
-        rows.forEach { weekRow ->
-            Row(
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            WeekdayHeaderRow()
+        }
+        items(
+            items = monthCells,
+            key = { (date, _) -> date.toEpochDay() }
+        ) { (date, inCurrentMonth) ->
+            val dayItems = remember(date, scheduleItems) {
+                scheduleItems.filter { it.occursOnDate(date) }
+                    .sortedWith(compareBy({ it.hour }, { it.minute }))
+            }
+            CalendarDayCell(
+                date = date,
+                isInCurrentMonth = inCurrentMonth,
+                today = today,
+                dayItems = dayItems,
+                onClick = { onDateSelected(date) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 108.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                weekRow.forEach { (date, inCurrentMonth) ->
-                    val dayItems = remember(date, items) {
-                        items.filter { it.occursOnDate(date) }
-                            .sortedWith(compareBy({ it.hour }, { it.minute }))
-                    }
-                    CalendarDayCell(
-                        date = date,
-                        isInCurrentMonth = inCurrentMonth,
-                        today = today,
-                        dayItems = dayItems,
-                        onClick = { onDateSelected(date) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+                    .heightIn(min = 108.dp)
+            )
         }
-        Spacer(modifier = Modifier.height(72.dp))
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Spacer(modifier = Modifier.height(72.dp))
+        }
     }
 }
 
