@@ -58,6 +58,7 @@ fun EditItemDialog(
     initialItem: ScheduleItem?,
     defaultEventSettings: DefaultEventSettings,
     useGoogleBackupMode: Boolean, // Added parameter
+    hasConnectedGoogleAccount: Boolean,
     routeTravelMode: EventPredictionService.TravelMode,
     eventSetNames: List<String>,
     eventSetColors: List<Int>,
@@ -781,12 +782,16 @@ fun EditItemDialog(
                                         enabled = !useGoogleBackupMode,
                                     )
                                     Text(
-                                        text = "Calendar entry",
+                                        text = if (hasConnectedGoogleAccount) {
+                                            stringResource(R.string.calendar_entry)
+                                        } else {
+                                            stringResource(R.string.local_device_calendar_entry)
+                                        },
                                         color = if (useGoogleBackupMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else LocalContentColor.current
                                     )
                                 }
 
-                                if (addToCalendar && !useGoogleBackupMode && isFieldEnabled(EventDialogField.CALENDAR_TARGET)) {
+                                if (addToCalendar && hasConnectedGoogleAccount && !useGoogleBackupMode && isFieldEnabled(EventDialogField.CALENDAR_TARGET)) {
                                     Spacer(Modifier.height(8.dp))
                                     Column(
                                         Modifier

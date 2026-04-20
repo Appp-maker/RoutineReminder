@@ -73,6 +73,8 @@
     <string name="settings_default_events_one_time_appointment">Repeat event</string>
     <string name="event_repeats_weekly_label">Repeat event</string>
     <string name="settings_default_events_create_calendar_entry">Create calendar entry</string>
+    <string name="calendar_entry">Calendar entry</string>
+    <string name="local_device_calendar_entry">Local device calendar entry</string>
     <string name="settings_default_events_target_calendar_new_events">Target calendar for new events:</string>
     <string name="settings_default_events_target_calendar_local_device">Local device calendar</string>
     <string name="settings_default_events_select_gcal_primary">Selected Google Account\'s primary calendar</string>
