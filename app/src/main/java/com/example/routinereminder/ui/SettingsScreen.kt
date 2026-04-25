@@ -127,7 +127,8 @@ enum class SettingsCategory {
     SYNC,
     DEFAULT_EVENTS,
     MAP,
-    APP
+    APP,
+    GUIDE
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -749,22 +750,26 @@ fun SettingsScreen(
                         if (routineEnabled) SettingsCategory.DEFAULT_EVENTS else null,
                         SettingsCategory.SYNC,
                         if (includeMapTab) SettingsCategory.MAP else null,
-                        SettingsCategory.APP
+                        SettingsCategory.APP,
+                        SettingsCategory.GUIDE
                     )
                     "calories" -> listOfNotNull(
                         if (caloriesEnabled) SettingsCategory.PROFILE else null,
                         SettingsCategory.SYNC,
                         if (includeMapTab) SettingsCategory.MAP else null,
-                        SettingsCategory.APP
+                        SettingsCategory.APP,
+                        SettingsCategory.GUIDE
                     )
                     "map" -> listOf(
                         SettingsCategory.SYNC,
                         SettingsCategory.MAP,
-                        SettingsCategory.APP
+                        SettingsCategory.APP,
+                        SettingsCategory.GUIDE
                     )
                     else -> listOf(
                         SettingsCategory.SYNC,
-                        SettingsCategory.APP
+                        SettingsCategory.APP,
+                        SettingsCategory.GUIDE
                     )
                 }
 
@@ -792,6 +797,7 @@ fun SettingsScreen(
                             SettingsCategory.SYNC -> stringResource(R.string.settings_category_sync)
                             SettingsCategory.MAP -> stringResource(R.string.settings_category_map)
                             SettingsCategory.APP -> stringResource(R.string.settings_category_app)
+                            SettingsCategory.GUIDE -> stringResource(R.string.settings_category_guide)
                         }
 
                         Tab(
@@ -1196,6 +1202,7 @@ fun SettingsScreen(
                         onRoutineInsightsEnabledChange = { routineInsightsEnabledChecked = it; justSavedSuccessfully = false },
                         onBackupClick = { selectedCategory = SettingsCategory.SYNC }
                     )
+                    SettingsCategory.GUIDE -> GuideSettingsSection()
                 }
             }
         }
@@ -3763,6 +3770,148 @@ private fun AppSettingsSection(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
     ) {
         Text(stringResource(R.string.settings_app_legal_action))
+    }
+}
+
+@Composable
+private fun GuideSettingsSection() {
+    var selectedGuideTab by remember { mutableStateOf(AppTab.Routine) }
+
+    Text(
+        text = stringResource(R.string.settings_guide_title),
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+    )
+    Text(
+        text = stringResource(R.string.settings_guide_description),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+
+    ScrollableTabRow(
+        selectedTabIndex = AppTab.entries.indexOf(selectedGuideTab),
+        edgePadding = 0.dp,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        AppTab.entries.forEach { tab ->
+            Tab(
+                selected = selectedGuideTab == tab,
+                onClick = { selectedGuideTab = tab },
+                selectedContentColor = MaterialTheme.colorScheme.secondary,
+                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = { Text(text = stringResource(tab.labelRes), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    when (selectedGuideTab) {
+        AppTab.Routine -> GuideTabContent(
+            summary = "Plan and complete recurring tasks, appointments, and personal routines.",
+            canDo = listOf(
+                "Create one-time or repeating events with reminders and optional calendar links.",
+                "Use event sets to switch quickly between routine plans (for example work week vs. weekend).",
+                "Track completion consistency over time with the routine insights module."
+            ),
+            exampleSteps = listOf(
+                "Create a \"Morning Routine\" event for weekdays at 7:00.",
+                "Enable reminders before start so you always get notified.",
+                "Mark it done each day and review your completion trend weekly."
+            )
+        )
+        AppTab.Calories -> GuideTabContent(
+            summary = "Track nutrition goals by logging foods, calories, and macro totals each day.",
+            canDo = listOf(
+                "Log foods and monitor calories, protein, carbs, and fats.",
+                "Scan product data and inspect nutrition details before adding items.",
+                "Use consumed checkboxes so totals reflect what you actually ate."
+            ),
+            exampleSteps = listOf(
+                "Add breakfast items in the morning plan.",
+                "Check foods as consumed when eaten to keep totals accurate.",
+                "Review remaining calories in the evening and adjust dinner choices."
+            )
+        )
+        AppTab.Map -> GuideTabContent(
+            summary = "Track running sessions and calculate route-aware travel context around events.",
+            canDo = listOf(
+                "Record runs with distance and duration context.",
+                "Choose transport mode to estimate ETA for destination-based events.",
+                "Optionally add route time before and after events automatically."
+            ),
+            exampleSteps = listOf(
+                "Select driving, cycling, walking, or public transport in map settings.",
+                "Create an event with a destination and keep route estimation enabled.",
+                "Let the app add travel buffer so your schedule becomes realistic."
+            )
+        )
+        AppTab.Workout -> GuideTabContent(
+            summary = "Create workout plans and follow guided exercise sessions with progress tracking.",
+            canDo = listOf(
+                "Build structured workout sessions and organize training days.",
+                "Browse a public exercise dataset for movement ideas and instructions.",
+                "Review progress regularly and increase intensity over time."
+            ),
+            exampleSteps = listOf(
+                "Create a strength workout with 4 to 6 exercises.",
+                "Start a session and complete sets in order.",
+                "Compare weekly results and raise reps or weight next cycle."
+            )
+        )
+    }
+}
+
+@Composable
+private fun GuideTabContent(
+    summary: String,
+    canDo: List<String>,
+    exampleSteps: List<String>
+) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "What this tab is for",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
+            )
+
+            Text(
+                text = "What you can do",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            canDo.forEach { item ->
+                Text(
+                    text = "• $item",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Example flow",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            exampleSteps.forEachIndexed { index, step ->
+                Text(
+                    text = "${index + 1}. $step",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
     }
 }
 
