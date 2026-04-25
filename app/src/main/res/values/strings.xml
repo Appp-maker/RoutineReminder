@@ -85,6 +85,16 @@
     <string name="settings_default_events_reminder_options_title">Reminder timing</string>
     <string name="settings_default_events_reminder_count_label">Number of reminders before event</string>
     <string name="settings_default_events_reminder_interval_label">Pause between reminders (minutes)</string>
+    <string name="event_timer_section_title">Automatic event timer</string>
+    <string name="event_timer_enable_auto_start">Start timer automatically when event starts</string>
+    <string name="event_timer_duration_mode_title">Timer length</string>
+    <string name="event_timer_use_event_duration">Use event duration</string>
+    <string name="event_timer_use_custom_duration">Use custom duration</string>
+    <string name="event_timer_custom_minutes">Custom minutes</string>
+    <string name="event_timer_when_finished_title">When timer finishes</string>
+    <string name="event_timer_alert_sound">Play sound</string>
+    <string name="event_timer_alert_notification">Show notification</string>
+    <string name="notification_event_timer_finished">Timer is finished.</string>
     <string name="settings_events_enabled_title">Enable event sets</string>
     <string name="settings_events_enabled_description">Turn this off to disable event sets. When disabled, all entries with an event set attached are shown.</string>
     <string name="settings_event_appearance_title">Event appearance</string>
