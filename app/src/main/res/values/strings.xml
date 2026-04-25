@@ -29,6 +29,7 @@
     <string name="settings_category_sync">Sync</string>
     <string name="settings_category_map">Map</string>
     <string name="settings_category_app">App</string>
+    <string name="settings_category_guide">Guide</string>
 
     <!-- Data Sync Settings -->
     <string name="settings_data_sync_title">Data &amp; Sync</string>
@@ -161,6 +162,8 @@
     <string name="settings_tabs_title">Visible tabs</string>
     <string name="settings_tabs_description">Choose which tabs to show in the app. This can be changed later.</string>
     <string name="settings_tabs_disabled_notice">Disabled tabs are hidden and their features won\u2019t run.</string>
+    <string name="settings_guide_title">Feature guide</string>
+    <string name="settings_guide_description">Open each guide tab to learn what the app can do and follow a practical setup example.</string>
     <string name="settings_app_about_section_title">About &amp; Legal</string>
     <string name="settings_app_about_action">About</string>
     <string name="settings_app_credits_action">Credits</string>
