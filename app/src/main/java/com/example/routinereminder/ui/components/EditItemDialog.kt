@@ -2,7 +2,9 @@
 package com.example.routinereminder.ui.components
 
 import android.app.DatePickerDialog
+import android.app.NotificationManager
 import android.app.TimePickerDialog
+import android.content.Context
 import android.widget.DatePicker
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -154,6 +156,7 @@ fun EditItemDialog(
     }
     var autoTimerAlertSound by remember(initialItem) { mutableStateOf(initialItem?.autoTimerAlertSound ?: true) }
     var autoTimerAlertNotification by remember(initialItem) { mutableStateOf(initialItem?.autoTimerAlertNotification ?: true) }
+    var focusModeEnabled by remember(initialItem) { mutableStateOf(initialItem?.focusModeEnabled ?: false) }
     var selectedColorArgb by remember(initialItem) {
         mutableStateOf(initialItem?.colorArgb ?: NO_EVENT_FOOD_COLOR_ARGB)
     }
@@ -269,6 +272,7 @@ fun EditItemDialog(
                 autoTimerCustomMinutes = autoTimerCustomMinutes,
                 autoTimerAlertSound = autoTimerAlertSound,
                 autoTimerAlertNotification = autoTimerAlertNotification,
+                focusModeEnabled = focusModeEnabled,
                 colorArgb = selectedColorArgb,
                 category = selectedCategory,
                 setId = selectedSetId
@@ -314,6 +318,7 @@ fun EditItemDialog(
                 autoTimerCustomMinutes = autoTimerCustomMinutes,
                 autoTimerAlertSound = autoTimerAlertSound,
                 autoTimerAlertNotification = autoTimerAlertNotification,
+                focusModeEnabled = focusModeEnabled,
                 colorArgb = selectedColorArgb,
                 category = selectedCategory,
                 setId = selectedSetId
@@ -885,6 +890,49 @@ fun EditItemDialog(
                                         onCheckedChange = { notifyEnabled = it },
                                     )
                                     Text("System notification")
+                                }
+                                Spacer(Modifier.height(8.dp))
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.clickable {
+                                        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                                        if (!focusModeEnabled && !notificationManager.isNotificationPolicyAccessGranted) {
+                                            context.startActivity(
+                                                android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            )
+                                            Toast.makeText(
+                                                context,
+                                                "Allow Do Not Disturb access to enable Focus mode.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            return@clickable
+                                        }
+                                        focusModeEnabled = !focusModeEnabled
+                                    }
+                                ) {
+                                    Checkbox(
+                                        checked = focusModeEnabled,
+                                        onCheckedChange = {
+                                            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                                            if (it && !notificationManager.isNotificationPolicyAccessGranted) {
+                                                context.startActivity(
+                                                    android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                                                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                )
+                                                Toast.makeText(
+                                                    context,
+                                                    "Allow Do Not Disturb access to enable Focus mode.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                                return@Checkbox
+                                            }
+                                            focusModeEnabled = it
+                                        },
+                                    )
+                                    Text("Focus mode (silence other Android apps during this event)")
                                 }
                                 Spacer(Modifier.height(8.dp))
 

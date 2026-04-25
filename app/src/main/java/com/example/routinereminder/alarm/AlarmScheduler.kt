@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.example.routinereminder.data.ScheduleItem
+import com.example.routinereminder.util.FocusModeReceiver
 import com.example.routinereminder.util.RecurrenceUtil
 import java.time.ZoneId
 import kotlin.math.abs
@@ -21,6 +22,8 @@ class AlarmScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val maxPreReminders = 10
+    private val focusStartIndex = maxPreReminders + 1
+    private val focusEndIndex = maxPreReminders + 2
 
     fun schedule(item: ScheduleItem): ScheduleResult {
         Log.i("AlarmScheduler", "Attempting to schedule item id: ${item.id}, notifyEnabled: ${item.notifyEnabled}")
@@ -86,6 +89,39 @@ class AlarmScheduler(private val context: Context) {
                 )
             }
 
+            if (item.focusModeEnabled) {
+                val focusStartIntent = Intent(context, FocusModeReceiver::class.java).apply {
+                    action = FocusModeReceiver.ACTION_ENABLE_FOCUS
+                }
+                val focusStartPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    makeRequestCode(item.id, focusStartIndex),
+                    focusStartIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    nextOccurrenceMillis,
+                    focusStartPendingIntent
+                )
+
+                val focusEndMillis = nextOccurrenceMillis + (item.durationMinutes.coerceAtLeast(1) * 60_000L)
+                val focusEndIntent = Intent(context, FocusModeReceiver::class.java).apply {
+                    action = FocusModeReceiver.ACTION_DISABLE_FOCUS
+                }
+                val focusEndPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    makeRequestCode(item.id, focusEndIndex),
+                    focusEndIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    focusEndMillis,
+                    focusEndPendingIntent
+                )
+            }
+
             Log.i("AlarmScheduler", "Alarm scheduled successfully for item id: ${item.id} at $nextOccurrenceMillis")
             ScheduleResult.Success
         } catch (se: SecurityException) {
@@ -101,13 +137,17 @@ class AlarmScheduler(private val context: Context) {
     }
 
     fun cancel(itemId: Long) {
-        val intent = Intent(context, NotificationReceiver::class.java)
         var canceledAny = false
-        for (index in 0..maxPreReminders) {
+        for (index in 0..focusEndIndex) {
+            val receiverClass = if (index == focusStartIndex || index == focusEndIndex) {
+                FocusModeReceiver::class.java
+            } else {
+                NotificationReceiver::class.java
+            }
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
                 makeRequestCode(itemId, index),
-                intent,
+                Intent(context, receiverClass),
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
             )
             if (pendingIntent != null) {

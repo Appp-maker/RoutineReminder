@@ -168,6 +168,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 250, 200, 250)
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                setBypassDnd(true)
             }
             notificationManager.createNotificationChannel(channel)
         }

@@ -20,6 +20,8 @@ class NotificationScheduler(private val context: Context) {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val maxPreReminders = 10
     private val timerCompletionIndex = maxPreReminders + 2
+    private val focusStartIndex = maxPreReminders + 3
+    private val focusEndIndex = maxPreReminders + 4
 
     fun scheduleSingleOccurrence(
         item: ScheduleItem,
@@ -136,6 +138,33 @@ class NotificationScheduler(private val context: Context) {
                 scheduleAlarm(timerTriggerMillis, timerPendingIntent)
             }
         }
+
+        if (item.focusModeEnabled) {
+            val focusStartIntent = Intent(context, FocusModeReceiver::class.java).apply {
+                action = FocusModeReceiver.ACTION_ENABLE_FOCUS
+            }
+            val focusStartPendingIntent = PendingIntent.getBroadcast(
+                context,
+                makeRequestCode(item.id, epochDay, focusStartIndex),
+                focusStartIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            scheduleAlarm(triggerMillis, focusStartPendingIntent)
+
+            val focusEndMillis = triggerMillis + (item.durationMinutes.coerceAtLeast(1) * 60_000L)
+            if (focusEndMillis > System.currentTimeMillis()) {
+                val focusEndIntent = Intent(context, FocusModeReceiver::class.java).apply {
+                    action = FocusModeReceiver.ACTION_DISABLE_FOCUS
+                }
+                val focusEndPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    makeRequestCode(item.id, epochDay, focusEndIndex),
+                    focusEndIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                scheduleAlarm(focusEndMillis, focusEndPendingIntent)
+            }
+        }
     }
 
 
@@ -179,12 +208,16 @@ class NotificationScheduler(private val context: Context) {
     }
 
     fun cancelSingleOccurrence(item: ScheduleItem, epochDay: Long) {
-        val intent = Intent(context, ReminderReceiver::class.java)
-        for (index in 0..timerCompletionIndex) {
+        for (index in 0..focusEndIndex) {
+            val receiverClass = if (index == focusStartIndex || index == focusEndIndex) {
+                FocusModeReceiver::class.java
+            } else {
+                ReminderReceiver::class.java
+            }
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
                 makeRequestCode(item.id, epochDay, index),
-                intent,
+                Intent(context, receiverClass),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             alarmManager.cancel(pendingIntent)

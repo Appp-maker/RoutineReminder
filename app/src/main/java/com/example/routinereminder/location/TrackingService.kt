@@ -82,6 +82,7 @@ class TrackingService : Service() {
             "Running Tracker",
             NotificationManager.IMPORTANCE_LOW
         )
+        chan.setBypassDnd(true)
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(chan)
     }

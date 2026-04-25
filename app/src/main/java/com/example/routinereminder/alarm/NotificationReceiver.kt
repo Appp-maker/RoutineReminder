@@ -100,6 +100,7 @@ class NotificationReceiver : BroadcastReceiver() {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Benachrichtigungen für Routinen und Termine"
+                setBypassDnd(true)
             }
             notificationManager.createNotificationChannel(channel)
         }
