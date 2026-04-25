@@ -11,6 +11,7 @@ import com.example.routinereminder.data.MIGRATION_15_16
 import com.example.routinereminder.data.MIGRATION_16_17
 import com.example.routinereminder.data.MIGRATION_17_18
 import com.example.routinereminder.data.MIGRATION_18_19
+import com.example.routinereminder.data.MIGRATION_19_20
 import com.example.routinereminder.data.dao.*
 import dagger.Module
 import dagger.Provides
@@ -39,7 +40,8 @@ object DatabaseModule {
                 MIGRATION_15_16,
                 MIGRATION_16_17,
                 MIGRATION_17_18,
-                MIGRATION_18_19
+                MIGRATION_18_19,
+                MIGRATION_19_20
             )
             .fallbackToDestructiveMigration()
             .build()

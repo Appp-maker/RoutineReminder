@@ -26,6 +26,7 @@ data class ScheduleItem(
     val autoTimerCustomMinutes: Int = 60,
     val autoTimerAlertSound: Boolean = true,
     val autoTimerAlertNotification: Boolean = true,
+    val focusModeEnabled: Boolean = false,
     val addToCalendarOnSave: Boolean = false,
     val calendarEventId: Long? = null,
     val origin: String = "APP_CREATED",

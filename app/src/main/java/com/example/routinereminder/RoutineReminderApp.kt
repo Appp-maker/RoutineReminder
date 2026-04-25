@@ -75,6 +75,7 @@ class RoutineReminderApp : Application(), Configuration.Provider {
                 android.app.NotificationManager.IMPORTANCE_HIGH
             )
             channel.description = "Notifications for scheduled routines"
+            channel.setBypassDnd(true)
 
             val manager = getSystemService(android.app.NotificationManager::class.java)
             manager.createNotificationChannel(channel)

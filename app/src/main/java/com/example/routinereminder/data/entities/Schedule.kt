@@ -44,6 +44,8 @@ data class Schedule(
     val autoTimerAlertSound: Boolean = true,
     @ColumnInfo(defaultValue = "1")
     val autoTimerAlertNotification: Boolean = true,
+    @ColumnInfo(defaultValue = "0")
+    val focusModeEnabled: Boolean = false,
     val addToCalendarOnSave: Boolean = false,
     val calendarEventId: Long? = null,
     val origin: String = "APP_CREATED",
