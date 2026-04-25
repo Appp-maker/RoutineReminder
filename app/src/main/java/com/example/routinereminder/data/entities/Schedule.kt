@@ -34,6 +34,16 @@ data class Schedule(
     val reminderCount: Int = 0,
     @ColumnInfo(defaultValue = "60")
     val reminderIntervalMinutes: Int = 60,
+    @ColumnInfo(defaultValue = "0")
+    val autoTimerEnabled: Boolean = false,
+    @ColumnInfo(defaultValue = "1")
+    val autoTimerUseEventDuration: Boolean = true,
+    @ColumnInfo(defaultValue = "60")
+    val autoTimerCustomMinutes: Int = 60,
+    @ColumnInfo(defaultValue = "1")
+    val autoTimerAlertSound: Boolean = true,
+    @ColumnInfo(defaultValue = "1")
+    val autoTimerAlertNotification: Boolean = true,
     val addToCalendarOnSave: Boolean = false,
     val calendarEventId: Long? = null,
     val origin: String = "APP_CREATED",

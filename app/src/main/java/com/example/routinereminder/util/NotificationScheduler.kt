@@ -19,6 +19,7 @@ class NotificationScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val maxPreReminders = 10
+    private val timerCompletionIndex = maxPreReminders + 2
 
     fun scheduleSingleOccurrence(
         item: ScheduleItem,
@@ -104,6 +105,37 @@ class NotificationScheduler(private val context: Context) {
                 scheduleAlarm(reminderMillis, pendingIntent)
             }
         }
+
+        if (item.autoTimerEnabled && (item.autoTimerAlertNotification || item.autoTimerAlertSound)) {
+            val timerDurationMinutes = if (item.autoTimerUseEventDuration) {
+                item.durationMinutes
+            } else {
+                item.autoTimerCustomMinutes
+            }.coerceAtLeast(1)
+            val timerTriggerMillis = triggerMillis + (timerDurationMinutes * 60_000L)
+            if (timerTriggerMillis > System.currentTimeMillis()) {
+                val notificationId = stableId(makeRequestCode(item.id, epochDay, timerCompletionIndex))
+                val timerIntent = Intent(context, ReminderReceiver::class.java).apply {
+                    action = ReminderReceiver.ACTION_TIMER_COMPLETED
+                    putExtra("title", item.name)
+                    putExtra("scheduleId", item.id)
+                    putExtra("epochDay", epochDay)
+                    putExtra(ReminderReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+                    putExtra(ReminderReceiver.EXTRA_TIMER_ALERT_SOUND, item.autoTimerAlertSound)
+                    putExtra(
+                        ReminderReceiver.EXTRA_TIMER_ALERT_NOTIFICATION,
+                        item.autoTimerAlertNotification
+                    )
+                }
+                val timerPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    makeRequestCode(item.id, epochDay, timerCompletionIndex),
+                    timerIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                scheduleAlarm(timerTriggerMillis, timerPendingIntent)
+            }
+        }
     }
 
 
@@ -148,7 +180,7 @@ class NotificationScheduler(private val context: Context) {
 
     fun cancelSingleOccurrence(item: ScheduleItem, epochDay: Long) {
         val intent = Intent(context, ReminderReceiver::class.java)
-        for (index in 0..(maxPreReminders + 1)) {
+        for (index in 0..timerCompletionIndex) {
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
                 makeRequestCode(item.id, epochDay, index),

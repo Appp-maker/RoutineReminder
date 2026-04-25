@@ -17,6 +17,7 @@ import kotlinx.serialization.json.Json
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import android.media.RingtoneManager
 
 private fun loadSettings(context: Context): DefaultEventSettings? {
     return try {
@@ -34,6 +35,9 @@ class ReminderReceiver : BroadcastReceiver() {
     companion object {
         const val EXTRA_MINUTES_BEFORE = "extra_minutes_before"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
+        const val EXTRA_TIMER_ALERT_SOUND = "extra_timer_alert_sound"
+        const val EXTRA_TIMER_ALERT_NOTIFICATION = "extra_timer_alert_notification"
+        const val ACTION_TIMER_COMPLETED = "TIMER_COMPLETED"
         private const val CHANNEL_ID = "routine_channel"
         private const val CHANNEL_NAME = "Routine Reminders"
     }
@@ -47,6 +51,35 @@ class ReminderReceiver : BroadcastReceiver() {
             val id = intent.getIntExtra("notificationId", -1)
             if (id != -1) {
                 NotificationManagerCompat.from(context).cancel(id)
+            }
+            return
+        }
+
+        // Timer completion trigger
+        if (intent.action == ACTION_TIMER_COMPLETED) {
+            val title = intent.getStringExtra("title") ?: "Event timer"
+            val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, System.currentTimeMillis().toInt())
+            val playSound = intent.getBooleanExtra(EXTRA_TIMER_ALERT_SOUND, true)
+            val showNotification = intent.getBooleanExtra(EXTRA_TIMER_ALERT_NOTIFICATION, true)
+
+            if (playSound) {
+                runCatching {
+                    val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                    val ringtone = RingtoneManager.getRingtone(context, soundUri)
+                    ringtone?.play()
+                }.onFailure {
+                    Log.w("ReminderReceiver", "Unable to play timer completion sound", it)
+                }
+            }
+
+            if (showNotification) {
+                showNotification(
+                    context = context,
+                    title = title,
+                    message = context.getString(R.string.notification_event_timer_finished),
+                    notificationId = notificationId
+                )
             }
             return
         }
@@ -66,8 +99,10 @@ class ReminderReceiver : BroadcastReceiver() {
             }
 
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, System.currentTimeMillis().toInt())
+        showNotification(context, title, message, notificationId)
+    }
 
-        // Close button
+    private fun showNotification(context: Context, title: String, message: String, notificationId: Int) {
         val closeIntent = Intent(context, ReminderReceiver::class.java).apply {
             action = "CLOSE_NOTIFICATION"
             putExtra("notificationId", notificationId)
@@ -138,4 +173,3 @@ class ReminderReceiver : BroadcastReceiver() {
         }
     }
 }
-

@@ -147,6 +147,13 @@ fun EditItemDialog(
     var reminderIntervalInput by remember(initialItem, defaultEventSettings) {
         mutableStateOf((initialItem?.reminderIntervalMinutes ?: defaultEventSettings.reminderIntervalMinutes).toString())
     }
+    var autoTimerEnabled by remember(initialItem) { mutableStateOf(initialItem?.autoTimerEnabled ?: false) }
+    var autoTimerUseEventDuration by remember(initialItem) { mutableStateOf(initialItem?.autoTimerUseEventDuration ?: true) }
+    var autoTimerCustomMinutesInput by remember(initialItem) {
+        mutableStateOf((initialItem?.autoTimerCustomMinutes ?: 60).toString())
+    }
+    var autoTimerAlertSound by remember(initialItem) { mutableStateOf(initialItem?.autoTimerAlertSound ?: true) }
+    var autoTimerAlertNotification by remember(initialItem) { mutableStateOf(initialItem?.autoTimerAlertNotification ?: true) }
     var selectedColorArgb by remember(initialItem) {
         mutableStateOf(initialItem?.colorArgb ?: NO_EVENT_FOOD_COLOR_ARGB)
     }
@@ -212,6 +219,10 @@ fun EditItemDialog(
         val reminderIntervalMinutes = reminderIntervalInput.toIntOrNull()
             ?.coerceAtLeast(1)
             ?: defaultEventSettings.reminderIntervalMinutes
+        val autoTimerCustomMinutes = autoTimerCustomMinutesInput.toIntOrNull()?.coerceAtLeast(1) ?: 1
+        if (autoTimerEnabled && !autoTimerAlertSound && !autoTimerAlertNotification) {
+            autoTimerAlertNotification = true
+        }
 
         val finalAddToCalendar = if (useGoogleBackupMode) false else addToCalendar
         val finalTargetCalendarSystem = if (useGoogleBackupMode || !finalAddToCalendar) null else targetCalendarSystemForEntry
@@ -253,6 +264,11 @@ fun EditItemDialog(
                 showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false,
                 reminderCount = reminderCount,
                 reminderIntervalMinutes = reminderIntervalMinutes,
+                autoTimerEnabled = autoTimerEnabled,
+                autoTimerUseEventDuration = autoTimerUseEventDuration,
+                autoTimerCustomMinutes = autoTimerCustomMinutes,
+                autoTimerAlertSound = autoTimerAlertSound,
+                autoTimerAlertNotification = autoTimerAlertNotification,
                 colorArgb = selectedColorArgb,
                 category = selectedCategory,
                 setId = selectedSetId
@@ -293,6 +309,11 @@ fun EditItemDialog(
                 showDetailsInNotification = if (notifyEnabled) showDetailsInNotification else false,
                 reminderCount = reminderCount,
                 reminderIntervalMinutes = reminderIntervalMinutes,
+                autoTimerEnabled = autoTimerEnabled,
+                autoTimerUseEventDuration = autoTimerUseEventDuration,
+                autoTimerCustomMinutes = autoTimerCustomMinutes,
+                autoTimerAlertSound = autoTimerAlertSound,
+                autoTimerAlertNotification = autoTimerAlertNotification,
                 colorArgb = selectedColorArgb,
                 category = selectedCategory,
                 setId = selectedSetId
@@ -909,8 +930,124 @@ fun EditItemDialog(
                                         enabled = notifyEnabled,
                                         modifier = Modifier.fillMaxWidth()
                                     )
-                                    Spacer(Modifier.height(64.dp))
+                                    Spacer(Modifier.height(12.dp))
                                 }
+
+                                Text(
+                                    text = stringResource(R.string.event_timer_section_title),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.clickable { autoTimerEnabled = !autoTimerEnabled }
+                                ) {
+                                    Checkbox(
+                                        checked = autoTimerEnabled,
+                                        onCheckedChange = { autoTimerEnabled = it }
+                                    )
+                                    Text(stringResource(R.string.event_timer_enable_auto_start))
+                                }
+                                if (autoTimerEnabled) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.event_timer_duration_mode_title),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                    Row(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .selectable(
+                                                selected = autoTimerUseEventDuration,
+                                                onClick = { autoTimerUseEventDuration = true }
+                                            )
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(selected = autoTimerUseEventDuration, onClick = null)
+                                        Text(
+                                            text = stringResource(R.string.event_timer_use_event_duration),
+                                            modifier = Modifier.padding(start = 8.dp)
+                                        )
+                                    }
+                                    Row(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .selectable(
+                                                selected = !autoTimerUseEventDuration,
+                                                onClick = { autoTimerUseEventDuration = false }
+                                            )
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(selected = !autoTimerUseEventDuration, onClick = null)
+                                        Text(
+                                            text = stringResource(R.string.event_timer_use_custom_duration),
+                                            modifier = Modifier.padding(start = 8.dp)
+                                        )
+                                    }
+                                    if (!autoTimerUseEventDuration) {
+                                        OutlinedTextField(
+                                            value = autoTimerCustomMinutesInput,
+                                            onValueChange = { autoTimerCustomMinutesInput = it.filter(Char::isDigit) },
+                                            label = { Text(stringResource(R.string.event_timer_custom_minutes)) },
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.event_timer_when_finished_title),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.clickable {
+                                            autoTimerAlertSound = !autoTimerAlertSound
+                                            if (!autoTimerAlertSound && !autoTimerAlertNotification) {
+                                                autoTimerAlertNotification = true
+                                            }
+                                        }
+                                    ) {
+                                        Checkbox(
+                                            checked = autoTimerAlertSound,
+                                            onCheckedChange = {
+                                                autoTimerAlertSound = it
+                                                if (!autoTimerAlertSound && !autoTimerAlertNotification) {
+                                                    autoTimerAlertNotification = true
+                                                }
+                                            }
+                                        )
+                                        Text(stringResource(R.string.event_timer_alert_sound))
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.clickable {
+                                            autoTimerAlertNotification = !autoTimerAlertNotification
+                                            if (!autoTimerAlertSound && !autoTimerAlertNotification) {
+                                                autoTimerAlertSound = true
+                                            }
+                                        }
+                                    ) {
+                                        Checkbox(
+                                            checked = autoTimerAlertNotification,
+                                            onCheckedChange = {
+                                                autoTimerAlertNotification = it
+                                                if (!autoTimerAlertSound && !autoTimerAlertNotification) {
+                                                    autoTimerAlertSound = true
+                                                }
+                                            }
+                                        )
+                                        Text(stringResource(R.string.event_timer_alert_notification))
+                                    }
+                                }
+                                Spacer(Modifier.height(64.dp))
                             }
 
                             EventDialogField.CALENDAR_TARGET,
